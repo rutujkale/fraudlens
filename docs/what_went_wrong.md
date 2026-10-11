@@ -180,3 +180,59 @@ _What happened, one line._
   temporal leakage — it is synthetic separability (the simulator's fraud is genuinely learnable). It is
   logged for Part 06, where model optimism vs the Part 03 gate should be re-examined.
 - **Test added:** `tests/test_leakage.py::test_8_canary_tests_detect_leakage`.
+
+---
+
+### Incident: Part 06 high XGBoost val PR-AUC (0.9667) with no dominant feature
+- **How detected:** the Part 06 stop-guard in `scripts/train.py` — XGBoost best validation PR-AUC
+  `0.9667 > 0.95` triggers an automatic diagnostic (`results/xgb_importance_dev.json`,
+  `results/xgb_importance_dev.csv`). This closes the "Open concern (not a leak)" left by the Part 05E
+  entry above (clean val PR-AUC 0.956).
+- **Measurements (`dev`, 289,870 tx; train 174,834 / val 41,313 / test 39,380 untouched):**
+  - rules val PR-AUC **0.3787**, logreg **0.9021**, xgb **0.9667** (ordering as expected).
+  - top-5 XGBoost gain shares are **diffuse** — no single feature dominates:
+
+    | rank | feature | gain share |
+    |---|---|---|
+    | 1 | `minutes_since_prev_tx` | 0.126 |
+    | 2 | `days_since_last_tx` | 0.093 |
+    | 3 | `tx_count_10m` | 0.091 |
+    | 4 | `tx_count_1h` | 0.064 |
+    | 5 | `is_night` | 0.060 |
+
+  - `dominant_feature = null` (no feature exceeds the 0.60 dominance share).
+  - `is_new_device` ablation (NaN the feature, re-score, no retrain): **0.9667 → 0.9667** (drop −5.5e−06).
+- **Interpretation:** this is **not** a single leaker. The high PR-AUC is spread across many velocity
+  / recency features, and the one feature most likely to be a target-derived shortcut
+  (`is_new_device`) contributes nothing. This is consistent with the Part 03 separability gate passing
+  (best single-signal PR-AUC 0.1831) and with genuinely learnable synthetic fraud, not temporal leakage
+  (Part 05's truncation / future-mutation / serving-parity invariance tests all pass on these features).
+- **Effect:** a headline "0.97 PR-AUC" could be mistaken for leakage; the diagnostic shows it is
+  synthetic separability. Model optimism vs the gate is now documented rather than hidden.
+- **Fix:** none to the simulator — per the Part 06 directive, no simulator change without approval, and
+  no dominant feature justifies one.
+- **Status:** logged and reported; **awaiting go-ahead** on whether 0.9667 is accepted as genuine or
+  warrants a simulator-side investigation.
+- **Test added:** none yet — the stop-guard is a CLI behaviour. A regression test pinning the
+  no-dominant-feature invariant (gain share < 0.60) is a candidate for Part 08's experiment suite.
+
+---
+
+### Incident: `customer_holdout` did not deduplicate transaction-level customer ids
+- **How detected:** `scripts/evaluate_val.py --profile dev` printed a nonsensical holdout split —
+  `A_seen_customers n=164` vs `B_unseen_customers n=41149` (seen PR-AUC 1.0000 on 4 frauds). A 20%
+  customer holdout should leave ~80% of the validation rows *seen*, not 0.4%.
+- **Root cause:** `customer_holdout` was handed `df["customer_id"]`, an array with **one element per
+  transaction** (57,974 rows, 5,000 unique customers). It did `np.array(sorted(ids))` and
+  `seen = set(ids) - set(heldout)` without deduplicating, and `rng.choice(ids, size=0.2·len(ids))`
+  sampled from the duplicated bag: `heldout` contained ~11,600 duplicates covering ~99.6% of unique
+  customers, collapsing `seen` to 124 unique customers.
+- **Effect:** the "unseen customers" experiment (Setting A vs B) measured the wrong partition —
+  virtually all validation rows landed in the held-out group, hiding the true seen/unseen
+  generalisation gap. Worse, the same helper feeds the Part 09 unseen-fraud design.
+- **Fix:** `np.unique(ids)` before sampling in `splits.py::customer_holdout`, and
+  `seen = ids[~np.isin(ids, heldout)]`. Fraction now applies to unique customers.
+- **Result after fix (`dev`):** holdout seen PR-AUC **0.9639** (n=33,082, 297 frauds) vs unseen
+  PR-AUC **0.9349** (n=8,231, 45 frauds) — a modest, believable generalisation gap.
+- **Test added:** `tests/test_splits.py::test_customer_holdout_dedupes_repeated_transaction_ids`
+  (1000 transaction ids over 50 customers → exactly 10 heldout / 40 seen).

@@ -62,6 +62,38 @@ common:
     tree3_vs_boosted_min_pr_auc_gap: 0.05
     min_hard_negative_overlap_signals: 2
     boosted: {n_estimators: 300, max_depth: 6, learning_rate: 0.1, subsample: 0.8, colsample_bytree: 0.8}
+  # Part 06 model settings. scale_pos_weight candidates are discrete tokens plus a
+  # continuous range; selection is on VALIDATION PR-AUC only.
+  models:
+    xgb:
+      n_trials: 30
+      n_estimators: 600            # cap; early stopping on val aucpr decides
+      early_stopping_rounds: 30
+      scale_pos_weight_modes: [one, sqrt, full]   # 1, sqrt(neg/pos), neg/pos
+      scale_pos_weight_continuous: [1.0, 130.0]
+      param_space:
+        max_depth: [3, 8]
+        learning_rate: [0.02, 0.2]
+        min_child_weight: [1, 20]
+        subsample: [0.6, 1.0]
+        colsample_bytree: [0.5, 1.0]
+        reg_alpha: [0.0, 2.0]
+        reg_lambda: [0.0, 5.0]
+    logreg:
+      C_grid: [0.01, 0.1, 1.0, 10.0, 100.0]
+      class_weights: [null, balanced]
+  # Part 06D rules baseline. Conditions are implemented in models/rules.py keyed
+  # by these names; only weights/thresholds live here. A rule with `percentile`
+  # takes its threshold from that percentile of the TRAINING-LEGIT distribution
+  # (never from labels); `min_*` keys are hand-set domain thresholds.
+  rules:
+    rules:
+      velocity_10m:       {weight: 1.5, percentile: 0.99, fallback_min: 5}
+      amount_ratio_30d:   {weight: 1.0, percentile: 0.995, fallback_min: 5.0}
+      new_device_amount:  {weight: 1.5, min_ratio: 2.0}
+      travel_speed:       {weight: 1.0, min_speed_kmh: 800.0}
+      night_new_category: {weight: 1.0}
+      near_threshold:     {weight: 1.0, min_count_24h: 3}
 
 profiles:
   tiny:       {customers: 300,   days: 30,  target_fraud_rate: 0.02,  label_delay_days: [1, 3],  drift: {start_fraction: null, strength: 0.0}}

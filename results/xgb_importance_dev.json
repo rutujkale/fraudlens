@@ -1,0 +1,37 @@
+{
+  "profile": "dev",
+  "val_pr_auc": 0.9667333862824425,
+  "top5_gain": [
+    {
+      "feature": "minutes_since_prev_tx",
+      "gain": 801.5684814453125,
+      "gain_share": 0.1257631127788359
+    },
+    {
+      "feature": "days_since_last_tx",
+      "gain": 589.6152954101562,
+      "gain_share": 0.09250844638887312
+    },
+    {
+      "feature": "tx_count_10m",
+      "gain": 578.747314453125,
+      "gain_share": 0.09080330060730135
+    },
+    {
+      "feature": "tx_count_1h",
+      "gain": 408.2654113769531,
+      "gain_share": 0.06405532423395395
+    },
+    {
+      "feature": "is_night",
+      "gain": 383.5068054199219,
+      "gain_share": 0.06017079106517651
+    }
+  ],
+  "dominant_feature": null,
+  "is_new_device_ablation": {
+    "with": 0.9667333862824425,
+    "without": 0.9667389137022816,
+    "drop": -5.527419839057579e-06
+  }
+}

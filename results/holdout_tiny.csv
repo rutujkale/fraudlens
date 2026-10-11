@@ -1,0 +1,3 @@
+setting,n,n_fraud,pr_auc,roc_auc,recall_at_top_0.001,recall_at_top_0.005,recall_at_top_0.01,recall_at_top_0.02,recall_at_top_0.05
+A_seen_customers,37,0,,,,,,,
+B_unseen_customers,453,3,0.006622516556291391,0.5,0.0,0.0,0.0,0.0,0.0

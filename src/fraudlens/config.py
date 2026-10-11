@@ -110,6 +110,37 @@ class SeparabilityGateConfig(StrictModel):
     boosted: BoostedConfig
 
 
+class XgbConfig(StrictModel):
+    """XGBoost random-search settings (Part 06F)."""
+
+    n_trials: int
+    n_estimators: int  # cap; early stopping decides the real count
+    early_stopping_rounds: int
+    # discrete scale_pos_weight candidates: one (=1), sqrt (sqrt(neg/pos)), full (neg/pos)
+    scale_pos_weight_modes: list[str]
+    scale_pos_weight_continuous: list[float]
+    param_space: dict[str, list[float]]
+
+
+class LogregConfig(StrictModel):
+    """Logistic-regression tuning grid (Part 06E)."""
+
+    C_grid: list[float]
+    class_weights: list[str | None]
+
+
+class ModelsConfig(StrictModel):
+    xgb: XgbConfig
+    logreg: LogregConfig
+
+
+class RulesConfig(StrictModel):
+    """Rules-baseline definitions (Part 06D); one dict per named rule."""
+
+    rules: dict[str, dict[str, Any]]
+
+
+
 class CommonConfig(StrictModel):
     seed: int
     currency: str
@@ -134,6 +165,8 @@ class CommonConfig(StrictModel):
     api: ApiConfig
     validation: ValidationConfig
     separability_gate: SeparabilityGateConfig
+    models: ModelsConfig
+    rules: RulesConfig
 
 
 class ProfileConfig(StrictModel):
@@ -183,6 +216,8 @@ class SimulationConfig(StrictModel):
     api: ApiConfig
     validation: ValidationConfig
     separability_gate: SeparabilityGateConfig
+    models: ModelsConfig
+    rules: RulesConfig
 
     @property
     def embargo_days(self) -> int:

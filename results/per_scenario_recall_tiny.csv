@@ -1,0 +1,2 @@
+scenario,n_val_fraud,captured_at_top,recall
+amount_anomaly,3,2,0.6666666666666666

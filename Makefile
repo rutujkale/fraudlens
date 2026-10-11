@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -59,7 +59,15 @@ db-load:
 build-features:
 	$(PY) scripts/build_features.py --profile $(PROFILE)
 
-# TODO(part 06): train           - rules / logreg / xgboost baselines
+## train: fit rules/logreg/xgb, select on the validation window (MODEL=rules|logreg|xgb|all).
+MODEL ?= all
+train:
+	$(PY) scripts/train.py --profile $(PROFILE) --model $(MODEL)
+
+## evaluate-val: validation comparison table, per-scenario recall, holdout, figures.
+evaluate-val:
+	$(PY) scripts/evaluate_val.py --profile $(PROFILE)
+
 # TODO(part 07): calibrate       - calibration + cost-based decision policy
 # TODO(part 08): experiments     - imbalance/ablation/drift experiments
 # TODO(part 09): unseen-fraud    - Isolation Forest experiment

@@ -41,6 +41,13 @@ def main() -> int:
     md_path.write_text(gate_markdown(report), encoding="utf-8")
 
     logger.info("Gate report written to %s and %s", out, md_path)
+    if not report.passed:
+        # Preserve the failing run: a later passing run overwrites `out`, so this
+        # differently-named snapshot is written once and never clobbered.
+        failed_path = Path(results_dir()) / f"separability_gate_{args.profile}.FAILED.json"
+        if not failed_path.exists():
+            write_gate_report(report, str(failed_path))
+            logger.warning("Gate FAILED; first failing report preserved at %s", failed_path)
     for name, cond in report.conditions.items():
         logger.info("  %-24s observed=%.4f threshold=%.4f %s",
                     name, float(cond["observed"]), float(cond["threshold"]),

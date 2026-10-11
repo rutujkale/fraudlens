@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -50,7 +50,11 @@ eda:
 separability-gate:
 	$(PY) scripts/separability_gate.py --profile $(PROFILE)
 
-# TODO(part 04): db-load         - load raw data into PostgreSQL
+## db-load: load raw data into PostgreSQL (add RESET=--reset to drop schemas first).
+RESET ?=
+db-load:
+	$(PY) scripts/load_db.py --profile $(PROFILE) $(RESET)
+
 # TODO(part 05): build-features  - point-in-time feature engineering
 # TODO(part 06): train           - rules / logreg / xgboost baselines
 # TODO(part 07): calibrate       - calibration + cost-based decision policy

@@ -1,0 +1,28 @@
+# EXPLAIN (ANALYZE, BUFFERS) — customer-history query — profile dev
+# reference customer: C0003346
+# query: SELECT transaction_id, timestamp, amount, merchant_category, channel FROM raw.transactions WHERE customer_id = %s AND timestamp < %s ORDER BY timestamp DESC LIMIT 50
+
+===== BEFORE indexes.sql =====
+Limit  (cost=6769.79..6769.91 rows=50 width=122) (actual time=23.490..23.496 rows=50 loops=1)
+  Buffers: shared hit=5267
+  ->  Sort  (cost=6769.79..6770.21 rows=167 width=122) (actual time=23.488..23.491 rows=50 loops=1)
+        Sort Key: "timestamp" DESC
+        Sort Method: top-N heapsort  Memory: 32kB
+        Buffers: shared hit=5267
+        ->  Seq Scan on transactions  (cost=0.00..6764.24 rows=167 width=122) (actual time=0.412..23.369 rows=353 loops=1)
+              Filter: (("timestamp" < '2026-04-30 23:47:00'::timestamp without time zone) AND (customer_id = 'C0003346'::text))
+              Rows Removed by Filter: 289517
+              Buffers: shared hit=5264
+Planning Time: 0.086 ms
+Execution Time: 23.519 ms
+
+===== AFTER indexes.sql =====
+Limit  (cost=0.42..193.97 rows=50 width=122) (actual time=0.055..0.118 rows=50 loops=1)
+  Buffers: shared hit=46 read=3
+  ->  Index Scan Backward using idx_transactions_customer_ts on transactions  (cost=0.42..1870.08 rows=483 width=122) (actual time=0.053..0.114 rows=50 loops=1)
+        Index Cond: ((customer_id = 'C0003346'::text) AND ("timestamp" < '2026-04-30 23:47:00'::timestamp without time zone))
+        Buffers: shared hit=46 read=3
+Planning:
+  Buffers: shared hit=12 read=3
+Planning Time: 0.465 ms
+Execution Time: 0.136 ms

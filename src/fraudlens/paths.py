@@ -39,3 +39,7 @@ def figures_dir() -> Path:
 
 def docs_dir() -> Path:
     return ensure_dir(REPO_ROOT / "docs")
+
+
+def sql_dir() -> Path:
+    return REPO_ROOT / "sql"

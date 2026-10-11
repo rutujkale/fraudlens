@@ -91,12 +91,45 @@ _What happened, one line._
 
 ### Incident: simulator shortcut — crude signals solved the data (separability gate FAIL)
 - **How detected:** `python scripts/separability_gate.py --profile dev` FAILed on first run: a single
-  crude signal (`amount_ratio`) had too high ROC/PR-AUC, i.e. fraud was trivially separable.
-- **Effect:** a model would have scored well for the wrong reason (one cheap amount threshold), which
-  is exactly what the gate exists to catch.
+  crude signal had too high discrimination, i.e. fraud was trivially separable by one cheap rule.
+- **Effect:** a model would have scored well for the wrong reason (one cheap threshold), which is
+  exactly what the gate exists to catch.
 - **Fix:** in `fraud.py`, amount multipliers now decay with stealth (`logmean = (1 − stealth)·U(...)`)
   so high-stealth fraud keeps a baseline-like amount; stealth raised to `period_a [2.0,3.0]` /
   `period_b [3.0,2.0]` (means ≈0.40/0.60); `fraud_device_reuse_prob: 0.35` so fraud often reuses a
   known device. Regenerated `tiny` + `dev`; gate now PASSes. Thresholds were **not** lowered.
+- **Before → after (gate conditions, `dev`):**
+
+  | condition | threshold | before (failed run) | after (passing run) |
+  |---|---|---|---|
+  | best single-signal ROC-AUC | < 0.85 | **FAIL** (`amount_ratio` too high) | 0.8105 PASS |
+  | best single-signal PR-AUC | < 0.20 | **FAIL** | 0.1831 PASS |
+  | depth-3 vs boosted PR-AUC gap | ≥ 0.05 | — | 0.0648 PASS |
+  | hard-negative overlap signals | ≥ 2 | — | 2/2 PASS |
+
+  **Honesty note:** the *exact numeric* metrics of the original failing run were **not persisted** —
+  the CLI wrote the failing report to `results/separability_gate_dev.json` and the next (passing) run
+  overwrote it. Only the after numbers are recorded verbatim in that file. The before column above
+  records the conditions that failed and the culprit signal, not invented numbers. Process fix:
+  the CLI now also writes a preserved `results/separability_gate_<profile>.FAILED.json` on failure
+  (written once, never clobbered by a pass).
 - **Test added:** `tests/test_separability_gate.py` (perfect single-signal separator must FAIL the
   gate), plus the CLI run recorded in `docs/separability_gate.md`.
+
+---
+
+### Incident: `RANGE ... EXCLUDE CURRENT ROW` does not exclude same-timestamp peers
+- **How detected:** code review while writing `sql/views.sql` (`curated.rolling_24h_sql_demo`), per
+  the Part 04 prompt.
+- **Effect:** in a window frame `RANGE BETWEEN INTERVAL '24 hours' PRECEDING AND CURRENT ROW`, rows
+  sharing the current row's `timestamp` are *peers*; `EXCLUDE CURRENT ROW` removes only the current
+  physical row, not its peers. If two of a customer's transactions share a timestamp, the demo view
+  can count a peer as "prior", over-counting vs a strict `timestamp < before_ts` definition.
+- **Fix / status:** the view is a **cross-check only** and is documented as such in a SQL comment.
+  Part 05's feature logic stays the source of truth (strictly `timestamp < T`). **Verified on `dev`:**
+  `SELECT ... GROUP BY customer_id, timestamp HAVING count(*) > 1` returns **0 peer groups** (Part 02
+  guarantees strictly-increasing per-customer timestamps), so `EXCLUDE CURRENT ROW` already matches the
+  strict-prior definition on this data. The caveat stays for safety; Part 05 should re-confirm and use
+  `EXCLUDE TIES` / a `<` self-join if peers ever appear.
+- **Test added:** `tests/test_db.py` covers the demo view + prior-only semantics; the full window
+  leakage suite arrives in Part 05.

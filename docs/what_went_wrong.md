@@ -133,3 +133,50 @@ _What happened, one line._
   `EXCLUDE TIES` / a `<` self-join if peers ever appear.
 - **Test added:** `tests/test_db.py` covers the demo view + prior-only semantics; the full window
   leakage suite arrives in Part 05.
+
+---
+
+### Incident: same-timestamp peers leaked into recency + running-state features
+- **How detected:** `tests/test_leakage.py::test_9_training_serving_parity` — for a row whose timestamp
+  tied with a peer, the offline build returned `minutes_since_prev_tx = 0.0` while serving (history
+  filtered to `timestamp < T`) returned `39.0`.
+- **Effect:** the per-customer loop used the positional predecessor (`cts[i-1]`) for
+  `minutes_since_prev_tx`, `days_since_last_tx`, `distance_from_prev_km`, `travel_speed_kmh`, and
+  `n_prior_tx`/`is_cold_start`/`hour_deviation`, and updated the running seen-sets and hour histogram
+  after *every* row. A same-timestamp peer therefore became visible to the row beside it — a strict
+  point-in-time violation that serving (which filters `< T`) would not reproduce.
+- **Fix:** `features/build_features.py` now processes each customer in equal-timestamp groups:
+  `prior_end` (== `#rows with ts < t`) drives recency/lifetime/hour features and the previous-row
+  pointer, and all running state (seen merchants/categories/recipients/devices/regions, device counts,
+  hour histogram) is updated only *after* the whole group. Window counts/sums were already strict.
+- **Test added:** `test_9_training_serving_parity` (the detector) plus
+  `test_4_same_timestamp_ties`. Part 02 also guarantees strictly-increasing per-customer timestamps, so
+  this is defence-in-depth; no real profile currently contains per-customer ties.
+
+---
+
+### Incident: leakage "incident" demo — metric-blindness of subtle leaks (Part 05E)
+- **How detected:** deliberately leaky `window_bounds` variants (the same ones the canary test uses)
+  were monkeypatched in a scratch script (`%TEMP%/leakage_incident.py`, no repo edit), features rebuilt
+  on `dev`, and a 200-tree XGBoost trained with the `dev` temporal split (train 60% / val 60–80%).
+- **Effect / measured (`results/leakage_incident_dev.json`, 289,870 tx, 470 val positives):**
+
+  | variant | val PR-AUC | val ROC-AUC | caught by |
+  |---|---|---|---|
+  | clean (correct `[T-w, T)`) | 0.9560 | 0.9987 | passes all tests |
+  | `[T-w, T]` inclusive | 0.9567 | 0.9989 | tests 3 & 4 |
+  | `[T-w, T+w]` future | **0.9927** | **0.9999** | tests 1 & 2 |
+
+  The future-window leak inflates val PR-AUC by ~0.037 and ROC-AUC to 0.9999 — the "suspiciously
+  better" signature. The inclusive-window leak, by contrast, barely moves the metric (+0.0007): a
+  metric-only review would have missed it. The invariance tests catch **both** deterministically.
+- **Fix:** none needed in the shipped code — the leak existed only in the scratch monkeypatch; the
+  canary test (`test_8`) keeps both detectors honest. Correcting the prompt's assumption: an
+  *inclusive* window does **not** fail test 1 (its current-row/same-timestamp leak is invisible to a
+  truncation test because the peer/current row exists on both sides of the cut); it fails tests 3 & 4.
+  Test 1 fails only for a future/lifetime leak.
+- **Open concern (not a leak):** the *clean* val PR-AUC of 0.956 is very high for a 0.8% positive rate.
+  Because clean features pass truncation, future-mutation and serving-parity invariance, this is not
+  temporal leakage — it is synthetic separability (the simulator's fraud is genuinely learnable). It is
+  logged for Part 06, where model optimism vs the Part 03 gate should be re-examined.
+- **Test added:** `tests/test_leakage.py::test_8_canary_tests_detect_leakage`.

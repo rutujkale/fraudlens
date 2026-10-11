@@ -20,7 +20,17 @@ common:
   fraud_device_reuse_prob: 0.35       # fraud often reuses a known device (weakens new-device shortcut)
   family_shared_device_share: 0.04    # legit shared devices so device-sharing is not a trivial signal
   splits: {train_end_fraction: 0.60, val_end_fraction: 0.80}   # embargo = max label delay (days)
-  features: {version: features_v1, windows_minutes: [10, 60, 360, 1440, 10080, 43200]}
+  # windows_minutes: 10m, 1h, 6h, 24h, 7d(=10080), 30d(=43200). Feature code keys
+  # off these exact values, so a missing window fails loudly rather than silently.
+  features:
+    version: features_v1
+    windows_minutes: [10, 60, 360, 1440, 10080, 43200]
+    near_threshold_band: [0.55, 1.0]   # structuring band as a multiple of reporting_threshold
+    travel_speed_cap_kmh: 1000.0       # implied-speed cap (commercial-flight scale)
+    hour_deviation_halfwidth_hours: 2  # +/- hours counted as "usual hour"
+    hour_deviation_min_prior: 5        # below this prior count, hour_deviation is NaN
+    amount_std_floor: 1.0e-6           # min std for the amount z-score (avoid /0)
+    trend_window_days: 7               # recent vs previous window for trend features
   costs:
     fraud_loss_rate: 0.85
     fraud_fixed_fee: 0

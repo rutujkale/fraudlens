@@ -1,0 +1,25 @@
+{
+  "profile": "dev",
+  "profile_rows": 289870,
+  "clean": {
+    "val_pr_auc": 0.956,
+    "val_roc_auc": 0.9987,
+    "n_train": 173922,
+    "n_val": 57974,
+    "val_positives": 470
+  },
+  "leaky_inclusive": {
+    "val_pr_auc": 0.9567,
+    "val_roc_auc": 0.9989,
+    "n_train": 173922,
+    "n_val": 57974,
+    "val_positives": 470
+  },
+  "leaky_future": {
+    "val_pr_auc": 0.9927,
+    "val_roc_auc": 0.9999,
+    "n_train": 173922,
+    "n_val": 57974,
+    "val_positives": 470
+  }
+}

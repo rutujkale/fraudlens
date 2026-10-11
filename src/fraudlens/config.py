@@ -43,6 +43,12 @@ class SplitsConfig(StrictModel):
 class FeaturesConfig(StrictModel):
     version: str
     windows_minutes: list[int]
+    near_threshold_band: list[float]
+    travel_speed_cap_kmh: float
+    hour_deviation_halfwidth_hours: int
+    hour_deviation_min_prior: int
+    amount_std_floor: float
+    trend_window_days: int
 
 
 class CostConfig(StrictModel):

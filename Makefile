@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -55,7 +55,10 @@ RESET ?=
 db-load:
 	$(PY) scripts/load_db.py --profile $(PROFILE) $(RESET)
 
-# TODO(part 05): build-features  - point-in-time feature engineering
+## build-features: point-in-time features -> data/features/<profile>/features_v1.parquet.
+build-features:
+	$(PY) scripts/build_features.py --profile $(PROFILE)
+
 # TODO(part 06): train           - rules / logreg / xgboost baselines
 # TODO(part 07): calibrate       - calibration + cost-based decision policy
 # TODO(part 08): experiments     - imbalance/ablation/drift experiments

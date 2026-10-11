@@ -12,7 +12,7 @@ from datetime import timedelta
 import numpy as np
 import pandas as pd
 
-from fraudlens.data_gen.archetypes import sample_archetype_params
+from fraudlens.data_gen.archetypes import INCOME_BANDS, sample_archetype_params
 
 CURRENCY = "INR"
 
@@ -201,7 +201,7 @@ def create_entities(rng: np.random.Generator, simulation) -> Entities:
     home_locations = [location_rows[i]["location_id"] for i in home_indices]
     home_regions = [region_of_loc[h] for h in home_locations]
     income_bands = [
-        rng.choice(list(INCOME_BAND_WEIGHTS_BY_ARCHETYPE[a]), p=INCOME_BAND_WEIGHTS_BY_ARCHETYPE[a])
+        rng.choice(INCOME_BANDS, p=INCOME_BAND_WEIGHTS_BY_ARCHETYPE[a])
         for a in archetypes
     ]
 

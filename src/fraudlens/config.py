@@ -77,6 +77,33 @@ class ApiConfig(StrictModel):
     max_batch: int
 
 
+class ValidationConfig(StrictModel):
+    """Data-quality thresholds (Part 03)."""
+
+    max_amount: float
+    max_fraud_rate: float
+
+
+class BoostedConfig(StrictModel):
+    """Reference gradient-boosted settings for the separability gate (Part 03)."""
+
+    n_estimators: int
+    max_depth: int
+    learning_rate: float
+    subsample: float
+    colsample_bytree: float
+
+
+class SeparabilityGateConfig(StrictModel):
+    """Crude-signal gate thresholds, all tunable in one place (Part 03)."""
+
+    max_single_signal_roc_auc: float
+    max_single_signal_pr_auc: float
+    tree3_vs_boosted_min_pr_auc_gap: float
+    min_hard_negative_overlap_signals: int
+    boosted: BoostedConfig
+
+
 class CommonConfig(StrictModel):
     seed: int
     currency: str
@@ -99,6 +126,8 @@ class CommonConfig(StrictModel):
     precision_targets: list[float]
     bootstrap: BootstrapConfig
     api: ApiConfig
+    validation: ValidationConfig
+    separability_gate: SeparabilityGateConfig
 
 
 class ProfileConfig(StrictModel):
@@ -146,6 +175,8 @@ class SimulationConfig(StrictModel):
     precision_targets: list[float]
     bootstrap: BootstrapConfig
     api: ApiConfig
+    validation: ValidationConfig
+    separability_gate: SeparabilityGateConfig
 
     @property
     def embargo_days(self) -> int:

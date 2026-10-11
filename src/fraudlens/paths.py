@@ -29,5 +29,13 @@ def results_dir() -> Path:
     return ensure_dir(REPO_ROOT / "results")
 
 
+def reports_dir() -> Path:
+    return ensure_dir(REPO_ROOT / "reports")
+
+
 def figures_dir() -> Path:
     return ensure_dir(REPO_ROOT / "reports" / "figures")
+
+
+def docs_dir() -> Path:
+    return ensure_dir(REPO_ROOT / "docs")

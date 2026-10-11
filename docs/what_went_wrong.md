@@ -60,3 +60,43 @@ _What happened, one line._
 - **Effect:** the specified payday spending bump never occurred.
 - **Fix:** return `1.15` on the 1st of the month.
 - **Test added:** covered indirectly by distribution/report tests (no isolated test).
+
+---
+
+### Incident: `income_band` sampled weights instead of band names
+- **How detected:** Part 03 validation — `income_band` enum check failed; the column held floats.
+- **Effect:** `entities.create_entities` did `rng.choice(...)` on the *probability weights*
+  (`INCOME_BAND_WEIGHTS_BY_ARCHETYPE[a]`) rather than on `INCOME_BANDS`, so every customer's
+  `income_band` was a garbage probability value. Any downstream segmentation by income band, and the
+  validation enum check, would be wrong.
+- **Fix:** `rng.choice(INCOME_BANDS, p=INCOME_BAND_WEIGHTS_BY_ARCHETYPE[a])` in `entities.py`.
+- **Test added:** `tests/test_validation.py::test_invalid_income_band_fails` (enum check) plus the
+  simulator's enum/coverage tests; the validation suite now fails on bad income bands.
+
+---
+
+### Incident: exported `customer_devices` leaked fraud-added devices (target-derived leak)
+- **How detected:** Part 03 code review while building the gate's `new_device_static` signal — the
+  `customer_devices` table contained device edges registered *during* episode generation, i.e. after
+  account opening, including devices added by fraud (`new_phone` HN, account-takeover, etc.).
+- **Effect:** using the exported table as "devices known at account opening" would leak future/fraud
+  information into the `is_new_device` feature — a point-in-time violation.
+- **Fix:** freeze device-edge export at `n_known_edges = len(devreg.customer_device_rows)` immediately
+  after `make_device_registry` in `generate.py`; only the account-opening snapshot is written.
+- **Test added:** `tests/test_validation.py` referential/logic checks plus
+  `tests/test_separability_gate.py` (static-device signal exercised); the frozen-edge behaviour is
+  asserted by the simulator's registry tests.
+
+---
+
+### Incident: simulator shortcut — crude signals solved the data (separability gate FAIL)
+- **How detected:** `python scripts/separability_gate.py --profile dev` FAILed on first run: a single
+  crude signal (`amount_ratio`) had too high ROC/PR-AUC, i.e. fraud was trivially separable.
+- **Effect:** a model would have scored well for the wrong reason (one cheap amount threshold), which
+  is exactly what the gate exists to catch.
+- **Fix:** in `fraud.py`, amount multipliers now decay with stealth (`logmean = (1 − stealth)·U(...)`)
+  so high-stealth fraud keeps a baseline-like amount; stealth raised to `period_a [2.0,3.0]` /
+  `period_b [3.0,2.0]` (means ≈0.40/0.60); `fraud_device_reuse_prob: 0.35` so fraud often reuses a
+  known device. Regenerated `tiny` + `dev`; gate now PASSes. Thresholds were **not** lowered.
+- **Test added:** `tests/test_separability_gate.py` (perfect single-signal separator must FAIL the
+  gate), plus the CLI run recorded in `docs/separability_gate.md`.

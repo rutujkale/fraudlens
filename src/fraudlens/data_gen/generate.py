@@ -193,6 +193,11 @@ def generate_profile(profile: str = "dev", seed: int | None = None) -> Generated
     logger.info("Generating entities for profile %s (seed=%d)", profile, run_seed)
     ent = create_entities(rng, sim)
     devreg: DeviceRegistry = make_device_registry(ent.devices, ent.customer_devices)
+    # Static "known devices" table = devices a customer had at account opening,
+    # frozen before any episode adds a device (hard-negative new_phone or fraud).
+    # Freezing later would make new-device a near-perfect fraud signal (Part 03
+    # gate caught exactly that shortcut).
+    n_known_edges = len(devreg.customer_device_rows)
 
     logger.info("Generating normal transactions")
     normal_buf = generate_normal(rng, sim, ent, devreg)
@@ -224,7 +229,8 @@ def generate_profile(profile: str = "dev", seed: int | None = None) -> Generated
     if leaked:  # pragma: no cover - guard
         raise AssertionError(f"label columns leaked into transactions: {sorted(leaked)}")
 
-    devices, customer_devices = devreg.to_frames()
+    devices, _ = devreg.to_frames()
+    customer_devices = pd.DataFrame(devreg.customer_device_rows[:n_known_edges])
     report = _build_report(cfg, transactions, labels, ent)
     report["config_hash"] = _config_hash(cfg)
 

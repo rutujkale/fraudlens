@@ -149,7 +149,9 @@ def generate_fraud(
                     merchant = str(rng.choice(mp))
                 recipient = str(rng.choice(ctx["others"])) if rng.random() < 0.25 else None
                 txn_type = "P2P_TRANSFER" if recipient else "PURCHASE"
-                mult = _lognorm_mult(rng, 1.0 + (1 - stealth) * rng.uniform(0, 3), 0.25)
+                # Amount anomaly shrinks to ~baseline as stealth -> 1, so even obvious
+                # fraud is not a single-feature giveaway (Part 03 gate).
+                mult = _lognorm_mult(rng, (1 - stealth) * rng.uniform(0.5, 1.6), 0.35)
                 amount = _base_amount(rng, ctx["base_amt"], ctx["amt_sigma"], mult)
                 location = ctx["home"]
                 rows.append(
@@ -194,7 +196,7 @@ def generate_fraud(
                 if mp:
                     merchant = str(rng.choice(mp))
                 channel = "APP" if device else "WEB"
-                mult = _lognorm_mult(rng, 1.0 + (1 - stealth) * 0.8, 0.4)
+                mult = _lognorm_mult(rng, (1 - stealth) * rng.uniform(0.4, 1.1), 0.4)
                 amount = _base_amount(rng, ctx["base_amt"], ctx["amt_sigma"], mult)
                 rows.append(
                     dict(zip(
@@ -210,7 +212,7 @@ def generate_fraud(
             n = int(min(rng.integers(1, 3, endpoint=True), bu))
             ts = ts_anchor
             for _ in range(n):
-                mult = _lognorm_mult(rng, 1.2 + 1.8 * (1 - stealth), 0.4)
+                mult = _lognorm_mult(rng, (1 - stealth) * rng.uniform(0.8, 1.5), 0.4)
                 amount = _base_amount(rng, ctx["base_amt"], ctx["amt_sigma"], mult)
                 category = str(rng.choice(CATEGORIES[:6]))
                 merchant = None

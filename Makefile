@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -38,7 +38,18 @@ PROFILE ?= dev
 simulate:
 	$(PY) scripts/generate_data.py --profile $(PROFILE)
 
-# TODO(part 03): validate-data   - data validation + EDA + separability gate
+## validate-data: schema/sanity checks on raw data (exit != 0 on failure).
+validate-data:
+	$(PY) scripts/validate_data.py --profile $(PROFILE)
+
+## eda: figures + generated docs/eda_summary.md + docs/data_dictionary.md.
+eda:
+	$(PY) scripts/eda.py --profile $(PROFILE)
+
+## separability-gate: prove the data is not trivially solvable (exit != 0 on FAIL).
+separability-gate:
+	$(PY) scripts/separability_gate.py --profile $(PROFILE)
+
 # TODO(part 04): db-load         - load raw data into PostgreSQL
 # TODO(part 05): build-features  - point-in-time feature engineering
 # TODO(part 06): train           - rules / logreg / xgboost baselines

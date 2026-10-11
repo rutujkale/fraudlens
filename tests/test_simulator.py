@@ -40,7 +40,7 @@ def drift_result(tmp_path, monkeypatch) -> GeneratedResult:
     raw["profiles"]["tiny"] = {
         "customers": 300,
         "days": 30,
-        "target_fraud_rate": 0.05,
+        "target_fraud_rate": 0.12,
         "label_delay_days": [1, 3],
         "drift": {"start_fraction": 0.5, "strength": 1.0},
     }

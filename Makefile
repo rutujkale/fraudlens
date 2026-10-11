@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast
+.PHONY: setup db-up db-down lint format test test-fast simulate
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -33,7 +33,11 @@ test:
 test-fast:
 	$(PY) -m pytest -m "not db and not slow"
 
-# TODO(part 02): simulate        - generate raw data for a profile
+## simulate: generate raw data for a profile (PROFILE=dev by default).
+PROFILE ?= dev
+simulate:
+	$(PY) scripts/generate_data.py --profile $(PROFILE)
+
 # TODO(part 03): validate-data   - data validation + EDA + separability gate
 # TODO(part 04): db-load         - load raw data into PostgreSQL
 # TODO(part 05): build-features  - point-in-time feature engineering

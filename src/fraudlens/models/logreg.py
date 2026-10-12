@@ -48,9 +48,20 @@ def _split_numeric_columns() -> tuple[list[str], list[str]]:
     return plain, sorted(heavy)
 
 
-def make_logreg_pipeline(C: float = 1.0, class_weight: str | None = None) -> Pipeline:
-    """Build the (unfitted) logistic-regression pipeline."""
+def make_logreg_pipeline(
+    C: float = 1.0,
+    class_weight: str | None = None,
+    extra_numeric: tuple[str, ...] = (),
+    extra_categorical: tuple[str, ...] = (),
+) -> Pipeline:
+    """Build the (unfitted) logistic-regression pipeline.
+
+    ``extra_numeric``/``extra_categorical`` let an experiment add engineered
+    columns (interaction products, discretised numerics) without duplicating the
+    preprocessing; they must exist in the frame given to ``fit``/``predict``.
+    """
     plain, heavy = _split_numeric_columns()
+    plain = plain + list(extra_numeric)
 
     numeric = Pipeline(
         [
@@ -78,7 +89,7 @@ def make_logreg_pipeline(C: float = 1.0, class_weight: str | None = None) -> Pip
         [
             ("num", numeric, plain),
             ("heavy", heavy_pipe, heavy),
-            ("cat", categorical, CATEGORICAL_COLUMNS),
+            ("cat", categorical, [*CATEGORICAL_COLUMNS, *extra_categorical]),
         ],
         remainder="drop",
     )

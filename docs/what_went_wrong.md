@@ -262,3 +262,60 @@ _What happened, one line._
   repair behaviour on INFLATED synthetic scores (so the machinery is proven), while the dev
   dataset simply happens to need no repair.
 - **Status:** logged; re-check on Part 11 (IEEE-CIS) / Part 12 where fraud overlaps.
+
+---
+
+### Incident: 8B feature ablation dropped the group instead of keeping it (drop/only swapped)
+- **How detected:** inspecting `results/exp_8B_ablation_dev.csv`, every `drop_X` row had *identical*
+  PR-AUC to the corresponding `only_X` row, and `drop_X` PR-AUC was ~0.03–0.5 rather than ~0.96.
+- **Root cause:** the drop arm passed `columns_for_group(group)` into the feature selector instead of its
+  **complement** (`[c for c in FEATURE_COLUMNS if c not in group]`), so "drop one" actually trained on
+  only that group.
+- **Effect:** the whole 8B ablation was inverted; conclusions about which groups are load-bearing would have
+  been exactly backwards.
+- **Fix:** select the complement for the drop arm; deleted the 21 bad `E11` rows from
+  `results/experiments.csv` and re-ran 8B.
+- **Test added:** none (numeric-output experiment); a manual invariant check is recorded in
+  `docs/experiments/8B_feature_ablation.md` (drop-one must stay close to the 0.9657 full baseline).
+
+---
+
+### Incident: 8C chose "best depth" from a single (depth, seed) pair, not the depth mean
+- **How detected:** the 8C data-size curve at 100% rows reproduced the depth-10 seed values exactly, even
+  though depth 8 had the higher **mean** val PR-AUC (0.9657 vs 0.9655).
+- **Root cause:** `if val_pr > best_val: best_val, best_depth = ...` ran inside the seed loop, so it picked
+  the single best seed across all depths (depth 10 / seed 44) rather than the best depth mean.
+- **Effect:** the data-size and boosting-round learning curves were produced at depth 10 instead of the
+  selected depth 8 — cosmetic here (depth 8 and 10 are statistically tied) but methodologically wrong.
+- **Fix:** compute `best_depth` from `cap_summary["val_pr_auc_mean"].idxmax()` after the sweep; re-ran 8C.
+- **Test added:** none (experiment script); the corrected best depth is logged (`best depth by mean val PR-AUC = 8`).
+
+---
+
+### Finding: TreeSHAP mean|SHAP| ranks planted noise mid-pack (real effect, not a bug)
+- **How detected:** 8D added a `_random_noise` column and a shuffled copy of the strongest feature; both
+  controls ranked last under gain and permutation but **17th/26th of 55 under mean|SHAP|**.
+- **Root cause:** not a code bug — split counts showed the booster really does split on the controls
+  (736 and 1065 internal nodes, 1.4%/2.0% of splits) because the task is near-separable and it overfits.
+  Path-dependent mean|SHAP| measures *usage* (including spurious splits), while permutation measures
+  *held-out usefulness*.
+- **Effect:** raw global mean|SHAP| would put noise ahead of real features and must not be presented as an
+  importance ranking (and never as points on the 0–100 risk score).
+- **Fix:** none to the model; documented in `docs/experiments/8D_feature_importance.md` and flagged as a
+  constraint on how Part 10 uses SHAP (signed per-transaction attribution on a calibrated model).
+- **Test added:** none (analytical result).
+
+---
+
+### Finding: adversarial validation on a temporal split is dominated by monotonic tenure features
+- **How detected:** 8E reported adversarial AUC **0.9998** (pre- vs post-drift), which looked implausibly
+  high; the top PSI features (`device_age_days`, `history_days`, `n_prior_tx`, `tx_from_device_prior`) are
+  all cumulative counts/ages.
+- **Root cause:** those features increase monotonically with calendar time, so any earlier-vs-later split is
+  almost perfectly separable by the clock alone (`history_days` alone: AUC 0.974).
+- **Effect:** a naive "massive covariate drift" story, when actually behavioural drift is moderate and the
+  concept drift is mild (frozen model still scores 0.944 PR-AUC post-switch).
+- **Fix:** report adversarial AUC and PSI both on all features and on a behavioural subset excluding the four
+  tenure features (all 0.9998 → behavioural 0.7072); both views are now written to the 8E outputs.
+- **Test added:** none (analytical result); `tests/test_drift.py` covers the PSI machinery (identical→0,
+  shifted→>0.25, missing-rate shift, monotonicity, eps-finite).

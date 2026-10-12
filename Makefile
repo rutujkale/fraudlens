@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -78,6 +78,27 @@ optimize-policy:
 	$(PY) scripts/optimize_policy.py --profile $(PROFILE) --scenario $(SCENARIO)
 
 # TODO(part 08): experiments     - imbalance/ablation/drift experiments
+## drift-data: generate + featurise the drift_lab profile (needed once for 8E).
+drift-data:
+	$(PY) scripts/generate_data.py --profile drift_lab
+	$(PY) scripts/build_features.py --profile drift_lab
+
+## experiment-8a..8d: Part 08 ML-understanding experiments on $(PROFILE) (default dev).
+experiment-8a:
+	$(PY) scripts/run_experiment_8A.py --profile $(PROFILE)
+
+experiment-8b:
+	$(PY) scripts/run_experiment_8B.py --profile $(PROFILE)
+
+experiment-8c:
+	$(PY) scripts/run_experiment_8C.py --profile $(PROFILE)
+
+experiment-8d:
+	$(PY) scripts/run_experiment_8D.py --profile $(PROFILE)
+
+## experiment-8e: drift backtest + PSI on the drift_lab profile.
+experiment-8e:
+	$(PY) scripts/run_experiment_8E.py --profile drift_lab
 # TODO(part 09): unseen-fraud    - Isolation Forest experiment
 # TODO(part 10): explain         - SHAP explanations + subgroup audit
 # TODO(part 11): external        - IEEE-CIS external validation

@@ -7,7 +7,6 @@ Never touches the test window. Labels are joined here for evaluation only:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -23,10 +22,9 @@ from fraudlens.evaluation.reporting import (
     per_scenario_recall,
     to_markdown,
 )
+from fraudlens.evaluation.scores import load_model_versions, raw_val_scores
 from fraudlens.evaluation.splits import customer_holdout, make_temporal_split
-from fraudlens.features.registry import FEATURE_COLUMNS
 from fraudlens.models import io as model_io
-from fraudlens.models.rules import RuleEngine
 from fraudlens.models.xgb import encode_features
 from fraudlens.paths import figures_dir, results_dir
 from fraudlens.utils import get_logger, set_global_seed
@@ -34,29 +32,9 @@ from fraudlens.utils import get_logger, set_global_seed
 logger = get_logger(__name__)
 
 
-def _versions(profile: str) -> dict[str, str]:
-    path = Path(results_dir()) / f"models_{profile}.json"
-    if not path.exists():
-        raise FileNotFoundError(f"{path} missing; run scripts/train.py --profile {profile} first")
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def _rules_scores(df, split, cfg: Config) -> np.ndarray:
-    train_legit = df.iloc[split.train_idx][df.iloc[split.train_idx]["is_fraud"] == 0]
-    engine = RuleEngine(cfg.simulation.rules).fit(train_legit[FEATURE_COLUMNS])
-    return engine.score(df.iloc[split.val_idx][FEATURE_COLUMNS]).to_numpy()
-
-
 def compute_val_scores(df, split, cfg: Config) -> tuple[dict[str, np.ndarray], dict[str, str]]:
     """Return validation scores per model and the loaded model versions."""
-    versions = _versions(cfg.simulation.profile)
-    val = df.iloc[split.val_idx]
-    scores = {"rules": _rules_scores(df, split, cfg)}
-    for name, key in (("logreg", "logreg"), ("xgb", "xgb")):
-        model = model_io.load_model(versions[key])
-        x = val[FEATURE_COLUMNS] if name == "logreg" else encode_features(val)
-        scores[name] = model.predict_proba(x)[:, 1]
-    return scores, versions
+    return raw_val_scores(df, split, cfg), load_model_versions(cfg.simulation.profile)
 
 
 def holdout_for_xgb(df, split, cfg: Config, versions: dict[str, str]) -> pd.DataFrame:

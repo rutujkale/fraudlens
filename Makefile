@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -68,7 +68,15 @@ train:
 evaluate-val:
 	$(PY) scripts/evaluate_val.py --profile $(PROFILE)
 
-# TODO(part 07): calibrate       - calibration + cost-based decision policy
+## calibrate: fit sigmoid/isotonic on val_cal, select on val_thr (SCENARIO=balanced).
+calibrate:
+	$(PY) scripts/calibrate.py --profile $(PROFILE)
+
+## optimize-policy: cost-based decision policy + capacity + sensitivity (+ SCENARIO).
+SCENARIO ?= balanced
+optimize-policy:
+	$(PY) scripts/optimize_policy.py --profile $(PROFILE) --scenario $(SCENARIO)
+
 # TODO(part 08): experiments     - imbalance/ablation/drift experiments
 # TODO(part 09): unseen-fraud    - Isolation Forest experiment
 # TODO(part 10): explain         - SHAP explanations + subgroup audit

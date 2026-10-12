@@ -14,6 +14,9 @@ from sklearn.metrics import (
     precision_recall_curve,
     roc_auc_score,
 )
+from sklearn.metrics import (
+    log_loss as log_loss_metric,
+)
 
 
 def _arrays(y: np.ndarray, score: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -103,6 +106,13 @@ def brier(y: np.ndarray, score: np.ndarray) -> float:
     """Brier score (mean squared error of the score). Lower is better."""
     y, score = _arrays(y, score)
     return float(brier_score_loss(y, score))
+
+
+def log_loss(y: np.ndarray, score: np.ndarray) -> float:
+    """Binary log-loss of the (clipped) probabilities. Lower is better."""
+    y, score = _arrays(y, score)
+    clipped = np.clip(score, 1e-15, 1 - 1e-15)
+    return float(log_loss_metric(y, clipped, labels=[0, 1]))
 
 
 def ece(y: np.ndarray, score: np.ndarray, n_bins: int = 10) -> float:

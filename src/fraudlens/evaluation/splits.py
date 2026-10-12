@@ -94,6 +94,24 @@ def make_temporal_split(tx: pd.DataFrame, cfg: Config) -> Split:
     )
 
 
+def chronological_fraction_split(
+    idx: np.ndarray, fraction: float
+) -> tuple[np.ndarray, np.ndarray]:
+    """Split an already-time-sorted index array into (first ``fraction``, rest).
+
+    ``fraction`` is applied by **position**, so the two parts are contiguous in
+    time: the first covers the earlier window, the second the later window. This
+    is the calibrator/threshold cut (Part 07); it must never be random, or future
+    rows leak into fitting the calibrator.
+    """
+    idx = np.asarray(idx)
+    if len(idx) < 2:
+        return idx, idx[:0]
+    cut = int(round(len(idx) * fraction))
+    cut = max(1, min(len(idx) - 1, cut))
+    return idx[:cut], idx[cut:]
+
+
 def max_train_label_available_at(
     labels: pd.DataFrame, tx: pd.DataFrame, split: Split
 ) -> pd.Timestamp:

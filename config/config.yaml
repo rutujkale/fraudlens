@@ -48,6 +48,13 @@ common:
     balanced:       {}
     high_fp_cost:   {friction_cost: 400, review_cost: 120}
     high_fraud_loss: {fraud_loss_rate: 1.0, fraud_fixed_fee: 300}
+  # Part 07 calibration. The validation window is split CHRONOLOGICALLY into a
+  # calibrator-fit slice (first `cal_fraction`) and a threshold/policy slice (rest);
+  # never random, so no future row can leak into fitting the calibrator.
+  calibration:
+    cal_fraction: 0.50     # first half of the val window fits calibrators; rest selects
+    bins: 10               # reliability diagram / ECE bins
+    min_cal_positives_flag: 150   # below this, isotonic is flagged unstable -> prefer sigmoid
   ks: [0.001, 0.005, 0.01, 0.02, 0.05]          # recall@top-K fractions
   precision_targets: [0.9, 0.8, 0.7]
   bootstrap: {n: 500, cluster_by: customer_id}

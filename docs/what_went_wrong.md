@@ -236,3 +236,29 @@ _What happened, one line._
   PR-AUC **0.9349** (n=8,231, 45 frauds) — a modest, believable generalisation gap.
 - **Test added:** `tests/test_splits.py::test_customer_holdout_dedupes_repeated_transaction_ids`
   (1000 transaction ids over 50 customers → exactly 10 heldout / 40 seen).
+
+---
+
+### Observation: probability calibration did not repair a weighting distortion (raw XGB already calibrated)
+- **How detected:** `scripts/calibrate.py --profile dev` produced the before/after table on
+  `val_thr`. Expected (per Part 07A): `scale_pos_weight` distorts raw probabilities and
+  calibration repairs them. Observed: xgb raw Brier 0.000986 / ECE 0.00032 / log-loss 0.004230
+  is BETTER than sigmoid (0.001182 / 0.000999 / 0.004847) and isotonic (0.001237 / 0.001270 /
+  0.010633); raw mean predicted 0.006145 vs observed 0.005906. Same ordering for logreg.
+- **Root cause:** not a bug. XGBoost was trained with `scale_pos_weight` approx 51, but the
+  synthetic fraud is near-separable (Part 06: >0.95 PR-AUC, no dominant feature). A near-perfect
+  classifier predicts approx 0 for negatives and approx 1 for positives, so the population mean
+  predicted probability equals the base rate regardless of the class weighting; the distortion
+  would only be visible in the (tiny) overlapping region.
+- **Effect:** calibration does not improve and mildly worsens Brier/ECE/log-loss for both models.
+  The calibration comparison is therefore a null result rather than a demonstration that
+  calibration repairs weighting.
+- **Fix:** none to the models. The least-bad calibrator is still selected per the prompt rule
+  (xgb: tie -> sigmoid; logreg: sigmoid lower Brier), the before/after table is kept as the
+  transparent record, and the finding is stated honestly in docs/progress/part_07.md. The
+  policy comparison is materially unaffected because calibrated and raw scores agree at the
+  high probabilities that drive decisions.
+- **Test added:** tests/test_calibration.py::test_calibration_repairs_mean_prediction pins the
+  repair behaviour on INFLATED synthetic scores (so the machinery is proven), while the dev
+  dataset simply happens to need no repair.
+- **Status:** logged; re-check on Part 11 (IEEE-CIS) / Part 12 where fraud overlaps.

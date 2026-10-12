@@ -74,6 +74,14 @@ class CostScenario(StrictModel):
     fraud_fixed_fee: float | None = None
 
 
+class CalibrationConfig(StrictModel):
+    """Calibration settings (Part 07)."""
+
+    cal_fraction: float
+    bins: int
+    min_cal_positives_flag: int
+
+
 class BootstrapConfig(StrictModel):
     n: int
     cluster_by: str
@@ -159,6 +167,7 @@ class CommonConfig(StrictModel):
     features: FeaturesConfig
     costs: CostConfig
     cost_scenarios: dict[str, CostScenario]
+    calibration: CalibrationConfig
     ks: list[float]
     precision_targets: list[float]
     bootstrap: BootstrapConfig
@@ -210,6 +219,7 @@ class SimulationConfig(StrictModel):
     features: FeaturesConfig
     costs: CostConfig
     cost_scenarios: dict[str, CostScenario]
+    calibration: CalibrationConfig
     ks: list[float]
     precision_targets: list[float]
     bootstrap: BootstrapConfig

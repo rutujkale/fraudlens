@@ -11,16 +11,13 @@ fraud episodes) · **Seeds:** 42–46 · **Model:** Part-06 XGBoost config
 
 Held-out-scenario recall is the headline. Validation window only; the test window is untouched.
 
-## Pre-registered outcomes (fixed before running)
+## Pre-registered outcomes (categories fixed before any run)
 
-1. **(A) No meaningful benefit** — the anomaly score does not improve held-out recall.
-2. **(B) Better unseen-fraud recall, little/neutral change in overall PR-AUC.**
-3. **(C) Meaningful overall improvement** — then robustness on other seeds/scenarios is required.
+1. (A) No meaningful benefit — the anomaly score does not improve held-out recall.
+2. (B) Better unseen-fraud recall, little/neutral change in overall PR-AUC.
+3. (C) Meaningful overall improvement — then robustness on other seeds/scenarios is required.
 
-Adoption rule (also fixed before running): adopt the anomaly feature only if **both** the
-realistic (`IF-all`) and the strict (`IF-strict`) variants show a supported benefit (paired
-cluster-bootstrap CI of the recall difference excludes 0) **and** the per-seed gain is ≥ 0.02.
-A win that requires the detector to have *seen* the pattern (unlabeled) is not an unseen-fraud win.
+Adoption rule: initially the seed-bagged recall gain (S1−S0 bagged difference) was required; if the bagged CI excluded 0, adoption was considered. The first run gave S1−S0 bagged +0.0291 [+0.0075,+0.0521], S1s−S0 bagged +0.0029 [-0.0065,+0.0123], per-seed S1 +0.0099 ± 0.0107, S1s +0.0087 ± 0.0041, S2 recall@1% 0.2035, S0 0.0035, S4 1.000 — under that initial rule it would have been adopted (bagged S1 CI excluded 0). After seeing those results, the rule was tightened to require (a) S1s (strict variant, genuinely-unseen detection) to show a gain with a bootstrap CI excluding 0 and (b) a per-seed gain >= 0.02, because the seed-bagged gain was not robust across seeds. The rule change occurred AFTER seeing results (a researcher degree of freedom), defensible only on principled robustness grounds. The first-run outputs were not preserved separately in committed artifacts (committed outputs reflect the final run).
 
 ## Setup
 

@@ -66,3 +66,5 @@ Added entry in `docs/what_went_wrong.md`: an early check (unused var from a colu
 
 - Consider logging `model_version` for the "not adopted" case (even when no artifact). Not required.
 - If decision were to adopt, the IF artifact would need to be saved. Currently not needed.
+
+- **Planned commit split:** The planned two-commit split (A: code/tests/script, B: docs/results/figures/experiments.csv) was not done; everything is in commit 478e07a.

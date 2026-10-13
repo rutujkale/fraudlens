@@ -52,17 +52,19 @@ so the comparisons are clean. Early stopping uses the validation split.
 
 ## Observations
 
-- **The model is data-limited, not capacity-limited.** Val PR-AUC rises through
-  depth 6 and then *saturates* (0.9634 → 0.9657 → 0.9655); depth 8 and 10 are
-  within one std. Meanwhile train PR-AUC reaches **1.0000 at depth 6** — the
-  trees can already memorise the training window, and more depth only adds
-  variance, not signal. The overfit gap is roughly flat (0.034–0.037) from depth
-  4 upward.
-- **More data is the only lever that still moves the metric.** Going 50% → 100%
-  of the training window adds **+0.0349** PR-AUC — larger than the entire
-  2→10 depth change (+0.045 total, mostly before depth 6). The 10%-row curve is
-  not just lower but **high-variance (±0.14)**, the signature of a model that
-  hasn't seen enough fraud examples.
+- **Saturation looks data-limited, not capacity-limited — read it as a trend,
+  not a measured law.** Val PR-AUC rises through depth 6 and then *saturates*
+  (0.9634 → 0.9657 → 0.9655); depth 8 and 10 are within one std. Meanwhile train
+  PR-AUC reaches **1.0000 at depth 6** — the trees can already memorise the
+  training window, and more depth only adds variance, not signal. The overfit gap
+  is roughly flat (0.034–0.037) from depth 4 upward.
+- **More data is the clearest remaining lever.** Going 50% → 100% of the training
+  window adds **+0.0349** PR-AUC — larger than the entire 2→10 depth change
+  (+0.045 total, mostly before depth 6). The 10%-row curve is not just lower but
+  **high-variance (±0.14)**, the signature of a model that hasn't seen enough
+  fraud examples. Because that ±0.14 and the saturation both rest on three seeds
+  of a single synthetic split, treat "more data helps" as a *trend*, not a
+  measured law; confirm capacity-vs-data on real data (Part 11).
 - **A linear model cannot close the gap.** Interactions and binning move LogReg
   by ≤0.002 (CIs overlap), leaving a stable **~0.06 PR-AUC gap** to XGBoost. The
   fraud signal here is genuinely higher-order/interaction-shaped, not something a

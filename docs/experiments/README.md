@@ -34,14 +34,17 @@ Per-experiment notes:
    costs ≤ 0.04 PR-AUC — but per-scenario effects are sharp and match how each
    scenario was *simulated* (device↔account-takeover, geographic↔geo-anomaly,
    transaction↔amount-anomaly). Structuring is the most redundant scenario. (8B)
-3. **The model is data-limited, not capacity-limited**: val PR-AUC saturates at
-   depth ≈ 8, train PR-AUC hits 1.0 by depth 6, and doubling the training set
-   (+0.034) buys more than any depth change. A linear model plateaus ~0.06 below
-   XGBoost even with interactions/binning. (8C)
+3. **Saturation looks data-limited, not capacity-limited** — a *trend*, not a
+   measured law: val PR-AUC saturates at depth ≈ 8, train PR-AUC hits 1.0 by
+   depth 6, and doubling the training set (+0.034) buys more than any depth
+   change, but the 10%-row point is ±0.14 and the claim rests on three seeds of
+   one synthetic split. A linear model plateaus ~0.06 below XGBoost even with
+   interactions/binning. (8C)
 4. **The three importance methods agree on the top families (ρ 0.57–0.65) but
    disagree on the tail**, and gain/permutation correctly flag the planted
    control columns as unimportant while path-dependent mean|SHAP| does not. (8D)
-5. **Naive covariate-drift metrics on a temporal split are dominated by
-   monotonic tenure features** (adversarial AUC 0.9998 all-features vs 0.7072
-   behavioural); behavioural drift is mild and retraining recovers only ~0.04
-   PR-AUC over a frozen model. (8E)
+5. **Behavioural drift is mild (adversarial AUC 0.7072)**; the naive
+   "adversarial AUC 0.9998" on all features is almost entirely the monotonic
+   tenure clock, not fraud drift. Retraining recovers only ~0.04 PR-AUC over a
+   frozen model — a property of this simulator's scenario-mix drift, to re-test
+   on real data (Part 11). (8E)

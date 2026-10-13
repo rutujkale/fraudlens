@@ -80,9 +80,9 @@ Adversarial validation (can a model tell pre from post?):
   median, recency/geo distances) move together, again consistent with a shifted
   scenario mix rather than the customer base changing.
 - **Concept drift is mild, and retraining recovers ~0.04 PR-AUC.** The frozen
-  model still scores 0.944 mean — the per-scenario feature signals the frozen
+  model still scores 0.9440 mean — the per-scenario feature signals the frozen
   trees learned are largely still valid after the switch. Retraining lifts this
-  to 0.982 (expanding) / 0.983 (sliding-60d).
+  to 0.9824 (expanding) / 0.9830 (sliding-60d).
 - **Recent data is enough.** `sliding_60d` matches or beats `expanding` in every
   window while training on ~1/4 the rows — for a drift-monitoring policy this
   argues for a rolling window, not unbounded accumulation.
@@ -99,6 +99,11 @@ Adversarial validation (can a model tell pre from post?):
 
 ## Caveats
 
+- The frozen model staying competitive and the ~0.04 retraining gain are
+  properties of *this* simulator's scenario-mix drift, not established facts: the
+  2026-08-29 window is easiest for **every** policy (frozen 0.9610, expanding
+  0.9876, sliding 0.9893, recency 0.9884), so read the *gap* between policies, not
+  the level. Re-test on real data in Part 11.
 - PSI is computed on numeric features only (categorical PSI needs ordered bins);
   categorical drift (transaction_type/channel mix) is visible only indirectly,
   through the behavioural adversarial AUC.
@@ -108,3 +113,13 @@ Adversarial validation (can a model tell pre from post?):
   definition of tenure would shift the adversarial AUC somewhat, though the
   tenure-vs-behavioural gap (0.9989 vs 0.7072) is far too large to be a
   definitional artefact.
+
+## Interview framing
+
+The drift number to quote is the **behavioural adversarial AUC 0.7072**, never the
+0.9998: the all-features figure is almost entirely the monotonic tenure clock, so
+"the model can tell pre from post with AUC 0.9998" would be a false drift claim.
+The honest one-liner: *"Temporal splits make tenure features drift by construction;
+strip them and real behavioural covariate drift is mild (0.7072), and retraining
+buys only ~0.04 PR-AUC — a result I treat as dataset-specific to this simulator's
+scenario-mix change until Part 11 re-tests it on real data."*

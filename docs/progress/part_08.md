@@ -68,8 +68,10 @@ threshold-count feature. The simulation-design link is written out in
 Data size at depth 8: 10% rows 0.6783 ± 0.1436, 25% 0.8893, 50% 0.9308, 100%
 0.9657. Rounds: val plateaus ~0.9653 by round ~490. LogReg base 0.9021 [+interactions
 0.9044, +binned 0.9022] vs XGB 0.9657 → a stable ~0.06 gap linear models cannot
-close. **Conclusion: data-limited, not capacity-limited** (50→100% gives +0.0349,
-more than any depth change).
+close. **Saturation looks data-limited, not capacity-limited — stated as a trend,
+not a measured law:** the 10%-row point is ±0.14 and saturation rests on three
+seeds of one synthetic split (50→100% gives +0.0349, more than any depth change);
+re-test on real data in Part 11.
 
 ## 8D — Importance agreement (`dev`)
 
@@ -88,8 +90,11 @@ sliding_60d **0.9830**, recency_weighted **0.9787**. Covariate drift (pre vs pos
 adversarial AUC **0.9998 all features** but **0.7072 behavioural** — the gap is the
 four monotonic tenure features (`history_days` alone gives 0.974). Behavioural PSI
 flags only `hour_deviation` (0.533). **Conclusion: covariate "drift" was mostly the
-clock; real concept drift is mild (frozen stays at 0.944) and a 60-day sliding
-window matches full-history retraining.**
+clock; real concept drift is mild (frozen stays at 0.9440) and a 60-day sliding
+window matches full-history retraining.** Caveat: the frozen model staying
+competitive and the ~0.04 retraining gain are dataset-specific — the 2026-08-29
+window is easiest for *every* policy (0.9610/0.9876/0.9893/0.9884), so read the
+gap, not the level; re-test on real data in Part 11.
 
 ## Commands run (actual summaries)
 

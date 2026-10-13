@@ -117,3 +117,15 @@ is subtler, the threshold-count features may matter more.
   PR-AUC is expected and only the *relative* per-scenario recalls are meaningful.
 - PR-AUC on the full validation window with 342 frauds is noisy at the 3rd
   decimal; we read direction, not exact deltas.
+
+## Interview framing
+
+This experiment is a **falsified hypothesis**, stated plainly: I expected the
+threshold-count features (`count_near_threshold_24h`, the `amount_sums` group) to
+be what catches structuring. The ablation says otherwise — dropping `amount_sums`
+leaves structuring recall at 1.000 (only −0.001 PR-AUC), and `only_amount_sums`
+catches just 0.333. The signal is actually spread across amount-vs-baseline
+(`only_amount_deviation` 0.884), transaction type (0.519) and trend (0.527). The
+honest one-liner: *"I designed a feature I was sure would catch structuring; the
+ablation showed it was redundant, and I reported that instead of quietly dropping
+the test."*

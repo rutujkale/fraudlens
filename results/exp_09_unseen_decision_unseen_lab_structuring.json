@@ -1,0 +1,104 @@
+{
+  "profile": "unseen_lab",
+  "holdout": "structuring",
+  "s0_holdout_recall_1pct": 0.0035,
+  "s4_holdout_recall_1pct": 1.0,
+  "paired": {
+    "S1": {
+      "diff_bagged": 0.0291,
+      "lo_bagged": 0.0075,
+      "hi_bagged": 0.0521,
+      "diff_per_seed_mean": 0.0099,
+      "diff_per_seed_std": 0.0107
+    },
+    "S1s": {
+      "diff_bagged": 0.0029,
+      "lo_bagged": -0.0065,
+      "hi_bagged": 0.0123,
+      "diff_per_seed_mean": 0.0087,
+      "diff_per_seed_std": 0.0041
+    }
+  },
+  "per_seed_paired": {
+    "S1": [
+      {
+        "seed": 42,
+        "diff": 0.0291,
+        "lo": 0.0097,
+        "hi": 0.0592
+      },
+      {
+        "seed": 43,
+        "diff": 0.0116,
+        "lo": 0.0025,
+        "hi": 0.0241
+      },
+      {
+        "seed": 44,
+        "diff": 0.0,
+        "lo": -0.0069,
+        "hi": 0.0129
+      },
+      {
+        "seed": 45,
+        "diff": 0.0087,
+        "lo": 0.0,
+        "hi": 0.0209
+      },
+      {
+        "seed": 46,
+        "diff": 0.0,
+        "lo": -0.0089,
+        "hi": 0.0108
+      }
+    ],
+    "S1s": [
+      {
+        "seed": 42,
+        "diff": 0.0058,
+        "lo": 0.0,
+        "hi": 0.0158
+      },
+      {
+        "seed": 43,
+        "diff": 0.0116,
+        "lo": 0.0026,
+        "hi": 0.0244
+      },
+      {
+        "seed": 44,
+        "diff": 0.0087,
+        "lo": -0.0048,
+        "hi": 0.0242
+      },
+      {
+        "seed": 45,
+        "diff": 0.0029,
+        "lo": -0.0093,
+        "hi": 0.0156
+      },
+      {
+        "seed": 46,
+        "diff": 0.0145,
+        "lo": 0.0029,
+        "hi": 0.0297
+      }
+    ]
+  },
+  "ci": {
+    "S0": {
+      "lo": 0.0,
+      "hi": 0.0096
+    },
+    "S1": {
+      "lo": 0.01,
+      "hi": 0.0573
+    },
+    "S2": {
+      "lo": 0.1419,
+      "hi": 0.2609
+    }
+  },
+  "adopted": false,
+  "reason": "not adopted: IF-strict shows no benefit (gain requires the detector to have seen the pattern unlabeled); per-seed S1 gain < 0.02 (driven by seed bagging)"
+}

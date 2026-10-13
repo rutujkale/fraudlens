@@ -98,7 +98,7 @@ _What happened, one line._
   so high-stealth fraud keeps a baseline-like amount; stealth raised to `period_a [2.0,3.0]` /
   `period_b [3.0,2.0]` (means ≈0.40/0.60); `fraud_device_reuse_prob: 0.35` so fraud often reuses a
   known device. Regenerated `tiny` + `dev`; gate now PASSes. Thresholds were **not** lowered.
-- **Before → after (gate conditions, `dev`):**
+- **Before vs after (gate conditions, `dev`):**
 
   | condition | threshold | before (failed run) | after (passing run) |
   |---|---|---|---|
@@ -201,7 +201,7 @@ _What happened, one line._
     | 5 | `is_night` | 0.060 |
 
   - `dominant_feature = null` (no feature exceeds the 0.60 dominance share).
-  - `is_new_device` ablation (NaN the feature, re-score, no retrain): **0.9667 → 0.9667** (drop −5.5e−06).
+  - `is_new_device` ablation (NaN the feature, re-score, no retrain): **0.9667 vs 0.9667** (drop −5.5e−06).
 - **Interpretation:** this is **not** a single leaker. The high PR-AUC is spread across many velocity
   / recency features, and the one feature most likely to be a target-derived shortcut
   (`is_new_device`) contributes nothing. This is consistent with the Part 03 separability gate passing
@@ -235,7 +235,7 @@ _What happened, one line._
 - **Result after fix (`dev`):** holdout seen PR-AUC **0.9639** (n=33,082, 297 frauds) vs unseen
   PR-AUC **0.9349** (n=8,231, 45 frauds) — a modest, believable generalisation gap.
 - **Test added:** `tests/test_splits.py::test_customer_holdout_dedupes_repeated_transaction_ids`
-  (1000 transaction ids over 50 customers → exactly 10 heldout / 40 seen).
+  (1000 transaction ids over 50 customers vs exactly 10 heldout / 40 seen).
 
 ---
 
@@ -316,6 +316,24 @@ _What happened, one line._
 - **Effect:** a naive "massive covariate drift" story, when actually behavioural drift is moderate and the
   concept drift is mild (frozen model still scores 0.944 PR-AUC post-switch).
 - **Fix:** report adversarial AUC and PSI both on all features and on a behavioural subset excluding the four
-  tenure features (all 0.9998 → behavioural 0.7072); both views are now written to the 8E outputs.
-- **Test added:** none (analytical result); `tests/test_drift.py` covers the PSI machinery (identical→0,
-  shifted→>0.25, missing-rate shift, monotonicity, eps-finite).
+  tenure features (all 0.9998 vs behavioural 0.7072); both views are now written to the 8E outputs.
+- **Test added:** none (analytical result); `tests/test_drift.py` covers the PSI machinery (identical 0,
+  shifted >0.25, missing-rate shift, monotonicity, eps-finite).
+
+---
+
+### Finding: S1/S1s feature-column mismatch (caught before run)
+- **How detected:** During Part 09 implementation, inspection showed S1/S1s would score using `x_va` without `anomaly_score`; caught while fixing an unused variable.
+- **Root cause:** Variable reuse across blocks; early-stopping on the non-held-out subset required `x_va_nohold_anom_all` / `x_va_nohold_anom_strict`.
+- **Effect:** Would have been a runtime column error had it run uncorrected; never executed.
+- **Fix:** Built `x_va_anom_all`, `x_va_anom_strict`, `x_va_nohold_anom_all`, `x_va_nohold_anom_strict` explicitly and used them for predictions/masks.
+- **Test added:** `tests/test_anomaly.py` exercises end-to-end paths; the fix prevents column misalignment.
+
+---
+
+### Finding: duplicate E15 log entries after re-running (data cleanup)
+- **How detected:** Running the script a second time (after tightening the adoption rule) caused the logging code to append E15 rows again, resulting in 12 duplicate E15 rows in `results/experiments.csv` (first run + second run).
+- **Root cause:** The logging function (`log_experiment`) appends blindly; no idempotent de-duplication by experiment_id+holdout. The first run had produced E15 rows; the second appended another set.
+- **Effect:** Duplicate log entries; misleading `experiments.csv` line count.
+- **Fix:** Made logging idempotent in `scripts/run_unseen_experiment.py` (`_drop_prior_log_rows`) to remove prior E15/E16 rows for the same holdout before appending, and **manually deduplicated** `results/experiments.csv` by removing the duplicate E15 block (before: **62 rows total** with 12 E15 rows; after: **56 rows total** with 6 E15 rows). The 6 kept rows are the ones written by the **final run** (same deterministic metrics and identical timestamps across the 6 systems from the final invocation).
+- **Test added:** None (data hygiene).

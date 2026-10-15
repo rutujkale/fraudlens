@@ -71,3 +71,21 @@ def load_model(model_version: str) -> Any:
 
 def load_metadata(model_version: str) -> dict[str, Any]:
     return json.loads((artifacts_dir(model_version) / "metadata.json").read_text(encoding="utf-8"))
+
+
+def assert_artifact_profile(model_version: str, profile: str) -> None:
+    """Refuse to write into an artifact whose metadata belongs to another profile.
+
+    ``results/models_<profile>.json`` can map two profiles to the same version when
+    version names omit the profile, so a run for profile B could silently overwrite
+    profile A's calibrator/policy (see docs/what_went_wrong.md, 2026-10-12).
+    """
+    meta_path = artifacts_dir(model_version) / "metadata.json"
+    if not meta_path.exists():
+        raise FileNotFoundError(f"{meta_path} missing; cannot verify profile of {model_version!r}")
+    found = json.loads(meta_path.read_text(encoding="utf-8")).get("profile")
+    if found != profile:
+        raise ValueError(
+            f"artifact {model_version!r} belongs to profile {found!r}; refusing to write "
+            f"{profile!r} calibrator/policy into it"
+        )

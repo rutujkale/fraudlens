@@ -29,6 +29,7 @@ from fraudlens.models.calibration import (
     choose_calibrator,
     fit_calibrators,
 )
+from fraudlens.models.io import assert_artifact_profile
 from fraudlens.paths import artifacts_dir, figures_dir, results_dir
 from fraudlens.utils import get_logger, set_global_seed
 
@@ -92,6 +93,7 @@ def main() -> int:
         )
 
         artifact = artifacts_dir(versions[model])
+        assert_artifact_profile(versions[model], args.profile)
         joblib.dump(chosen, artifact / "calibrator.joblib")
         (artifact / "calibration.json").write_text(
             json.dumps({"model": model, "selected": selection["selected"], **selection},

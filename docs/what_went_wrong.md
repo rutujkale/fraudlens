@@ -331,6 +331,46 @@ _What happened, one line._
 
 ---
 
+### Incident: a `tiny` calibration/policy run overwrote the `dev` model's calibrator and policy
+- **How detected:** Part 10 recon — `artifacts/xgb_20261011_v1/calibration.json` reported
+  `n_cal_positives: 3` / reason `"val_cal positives 3 < 150"`, and `policy.json` reported
+  `"profile": "tiny"`, `capacity_per_day: 2`, `avg_daily_volume: 122.5`, `stepup_cost: 5.0`. The
+  committed dev outputs disagree (`results/calibration_selection_dev.json` → 220 positives;
+  `results/policy_comparison_dev.csv` → capacity 23/day, avg daily volume 2,295.2).
+- **Clobbered state recorded before repair (all stamped 2026-10-12 19:59):**
+
+  | file | mtime | SHA-256 | content |
+  |---|---|---|---|
+  | `calibration.json` | 2026-10-12 19:59:15 | `6C47BECD…486440` | `n_cal_positives: 3`, brier_sigmoid 0.005309 |
+  | `calibrator.joblib` | 2026-10-12 19:59:15 | `7E6A5C43…6FDAF1` | sigmoid fit on 3 positives |
+  | `policy.json` | 2026-10-12 19:59:28 | `F614E24B…BFC78F6` | `profile: "tiny"`, capacity 2/day, 97.88% saving |
+
+  `metadata.json` (unchanged, 2026-10-11 08:12:49, `B398D4F5…C5C9DB`) and `model.joblib`
+  (`xgb_20261011_v1`, `"profile": "dev"`) show the directory belongs to **dev**: only the
+  Part 07 outputs inside it were overwritten.
+- **Root cause:** `scripts/train.py` named artifacts by date only (`xgb_<date>_v1`,
+  `logreg_<date>_v1`), so two profiles trained on the same day (2026-10-11) resolved to one
+  directory. `results/models_tiny.json` and `results/models_dev.json` both pointed at
+  `xgb_20261011_v1`, so `calibrate.py`/`optimize_policy.py --profile tiny` wrote tiny's
+  calibrator/policy straight into dev's artifact.
+- **Effect:** anything loading the frozen dev artifact (Part 10's fairness audit and gallery)
+  would have used a calibrator fit on 3 frauds and a 2/day capacity policy — wrong calibrated
+  probabilities, wrong actions, wrong FPR/flag rates, with nothing in the file names to show it.
+- **Blast radius checked:** no Part 08/09 output written after 2026-10-12 19:59 read these files —
+  8A–8E fit their calibrators in memory (`evaluation/experiments_lib.py`) and Part 09 loaded no
+  artifact (it only *writes* an IF artifact when adopted, which it was not). Part 07's reported
+  numbers were never affected (`results/*_dev.*` are intact).
+- **Fix:** (1) artifact version names now include the profile
+  (`{model}_{profile}_{date}_v1`) in `scripts/train.py`; (2) `results/models_tiny.json` no longer
+  points at the dev artifact; (3) `models/io.py::assert_artifact_profile` makes
+  `calibrate.py`/`optimize_policy.py` refuse to write when the target artifact's
+  `metadata.json.profile` differs from `--profile`; (4) dev calibrator/policy regenerated with
+  `--profile dev` and asserted back to the committed dev numbers.
+- **Test added:** `tests/test_artifact_guard.py` (guard raises on a profile mismatch, passes on a
+  match, raises on a missing `metadata.json`).
+
+---
+
 ### Finding: duplicate E15 log entries after re-running (data cleanup)
 - **How detected:** Running the script a second time (after tightening the adoption rule) caused the logging code to append E15 rows again, resulting in 12 duplicate E15 rows in `results/experiments.csv` (first run + second run).
 - **Root cause:** The logging function (`log_experiment`) appends blindly; no idempotent de-duplication by experiment_id+holdout. The first run had produced E15 rows; the second appended another set.

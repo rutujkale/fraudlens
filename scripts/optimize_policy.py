@@ -31,6 +31,7 @@ from fraudlens.evaluation.scores import load_model_versions, raw_val_scores
 from fraudlens.evaluation.splits import chronological_fraction_split, make_temporal_split
 from fraudlens.evaluation.threshold_search import build_policy_comparison, op_at_threshold
 from fraudlens.features.registry import FEATURE_VERSION
+from fraudlens.models.io import assert_artifact_profile
 from fraudlens.paths import artifacts_dir, figures_dir, results_dir
 from fraudlens.utils import get_logger, set_global_seed
 
@@ -41,6 +42,7 @@ POLICY_VERSION = "cost_policy_v1"
 def _val_thr(df, split, cfg, raw):
     """Return the calibrated val_thr arrays (y, p, amount, dates) and selection info."""
     versions = load_model_versions(cfg.simulation.profile)
+    assert_artifact_profile(versions["xgb"], cfg.simulation.profile)
     n_val = len(split.val_idx)
     _, thr_pos = chronological_fraction_split(
         np.arange(n_val), cfg.simulation.calibration.cal_fraction

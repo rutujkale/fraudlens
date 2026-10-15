@@ -1,4 +1,4 @@
 {
-  "logreg": "logreg_20261011_v1",
-  "xgb": "xgb_20261011_v1"
+  "logreg": "logreg_tiny_v1",
+  "xgb": "xgb_tiny_v1"
 }

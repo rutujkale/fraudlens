@@ -150,7 +150,7 @@ def train_logreg(df, split, cfg: Config, chash: str) -> tuple[np.ndarray, str]:
         y[split.val_idx], score, cfg.simulation.ks, cfg.simulation.precision_targets
     )
     save_logreg_coefficients(model, results_dir() / "logreg_coefficients.csv")
-    version = f"logreg_{datetime.now():%Y%m%d}_v1"
+    version = f"logreg_{cfg.simulation.profile}_{datetime.now():%Y%m%d}_v1"
     metadata = model_io.build_metadata(
         model_version=version,
         feature_version=FEATURE_VERSION,
@@ -209,7 +209,7 @@ def train_xgb(df, split, cfg: Config, chash: str) -> tuple[np.ndarray, str, dict
     metrics = evaluate_scores(
         y[split.val_idx], score, cfg.simulation.ks, cfg.simulation.precision_targets
     )
-    version = f"xgb_{datetime.now():%Y%m%d}_v1"
+    version = f"xgb_{cfg.simulation.profile}_{datetime.now():%Y%m%d}_v1"
     params = search.drop(columns=["trial", "val_pr_auc", "best_iteration"]).iloc[0].to_dict()
     metadata = model_io.build_metadata(
         model_version=version,

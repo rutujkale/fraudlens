@@ -35,6 +35,30 @@ EXPERIMENT_COLUMNS = [
 ]
 
 
+def drop_experiment_rows(
+    experiment_id: str, profile: str | None = None, path: str | Path | None = None
+) -> int:
+    """Remove prior rows for ``experiment_id`` so re-runs stay idempotent.
+
+    ``log_experiment`` appends blindly (see the Part 09 duplicate-E15 finding in
+    ``docs/what_went_wrong.md``); call this before logging a re-runnable experiment.
+    Returns the number of rows removed.
+    """
+    out = Path(path) if path is not None else Path(results_dir()) / "experiments.csv"
+    if not out.exists():
+        return 0
+    import pandas as pd
+
+    df = pd.read_csv(out)
+    dupe = df["experiment_id"] == experiment_id
+    if profile is not None:
+        dupe &= df["dataset_profile"] == profile
+    if not dupe.any():
+        return 0
+    df[~dupe].to_csv(out, index=False)
+    return int(dupe.sum())
+
+
 def log_experiment(
     row: dict[str, Any], path: str | Path | None = None, config_hash: str | None = None
 ) -> Path:

@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -99,8 +99,18 @@ experiment-8d:
 ## experiment-8e: drift backtest + PSI on the drift_lab profile.
 experiment-8e:
 	$(PY) scripts/run_experiment_8E.py --profile drift_lab
+
+## shap: global SHAP, figures, latency + explanation gallery (docs/explanation_gallery.md).
+shap:
+	$(PY) scripts/run_shap.py --profile $(PROFILE)
+
+## fairness: subgroup audit -> results/fairness_*.csv + docs/fairness_audit.md.
+fairness:
+	$(PY) scripts/fairness_audit.py --profile $(PROFILE)
+
+## explain: both Part 10 outputs.
+explain: shap fairness
 # TODO(part 09): unseen-fraud    - Isolation Forest experiment
-# TODO(part 10): explain         - SHAP explanations + subgroup audit
 # TODO(part 11): external        - IEEE-CIS external validation
 # TODO(part 12): evaluate        - locked one-shot test evaluation
 # TODO(part 13): api             - FastAPI service + latency benchmark

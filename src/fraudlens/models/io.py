@@ -69,6 +69,26 @@ def load_model(model_version: str) -> Any:
     return joblib.load(artifacts_dir(model_version) / "model.joblib")
 
 
+def load_serving_bundle(model_version: str) -> dict[str, Any]:
+    """Load everything needed to score: model, calibrator, policy, metadata.
+
+    The calibrator and policy are written by ``scripts/calibrate.py`` and
+    ``scripts/optimize_policy.py`` into the same artifact directory.
+    """
+    version_dir = artifacts_dir(model_version)
+    bundle: dict[str, Any] = {
+        "model": load_model(model_version),
+        "metadata": load_metadata(model_version),
+    }
+    calibrator_path = version_dir / "calibrator.joblib"
+    policy_path = version_dir / "policy.json"
+    bundle["calibrator"] = joblib.load(calibrator_path) if calibrator_path.exists() else None
+    bundle["policy"] = (
+        json.loads(policy_path.read_text(encoding="utf-8")) if policy_path.exists() else None
+    )
+    return bundle
+
+
 def load_metadata(model_version: str) -> dict[str, Any]:
     return json.loads((artifacts_dir(model_version) / "metadata.json").read_text(encoding="utf-8"))
 

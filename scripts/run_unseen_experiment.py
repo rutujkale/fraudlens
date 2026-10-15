@@ -69,8 +69,12 @@ def _recall_at_budget(y_pos: np.ndarray, score: np.ndarray, budget: float) -> fl
     return recall_at_top_k(y_pos, score, budget)
 
 
-def _drop_prior_log_rows(exp_id: str, holdout: str) -> None:
-    """Remove earlier ``experiments.csv`` rows for this experiment/holdout (idempotent log)."""
+def _drop_prior_log_rows(exp_id: str, holdout: str, dataset_version: str) -> None:
+    """Remove earlier rows for this experiment/holdout *and* dataset version.
+
+    Rows logged against a different data generation are history, not duplicates
+    (Part 02b), so they are left alone.
+    """
     path = results_dir() / "experiments.csv"
     if not path.exists():
         return
@@ -78,6 +82,8 @@ def _drop_prior_log_rows(exp_id: str, holdout: str) -> None:
     dupe = (df["experiment_id"] == exp_id) & df["notes"].astype(str).str.contains(
         f"holdout={holdout}", regex=False
     )
+    if "dataset_version" in df.columns:
+        dupe &= df["dataset_version"].astype(str) == dataset_version
     if dupe.any():
         df[~dupe].to_csv(path, index=False)
 
@@ -111,6 +117,7 @@ def main() -> int:
     cfg = sup.cfg
     set_global_seed(cfg.simulation.seed)
     chash = config_hash(cfg)
+    dversion = cfg.simulation.dataset_version
 
     df, x, y, split = sup.df, sup.x, sup.y, sup.split
     scenario = df["fraud_scenario"].to_numpy()
@@ -405,7 +412,7 @@ def main() -> int:
     # the script does not append duplicate log entries.
     exp_id = "E15" if holdout == "structuring" else "E16"
     notes = f"unseen-fraud holdout={holdout}; cross-fitted IF; paired S1-S0 CI"
-    _drop_prior_log_rows(exp_id, holdout)
+    _drop_prior_log_rows(exp_id, holdout, dversion)
     for system in results["system"].unique():
         sub = results[results["system"] == system]
         log_experiment(

@@ -60,12 +60,29 @@ def _far_location(rng, far_locs, home_region, all_locations) -> str:
     return str(rng.choice(pool))
 
 
+def _fallback_customer(rng, archetypes, open_day, max_start_day, ci: int) -> int:
+    """Another customer of the same archetype whose account opens in time.
+
+    Used when the drawn victim's account opens after the last valid episode start
+    (Part 02b); a same-archetype swap keeps the customer-cost profile comparable.
+    """
+    pool = np.flatnonzero((archetypes == archetypes[ci]) & (open_day <= max_start_day))
+    pool = pool[pool != ci]
+    if not pool.size:
+        pool = np.flatnonzero(open_day <= max_start_day)
+    if not pool.size:
+        raise RuntimeError("no customer's account is open within the simulation window")
+    return int(pool[int(rng.integers(len(pool)))])
+
+
 def generate_fraud(
     rng: np.random.Generator, simulation, ent: Entities, devreg: DeviceRegistry,
     legit_count: int, normal_times: tuple[np.ndarray, np.ndarray],
+    counters: dict[str, int] | None = None,
 ) -> RowBuffer:
     """Generate fraud episodes to hit `target_fraud_rate` of all transactions."""
     from fraudlens.data_gen import drift
+    from fraudlens.data_gen.normal import open_day_index
 
     buf = RowBuffer()
     if legit_count <= 0:
@@ -77,6 +94,8 @@ def generate_fraud(
     weights = np.array([1.5 if c["archetype"] == "business_like" else 1.0 for c in customers])
     weights = weights / weights.sum()
     all_customers = [c["customer_id"] for c in customers]
+    open_day = open_day_index(ent.customers, simulation.start_date)
+    archetypes = ent.customers["archetype"].to_numpy()
     merchants_by_cat: dict[str, list[str]] = defaultdict(list)
     for row in ent.merchants.to_dict("records"):
         merchants_by_cat[row["merchant_category"]].append(row["merchant_id"])
@@ -92,6 +111,7 @@ def generate_fraud(
     cur = 0
     episode_no = 0
     max_start_minutes = simulation.days * 1440 - 2880
+    max_start_day = max_start_minutes // 1440
     window_start = pd.Timestamp(simulation.start_date)
 
     while cur < 0.95 * target:
@@ -99,10 +119,26 @@ def generate_fraud(
         if bu <= 0:
             break
         ci = int(rng.choice(n_cust, p=weights))
+        # Cold-start gate (Part 02b): the episode must land after the victim's
+        # account opens. Fall back to a same-archetype customer with room, then
+        # redraw the start day inside the valid window.
+        if open_day[ci] > max_start_day:
+            if counters is not None:
+                counters["episode_customer_fallbacks"] = (
+                    counters.get("episode_customer_fallbacks", 0) + 1
+                )
+            ci = _fallback_customer(rng, archetypes, open_day, max_start_day, ci)
         victim = customers[ci]
         cid = victim["customer_id"]
 
-        s_ts = window_start + timedelta(minutes=int(rng.integers(0, max(1, max_start_minutes))))
+        open_min = int(open_day[ci]) * 1440
+        open_ts = window_start + timedelta(minutes=open_min)
+        start_offset = int(rng.integers(0, max(1, max_start_minutes)))
+        if start_offset < open_min:
+            if counters is not None:
+                counters["episode_day_redraws"] = counters.get("episode_day_redraws", 0) + 1
+            start_offset = int(rng.integers(open_min, max(open_min + 1, max_start_minutes)))
+        s_ts = window_start + timedelta(minutes=start_offset)
         sval = drift.position(simulation, s_ts)
         mix = drift.scenario_mix(simulation, sval)
         scenario = str(rng.choice(list(mix.keys()), p=list(mix.values())))
@@ -183,7 +219,10 @@ def generate_fraud(
                     if far else ctx["home"]
                 )
                 if odd_hour:
-                    ts = ts.replace(hour=int(rng.integers(0, 6)), minute=int(rng.integers(0, 60)))
+                    cand = ts.replace(
+                        hour=int(rng.integers(0, 6)), minute=int(rng.integers(0, 60))
+                    )
+                    ts = cand if cand >= open_ts else ts
                 currencylike = rng.random() < 0.7
                 if currencylike:
                     category = str(rng.choice(["electronics", "jewelry", "transfers"]))
@@ -269,7 +308,10 @@ def generate_fraud(
 
         elif scenario == "structuring":
             if bu < 4:
-                break
+                # Not enough budget for a structuring episode; try another scenario
+                # instead of ending fraud generation entirely (Part 02b: the old
+                # `break` here could drop the whole scenario from a profile).
+                continue
             n = int(min(rng.integers(4, 14, endpoint=True), bu))
             high = min(6.0, 0.97 * n)
             low = min(max(1.5, 0.55 * n + 0.05), high)
@@ -305,6 +347,9 @@ def generate_fraud(
             raise ValueError(f"unknown scenario {scenario}")
 
         for r in rows:
+            if r["timestamp"] < open_ts:
+                # Defensive: gap/structuring sequences can extend before the anchor.
+                r["timestamp"] = open_ts
             buf.add_row(r)
         cur += len(rows)
         episode_no += 1

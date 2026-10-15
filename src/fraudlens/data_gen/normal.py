@@ -128,8 +128,24 @@ def _festival_multiplier(start: date, days: int) -> np.ndarray:
     return mult
 
 
+def open_day_index(cust_df: pd.DataFrame, start) -> np.ndarray:
+    """Whole-day index at which each customer's account opens (0 if already open).
+
+    The single source of the cold-start gate: no transaction may be generated for
+    a customer on a day before this index (Part 02b). ``start`` is the simulation
+    start date; the returned array is aligned with ``cust_df`` row order.
+    """
+    opened = pd.to_datetime(cust_df["account_open_date"])
+    offset_days = (opened - pd.Timestamp(start)).dt.total_seconds() / 86400.0
+    return np.floor(offset_days.to_numpy(dtype=float)).clip(min=0).astype(np.int64)
+
+
 def generate_normal(
-    rng: np.random.Generator, simulation, ent: Entities, devreg: DeviceRegistry
+    rng: np.random.Generator,
+    simulation,
+    ent: Entities,
+    devreg: DeviceRegistry,
+    counters: dict[str, int] | None = None,
 ) -> RowBuffer:
     """Generate all normal (non-episode) legitimate transactions."""
     buf = RowBuffer()
@@ -137,6 +153,7 @@ def generate_normal(
     ndays = simulation.days
     cust_df = ent.customers
     n = len(cust_df)
+    open_day = open_day_index(cust_df, start)
 
     merchants_by_cat: dict[str, list[str]] = defaultdict(list)
     for row in ent.merchants.to_dict("records"):
@@ -289,6 +306,17 @@ def generate_normal(
 
             mult = CATEGORY_MULTIPLIER.get(category or "transfers", 1.0)
             amount = round(float(base_amt[pos] * mult * outlier_mult[pos]), 2)
+
+            # Cold-start gate (Part 02b): drop days before the account opened. This
+            # is a pure emit-time filter — the vectorized draws and the per-customer
+            # state above are untouched, so rows for customers already open at the
+            # window start are byte-identical to an ungated run. (A cold customer's
+            # retained rows keep the state their own dropped days produced; features
+            # are computed later from the final table, which has no pre-open rows.)
+            if day[pos] < open_day[ci]:
+                if counters is not None:
+                    counters["normal_rows_masked"] = counters.get("normal_rows_masked", 0) + 1
+                continue
 
             buf.add_row(
                 {

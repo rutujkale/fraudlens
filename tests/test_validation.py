@@ -134,6 +134,18 @@ def test_clean_dataset_passes(clean):
     assert validate_dataset(clean).passed
 
 
+def test_transaction_before_account_open_fails(clean):
+    """Part 02b: a transaction may not precede its customer's account opening."""
+    clean["customers"].loc[0, "account_open_date"] = "2026-01-03"
+    assert "transactions_after_account_open" in _failed(clean)
+
+
+def test_account_open_before_window_is_fine(clean):
+    """Accounts open before the simulation window are unremarkable."""
+    clean["customers"].loc[0, "account_open_date"] = "2020-01-01"
+    assert validate_dataset(clean).passed
+
+
 def test_duplicate_transaction_id_fails(clean):
     clean["transactions"].loc[1, "transaction_id"] = "T0000001"
     assert "unique_transactions.transaction_id" in _failed(clean)

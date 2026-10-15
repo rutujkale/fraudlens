@@ -150,6 +150,7 @@ def _build_report(
 
     return {
         "profile": sim.profile,
+        "dataset_version": sim.dataset_version,
         "seed": sim.seed,
         "git_commit": git_commit(),
         "date_range": [
@@ -162,6 +163,12 @@ def _build_report(
         "n_fraud_episodes": int(len(episodes)),
         "fraud_rate": round(n_fraud / max(1, total), 6),
         "target_fraud_rate": sim.target_fraud_rate,
+        "fraud_rate_vs_target_pct": round(
+            100.0 * ((n_fraud / max(1, total)) / sim.target_fraud_rate - 1.0), 3
+        ),
+        "fraud_rate_within_5pct_of_target": bool(
+            abs(n_fraud / max(1, total) / sim.target_fraud_rate - 1.0) <= 0.05
+        ),
         "period_totals": {
             "episodes": {str(k): int(v) for k, v in period_episodes.items()},
             "transactions": {str(k): int(v) for k, v in period_tx.items()},
@@ -200,16 +207,19 @@ def generate_profile(profile: str = "dev", seed: int | None = None) -> Generated
     n_known_edges = len(devreg.customer_device_rows)
 
     logger.info("Generating normal transactions")
-    normal_buf = generate_normal(rng, sim, ent, devreg)
+    gate = {"normal_rows_masked": 0, "episode_day_redraws": 0, "episode_customer_fallbacks": 0}
+    normal_buf = generate_normal(rng, sim, ent, devreg, counters=gate)
     legit_count = len(normal_buf)
 
     logger.info("Generating hard-negative episodes")
     normal_times = normal_buf.tx_times()
-    hard_buf = generate_hard_negatives(rng, sim, ent, devreg, legit_count, normal_times)
+    hard_buf = generate_hard_negatives(
+        rng, sim, ent, devreg, legit_count, normal_times, counters=gate
+    )
 
     logger.info("Generating fraud episodes")
     fraud_buf = generate_fraud(
-        rng, sim, ent, devreg, legit_count + len(hard_buf), normal_times
+        rng, sim, ent, devreg, legit_count + len(hard_buf), normal_times, counters=gate
     )
 
     df = _merge_buffers([normal_buf, hard_buf, fraud_buf])
@@ -229,9 +239,21 @@ def generate_profile(profile: str = "dev", seed: int | None = None) -> Generated
     if leaked:  # pragma: no cover - guard
         raise AssertionError(f"label columns leaked into transactions: {sorted(leaked)}")
 
+    # Cold-start gate (Part 02b): no transaction may precede its account opening.
+    open_map = dict(
+        zip(ent.customers["customer_id"], pd.to_datetime(ent.customers["account_open_date"]))
+    )
+    before_open = transactions["timestamp"] < transactions["customer_id"].map(open_map)
+    if before_open.any():  # pragma: no cover - guard
+        raise AssertionError(
+            f"{int(before_open.sum())} transactions precede account_open_date "
+            f"(first: {transactions.loc[before_open, 'transaction_id'].iloc[0]})"
+        )
+
     devices, _ = devreg.to_frames()
     customer_devices = pd.DataFrame(devreg.customer_device_rows[:n_known_edges])
     report = _build_report(cfg, transactions, labels, ent)
+    report["cold_start_gate"] = dict(gate)
     report["config_hash"] = _config_hash(cfg)
 
     result = GeneratedResult(

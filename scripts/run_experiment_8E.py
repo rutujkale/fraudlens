@@ -31,7 +31,7 @@ import pandas as pd  # noqa: E402
 from xgboost import XGBClassifier  # noqa: E402
 
 from fraudlens.config import config_hash  # noqa: E402
-from fraudlens.evaluation.experiments import log_experiment  # noqa: E402
+from fraudlens.evaluation.experiments import drop_experiment_rows, log_experiment  # noqa: E402
 from fraudlens.evaluation.experiments_lib import (  # noqa: E402
     best_xgb_params,
     load_supervised,
@@ -99,6 +99,9 @@ def main() -> int:
     cfg = sup.cfg
     set_global_seed(cfg.simulation.seed)
     chash = config_hash(cfg)
+    # Replace only this dataset version's rows: earlier versions describe data that
+    # no longer exists and are kept as history (Part 02b).
+    drop_experiment_rows("E14", args.profile, dataset_version=cfg.simulation.dataset_version)
 
     params = best_xgb_params(args.profile)
     params = {k: (int(v) if k == "max_depth" else v) for k, v in params.items()}

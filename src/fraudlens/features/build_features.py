@@ -363,5 +363,11 @@ def build_features(tx: pd.DataFrame, entities, cfg) -> pd.DataFrame:
         }
     )
     result = pd.concat([result, features[FEATURE_COLUMNS]], axis=1)
+    negative_history = int((features["history_days"] < 0).sum())
+    if negative_history:  # pragma: no cover - guard
+        raise AssertionError(
+            f"history_days < 0 for {negative_history} rows: transactions precede "
+            "account_open_date (see Part 02b)"
+        )
     assert_no_target_columns(result)
     return result

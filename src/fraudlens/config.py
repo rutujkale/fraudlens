@@ -153,6 +153,7 @@ class CommonConfig(StrictModel):
     seed: int
     currency: str
     start_date: date
+    dataset_version: str
     reporting_threshold: float
     customers_archetype_mix: dict[str, float]
     fraud_scenarios: list[str]
@@ -199,6 +200,7 @@ class SimulationConfig(StrictModel):
     seed: int
     currency: str
     start_date: date
+    dataset_version: str
     reporting_threshold: float
     customers: int
     days: int

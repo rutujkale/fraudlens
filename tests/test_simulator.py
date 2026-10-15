@@ -58,6 +58,95 @@ def test_determinism():
     assert a.customers.equals(b.customers)
 
 
+def test_no_transactions_before_account_open(result):
+    """Part 02b cold-start gate: nothing may precede the account's opening."""
+    opened = pd.to_datetime(result.customers.set_index("customer_id")["account_open_date"])
+    ts = pd.to_datetime(result.transactions["timestamp"])
+    open_ts = result.transactions["customer_id"].map(opened)
+    assert (ts >= open_ts).all()
+
+
+def test_normal_rows_for_open_customers_unchanged():
+    """The gate only drops pre-opening days for mid-window accounts.
+
+    For customers already open when the window starts, the normal-stage rows are
+    byte-identical to the ungated generator. No identity is claimed for the
+    hard-negative/fraud stages, which consume the RNG stream differently
+    (Part 02b).
+    """
+    import dataclasses
+
+    from fraudlens.config import load_config
+    from fraudlens.data_gen.entities import create_entities, make_device_registry
+    from fraudlens.data_gen.normal import generate_normal, open_day_index
+
+    sim = load_config("tiny").simulation
+    ent = create_entities(np.random.default_rng(sim.seed), sim)
+    devreg = make_device_registry(ent.devices, ent.customer_devices)
+
+    gated = generate_normal(np.random.default_rng(sim.seed), sim, ent, devreg, counters={})
+
+    flat = dataclasses.replace(
+        ent, customers=ent.customers.assign(account_open_date=sim.start_date.isoformat())
+    )
+    ungated = generate_normal(np.random.default_rng(sim.seed), sim, flat, devreg)
+
+    open_day = open_day_index(ent.customers, sim.start_date)
+    open_customers = set(ent.customers.loc[open_day == 0, "customer_id"])
+    assert len(open_customers) < len(ent.customers)  # the gate has something to do
+
+    def keep(df: pd.DataFrame) -> pd.DataFrame:
+        return df[df["customer_id"].isin(open_customers)].reset_index(drop=True)
+
+    a, b = keep(gated.tx_frame()), keep(ungated.tx_frame())
+    assert len(a) > 0
+    pd.testing.assert_frame_equal(a, b)
+
+
+def test_episode_falls_back_when_account_opens_after_window():
+    """Customers whose accounts open after the window cannot host an episode.
+
+    Half the customer base opens too late; every episode must fall back to a
+    customer that is open, exercising the gate's fallback path (Part 02b).
+    """
+    import dataclasses
+
+    from fraudlens.config import load_config
+    from fraudlens.data_gen.entities import create_entities, make_device_registry
+    from fraudlens.data_gen.fraud import generate_fraud
+    from fraudlens.data_gen.hard_negatives import generate_hard_negatives
+    from fraudlens.data_gen.normal import generate_normal
+
+    sim = load_config("tiny").simulation
+    ent = create_entities(np.random.default_rng(sim.seed), sim)
+    late = (pd.Timestamp(sim.start_date) + pd.Timedelta(days=sim.days + 30)).isoformat()
+    customers = ent.customers.copy()
+    too_late = customers.index % 2 == 1
+    customers.loc[too_late, "account_open_date"] = late
+    customers.loc[~too_late, "account_open_date"] = pd.Timestamp(sim.start_date).isoformat()
+    ent = dataclasses.replace(ent, customers=customers)
+    devreg = make_device_registry(ent.devices, ent.customer_devices)
+
+    gate = {"normal_rows_masked": 0, "episode_day_redraws": 0, "episode_customer_fallbacks": 0}
+    normal = generate_normal(np.random.default_rng(sim.seed), sim, ent, devreg, counters=gate)
+    hard = generate_hard_negatives(
+        np.random.default_rng(sim.seed + 1), sim, ent, devreg, len(normal),
+        normal.tx_times(), counters=gate,
+    )
+    fraud = generate_fraud(
+        np.random.default_rng(sim.seed + 2), sim, ent, devreg,
+        len(normal) + len(hard), normal.tx_times(), counters=gate,
+    )
+
+    open_customers = set(customers.loc[~too_late, "customer_id"])
+    assert gate["episode_customer_fallbacks"] > 0
+    assert len(fraud.tx_frame()) > 0
+    # low-activity customers can legitimately have zero normal rows, hence subset
+    assert set(normal.tx_frame()["customer_id"]) <= open_customers
+    assert set(hard.tx_frame()["customer_id"]) <= open_customers
+    assert set(fraud.tx_frame()["customer_id"]) <= open_customers
+
+
 def test_different_seed_differs():
     a = generate_profile("tiny", seed=1)
     b = generate_profile("tiny", seed=2)

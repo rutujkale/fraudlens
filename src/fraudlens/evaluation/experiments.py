@@ -19,6 +19,7 @@ EXPERIMENT_COLUMNS = [
     "experiment_id",
     "part",
     "dataset_profile",
+    "dataset_version",
     "model",
     "features_version",
     "train_window",
@@ -36,13 +37,20 @@ EXPERIMENT_COLUMNS = [
 
 
 def drop_experiment_rows(
-    experiment_id: str, profile: str | None = None, path: str | Path | None = None
+    experiment_id: str,
+    profile: str | None = None,
+    path: str | Path | None = None,
+    dataset_version: str | None = None,
 ) -> int:
     """Remove prior rows for ``experiment_id`` so re-runs stay idempotent.
 
     ``log_experiment`` appends blindly (see the Part 09 duplicate-E15 finding in
     ``docs/what_went_wrong.md``); call this before logging a re-runnable experiment.
     Returns the number of rows removed.
+
+    ``dataset_version`` narrows the match to one data generation (Part 02b): rows
+    from a *different* dataset version are history and are kept, so regenerated
+    runs replace their own rows instead of erasing the previous dataset's evidence.
     """
     out = Path(path) if path is not None else Path(results_dir()) / "experiments.csv"
     if not out.exists():
@@ -53,10 +61,58 @@ def drop_experiment_rows(
     dupe = df["experiment_id"] == experiment_id
     if profile is not None:
         dupe &= df["dataset_profile"] == profile
+    if dataset_version is not None:
+        version = df["dataset_version"].astype(str) if "dataset_version" in df.columns else ""
+        dupe &= version == dataset_version
     if not dupe.any():
         return 0
     df[~dupe].to_csv(out, index=False)
     return int(dupe.sum())
+
+
+def backfill_dataset_version(version: str, path: str | Path | None = None) -> int:
+    """Stamp ``version`` on experiment rows that have no ``dataset_version`` yet.
+
+    Existing rows predate the column, so they describe the pre-fix dataset; this
+    attaches that label rather than leaving them ambiguous. Returns rows stamped.
+    """
+    import pandas as pd
+
+    out = Path(path) if path is not None else Path(results_dir()) / "experiments.csv"
+    if not out.exists():
+        return 0
+    df = pd.read_csv(out)
+    if "dataset_version" not in df.columns:
+        df["dataset_version"] = version
+        stamped = len(df)
+    else:
+        missing = df["dataset_version"].isna() | (df["dataset_version"].astype(str) == "")
+        df.loc[missing, "dataset_version"] = version
+        stamped = int(missing.sum())
+    other = [c for c in df.columns if c not in EXPERIMENT_COLUMNS]
+    order = [c for c in EXPERIMENT_COLUMNS if c in df.columns] + other
+    df[order].to_csv(out, index=False)
+    return stamped
+
+
+def _ensure_schema(path: Path) -> None:
+    """Rewrite the CSV if its header predates a column, so appended rows stay aligned."""
+    if not path.exists():
+        return
+    existing = _read_existing_columns(path)
+    if not existing:
+        return
+    missing = [c for c in EXPERIMENT_COLUMNS if c not in existing]
+    if not missing:
+        return
+    import pandas as pd
+
+    df = pd.read_csv(path)
+    for col in missing:
+        df[col] = ""
+    other = [c for c in df.columns if c not in EXPERIMENT_COLUMNS]
+    order = [c for c in EXPERIMENT_COLUMNS if c in df.columns] + other
+    df[order].to_csv(path, index=False)
 
 
 def log_experiment(
@@ -69,6 +125,8 @@ def log_experiment(
     row.setdefault("timestamp", datetime.now().isoformat(timespec="seconds"))
     if config_hash is not None:
         row.setdefault("config_hash", config_hash)
+    row.setdefault("dataset_version", _config_dataset_version(row.get("dataset_profile")))
+    _ensure_schema(out)
 
     existing = _read_existing_columns(out)
     fieldnames = list(EXPERIMENT_COLUMNS)
@@ -86,6 +144,18 @@ def log_experiment(
             writer.writeheader()
         writer.writerow({k: _stringify(v) for k, v in row.items()})
     return out
+
+
+def _config_dataset_version(profile: Any) -> str:
+    """Best-effort lookup of the profile's ``dataset_version`` label."""
+    if not isinstance(profile, str):
+        return "unknown"
+    try:
+        from fraudlens.config import load_config
+
+        return load_config(profile).simulation.dataset_version
+    except Exception:  # pragma: no cover - unknown profile / config unavailable
+        return "unknown"
 
 
 def _read_existing_columns(path: Path) -> list[str]:

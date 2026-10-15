@@ -304,6 +304,29 @@ def _check_foreign_keys(tables: dict[str, pd.DataFrame]) -> CheckResult:
     )
 
 
+def _check_transactions_after_account_open(tables: dict[str, pd.DataFrame]) -> CheckResult:
+    """No transaction may precede its customer's account opening (Part 02b).
+
+    Violations make ``history_days`` negative and hand the model a clock that runs
+    backwards; the simulator now gates on this, and this check makes a regression
+    fail the data-quality run instead of silently reaching the features.
+    """
+    tx = tables["transactions"][["transaction_id", "customer_id", "timestamp"]].copy()
+    cust = tables["customers"][["customer_id", "account_open_date"]]
+    merged = tx.merge(cust, on="customer_id", how="left")
+    ts = pd.to_datetime(merged["timestamp"], errors="coerce")
+    opened = pd.to_datetime(merged["account_open_date"], errors="coerce")
+    bad = (ts < opened) & ts.notna() & opened.notna()
+    return CheckResult(
+        name="transactions_after_account_open",
+        passed=not bad.any(),
+        n_offending=int(bad.sum()),
+        examples=_examples(
+            merged, bad, ["transaction_id", "customer_id", "timestamp", "account_open_date"]
+        ),
+    )
+
+
 def _check_labels(tables: dict[str, pd.DataFrame]) -> list[CheckResult]:
     results: list[CheckResult] = []
     tx_ids = set(tables["transactions"]["transaction_id"])
@@ -388,5 +411,7 @@ def validate_dataset(
     if "labels" in tables and "transactions" in tables:
         checks.extend(_check_labels(tables))
         checks.append(_check_fraud_rate(tables, max_fraud_rate))
+    if "transactions" in tables and "customers" in tables:
+        checks.append(_check_transactions_after_account_open(tables))
     checks.append(_check_foreign_keys(tables))
     return ValidationReport(checks=checks)

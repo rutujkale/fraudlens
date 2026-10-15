@@ -56,6 +56,59 @@ def _emit(buf, row_keys, values, **kw) -> None:
     buf.add_row(dict(zip(row_keys, values)))
 
 
+def _gated_day(rng, n_days: int, open_day: int, counters: dict[str, int] | None) -> int:
+    """A uniform day index in [0, n_days), redrawn inside [open_day, n_days) if early.
+
+    Part 02b cold-start gate: an episode may not start before its customer's
+    account exists.
+    """
+    d = int(rng.integers(0, n_days))
+    if d >= open_day:
+        return d
+    if counters is not None:
+        counters["episode_day_redraws"] = counters.get("episode_day_redraws", 0) + 1
+    return int(rng.integers(open_day, n_days))
+
+
+def _gated_minute_offset(
+    rng, upper: int, open_day: int, counters: dict[str, int] | None
+) -> int:
+    """Uniform minute offset in [0, upper), redrawn into the valid range if early."""
+    lo = open_day * 1440
+    raw = int(rng.integers(0, max(1, upper)))
+    if raw >= lo:
+        return raw
+    if counters is not None:
+        counters["episode_day_redraws"] = counters.get("episode_day_redraws", 0) + 1
+    return int(rng.integers(lo, max(lo + 1, upper))) if upper > lo else lo
+
+
+def _pick_with_room(
+    rng, pool: list[dict], open_index: dict[str, int], max_day: int,
+    counters: dict[str, int] | None, all_customers: list[dict] | None = None,
+) -> dict:
+    """Choose a customer from ``pool`` whose account is open by ``max_day``.
+
+    Falls back to another customer in the same pool — then to the whole customer
+    base — when the drawn one has no room (Part 02b), so an episode can always be
+    placed after its account opens.
+    """
+    victim = pool[int(rng.integers(len(pool)))]
+    if open_index[victim["customer_id"]] <= max_day:
+        return victim
+    if counters is not None:
+        counters["episode_customer_fallbacks"] = (
+            counters.get("episode_customer_fallbacks", 0) + 1
+        )
+    for candidate_pool in (pool, all_customers):
+        if not candidate_pool:
+            continue
+        valid = [c for c in candidate_pool if open_index[c["customer_id"]] <= max_day]
+        if valid:
+            return valid[int(rng.integers(len(valid)))]
+    raise RuntimeError("no customer's account is open within the simulation window")
+
+
 def generate_hard_negatives(
     rng: np.random.Generator,
     simulation,
@@ -63,6 +116,7 @@ def generate_hard_negatives(
     devreg: DeviceRegistry,
     legit_count: int,
     normal_times: tuple[np.ndarray, np.ndarray],
+    counters: dict[str, int] | None = None,
 ) -> RowBuffer:
     buf = RowBuffer()
     if legit_count <= 0:
@@ -72,7 +126,11 @@ def generate_hard_negatives(
     days = simulation.days
     end_min = days * 1440
 
+    from fraudlens.data_gen.normal import open_day_index
+
     customers = ent.customers.to_dict("records")
+    open_day = open_day_index(ent.customers, simulation.start_date)
+    open_index = {c["customer_id"]: int(open_day[i]) for i, c in enumerate(customers)}
     merchants_by_cat: dict[str, list[str]] = defaultdict(list)
     for row in ent.merchants.to_dict("records"):
         merchants_by_cat[row["merchant_category"]].append(row["merchant_id"])
@@ -92,8 +150,9 @@ def generate_hard_negatives(
     while total < 0.95 * target:
         ttype = str(rng.choice(HARD_NEGATIVE_TYPES))
         pool = power_customers if ttype == "power_user_burst" and power_customers else customers
-        victim = pool[int(rng.integers(len(pool)))]
+        victim = _pick_with_room(rng, pool, open_index, days - 1, counters, customers)
         cid = victim["customer_id"]
+        od = open_index[cid]
         ep_id = f"EP_H_{episode_no + 1:05d}"
         acct = ent.first_account[cid]
         home = ent.home_location[cid]
@@ -116,7 +175,9 @@ def generate_hard_negatives(
             n = int(rng.integers(6, 16, endpoint=True))
             span_days = float(rng.uniform(14, 21))
             span_min = min(span_days * 1440, end_min - 60)
-            ts0 = start + timedelta(minutes=int(rng.integers(0, max(1, end_min - span_min))))
+            ts0 = start + timedelta(
+                minutes=_gated_minute_offset(rng, int(end_min - span_min), od, counters)
+            )
             offsets = np.sort(rng.uniform(30, span_min, size=n))
             seq = _txn(np.diff(np.round(offsets)).tolist(), ts0)
             cats = list(victim["preferred_categories"])
@@ -151,9 +212,12 @@ def generate_hard_negatives(
                     device=device, location=dest)
 
         elif ttype == "holiday_splurge":
-            if not festivals:
+            usable = [
+                fd for fd in festivals if (fd - simulation.start_date).days >= od
+            ]
+            if not usable:
                 continue
-            fday = festivals[int(rng.integers(len(festivals)))]
+            fday = usable[int(rng.integers(len(usable)))]
             ts0 = pd.Timestamp(fday) + timedelta(hours=int(rng.uniform(10, 21)),
                                                  minutes=int(rng.integers(0, 60)))
             n = int(rng.integers(2, 6, endpoint=True))
@@ -168,8 +232,9 @@ def generate_hard_negatives(
 
         elif ttype == "medical_bill":
             n = 1
-            ts0 = start + timedelta(days=int(rng.integers(0, days)),
-                                    hours=int(rng.uniform(9, 20)))
+            ts0 = start + timedelta(
+                days=_gated_day(rng, days, od, counters), hours=int(rng.uniform(9, 20))
+            )
             row(ts0, _amount(rng, base, sigma, float(rng.uniform(5.0, 30.0))),
                 category="healthcare",
                 merchant=_pick_merchant(rng, merchants_by_cat, "healthcare"),
@@ -178,9 +243,11 @@ def generate_hard_negatives(
 
         elif ttype == "emergency_odd_hour":
             n = int(rng.integers(1, 3, endpoint=True))
-            ts0 = start + timedelta(days=int(rng.integers(0, days)),
-                                    hours=int(rng.integers(0, 4)),
-                                    minutes=int(rng.integers(0, 60)))
+            ts0 = start + timedelta(
+                days=_gated_day(rng, days, od, counters),
+                hours=int(rng.integers(0, 4)),
+                minutes=int(rng.integers(0, 60)),
+            )
             seq = _txn([rng.uniform(1, 40) for _ in range(n - 1)], ts0)
             device = str(rng.choice(known)) if known else None
             for ts in seq:
@@ -191,7 +258,12 @@ def generate_hard_negatives(
                     device=device, location=loc)
 
         elif ttype == "payday_burst":
-            day = int(rng.choice(paydays)) if paydays else int(rng.integers(0, days))
+            paydays_ok = [d for d in paydays if d >= od]
+            day = (
+                int(rng.choice(paydays_ok))
+                if paydays_ok
+                else _gated_day(rng, days, od, counters)
+            )
             ts0 = start + timedelta(days=day, hours=int(rng.uniform(9, 20)),
                                     minutes=int(rng.integers(0, 60)))
             n = int(rng.integers(3, 8, endpoint=True))
@@ -211,9 +283,11 @@ def generate_hard_negatives(
 
         else:  # power_user_burst
             n = int(rng.integers(8, 20, endpoint=True))
-            ts0 = start + timedelta(days=int(rng.integers(0, days)),
-                                    hours=int(rng.uniform(8, 21)),
-                                    minutes=int(rng.integers(0, 60)))
+            ts0 = start + timedelta(
+                days=_gated_day(rng, days, od, counters),
+                hours=int(rng.uniform(8, 21)),
+                minutes=int(rng.integers(0, 60)),
+            )
             seq = _txn([rng.uniform(1, 8) for _ in range(n - 1)], ts0)
             device = str(rng.choice(known)) if known else None
             for ts in seq:

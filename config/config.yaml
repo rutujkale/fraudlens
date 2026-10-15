@@ -9,6 +9,10 @@ common:
   seed: 42
   currency: INR
   start_date: "2026-01-01"
+  # Label identifying the data-generation version (Part 02b). Not a simulation
+  # parameter: it only tags experiment-log rows so results from different
+  # regenerations are never silently mixed. Bump it whenever generated data changes.
+  dataset_version: post_coldstart_fix
   reporting_threshold: 50000        # structuring reference amount (₹)
   customers_archetype_mix: {conservative: 0.30, regular: 0.40, high_spend: 0.10, frequent_digital: 0.15, business_like: 0.05}
   fraud_scenarios: [burst, account_takeover, amount_anomaly, geo_anomaly, structuring]

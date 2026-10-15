@@ -53,3 +53,35 @@ because the composite `(customer_id, timestamp)` index turns "scan the whole tab
 sort the top 50" into "walk the index backwards from the cutoff and stop at 50". The index
 also serves the strictly-prior `timestamp < before_ts` predicate directly
 (`Index Cond`), which is exactly the access pattern the service layer needs.
+
+## SHAP values are margin pushes, never points on the risk score (Part 10)
+
+`TreeExplainer(model, model_output="raw")` attributes the **raw margin** (log-odds) that
+`predict_proba` sees, so `base_value + Σ SHAP = margin` and the attested identity holds to
+`1.6e-5` on dev (`tests/test_explain.py::test_shap_additivity_and_best_iteration`). Two
+consequences:
+
+- **Never plot a SHAP value as a position on the 0–100 risk score.** `risk_score` is
+  `100 × calibrated probability`, and the sigmoid calibrator is a non-linear map of the
+  margin, so a "+0.6 SHAP" contribution is not "0.6 risk points". SHAP answers *which
+  features moved the model rank / margin*, and the calibrated probability (plus the
+  amount-aware action) is the only thing quoted as a risk number.
+- **The explainer must honour `best_iteration`.** The dev artifact early-stopped at 592 of
+  600 rounds; explaining all 600 would attribute trees the model does not score with
+  (margin off by 0.108). `ShapExplainer.raw_margin` passes
+  `iteration_range=(0, best_iteration + 1)`, matching the booster default.
+
+`mean|SHAP|` is a **usage** measure, not a utility measure: a feature can dominate
+`mean|SHAP|` while contributing nothing out-of-sample. Experiment 8D is the utility
+evidence (permutation PR-AUC drop), and the two are reported next to each other in
+`results/shap_global_dev.csv` rather than conflated.
+
+## Simulated subgroup gaps are not real-world fairness claims (Part 10)
+
+The subgroup audit (`docs/fairness_audit.md`) reports per-group operating metrics for the
+frozen policy, but the data is synthetic: group differences are the simulator's assumptions
+about age/income/archetype, not demographic reality. Suppression (groups with < 30 frauds
+or < 1,000 rows) is reported *up front*, per-group calibration/Brier is excluded from the
+exploratory full-validation view (the calibrator saw half of it), and every interval is a
+**cluster** bootstrap over customers, because one customer's transactions are correlated.
+The audit is not a compliance claim.

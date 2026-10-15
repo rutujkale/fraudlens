@@ -1,0 +1,13 @@
+attribute,metric,ratio,hi_group,lo_group
+age_band,recall,,,
+age_band,fpr_any,,,
+age_band,flag_rate_any,,,
+income_band,recall,1.0625,income_band=mid,income_band=high
+income_band,fpr_any,1.9635978990370588,income_band=high,income_band=mid
+income_band,flag_rate_any,1.6866720850978885,income_band=high,income_band=mid
+archetype,recall,,,
+archetype,fpr_any,,,
+archetype,flag_rate_any,,,
+home_region_group,recall,,,
+home_region_group,fpr_any,,,
+home_region_group,flag_rate_any,,,

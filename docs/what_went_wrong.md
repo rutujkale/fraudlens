@@ -377,3 +377,33 @@ _What happened, one line._
 - **Effect:** Duplicate log entries; misleading `experiments.csv` line count.
 - **Fix:** Made logging idempotent in `scripts/run_unseen_experiment.py` (`_drop_prior_log_rows`) to remove prior E15/E16 rows for the same holdout before appending, and **manually deduplicated** `results/experiments.csv` by removing the duplicate E15 block (before: **62 rows total** with 12 E15 rows; after: **56 rows total** with 6 E15 rows). The 6 kept rows are the ones written by the **final run** (same deterministic metrics and identical timestamps across the 6 systems from the final invocation).
 - **Test added:** None (data hygiene).
+
+---
+
+### Finding: cold-start customers have transactions before their account exists (`history_days < 0`)
+- **What happened:** `data_gen/entities.py` gives ~10% of customers a mid-window
+  `account_open_date` (the intended cold-start cohort), but no part of the transaction
+  generator (`normal.py`, `fraud.py`, `hard_negatives.py`) ever reads `account_open_date`.
+  Those customers get transactions from the first simulation day, so
+  `history_days = (t - account_open_date) / 1 day` is negative for every transaction before
+  the nominal opening.
+- **How detected:** while selecting the Part 10 explanation-gallery cold-start case, the
+  chosen row printed `history_days = -11.87` (reason string "Account opened -12 days ago").
+  Direct check: `12,329 of 289,870` dev rows (4.25%) have `history_days < 0` across `468`
+  customers, and `12,329` dev transactions fall before their customer's `account_open_date`.
+- **Effect:** `history_days` (and, for that cohort, the tenure-style features) carries a
+  semantically impossible value, and the intended cold-start cohort is **not** actually
+  cold — it has full day-0 history — so the dataset under-tests cold start. `history_days`
+  is a feature, so the defect is in the frozen inputs of Parts 04-09, not just in Part 10
+  presentation.
+- **Fix (now):** not regenerated. Regenerating `data/raw/dev` would invalidate every
+  Part 04-09 result and the frozen `xgb_20261011_v1` artifact that Part 10 exists to
+  explain, which is out of scope for this part. The Part 10 gallery bans `history_days < 0`
+  rows from the cold-start case, the gallery doc states the caveat, and this entry records
+  the defect for a future data regeneration.
+- **Fix (deferred):** filter each customer's generated transactions to
+  `timestamp >= account_open_date` in `data_gen/normal.py` (and make that customer's
+  fraud/hard-negative episodes respect it), regenerate all profiles, re-run Parts 04-09, and
+  add a `(history_days >= 0).all()` assertion to `data_quality/validation.py`.
+- **Test added:** `tests/test_explain.py::test_gallery_cold_start_excludes_negative_history`
+  (the selection rule); the data-quality assertion is deferred with the regeneration.

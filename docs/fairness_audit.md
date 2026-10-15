@@ -142,6 +142,9 @@ Differences vs the reference group (largest by row count), paired cluster bootst
 | home_region_group | East | fpr_any | -0.001728 | -0.006572 | 0.002859 | False |
 | home_region_group | East | flag_rate_any | -0.004505 | -0.015202 | 0.006978 | False |
 
+**11 of 39** differences are distinguishable from noise — and these are **uncorrected for multiple comparisons**. 39 tests at a 95% level would throw up roughly 5% false positives by chance alone, and the tests share bootstrap draws and reference groups, so the family-wise error rate is above 5%. Read them as **exploratory signals**: a confirmatory analysis would pre-register a smaller family (e.g. FPR per attribute) and apply Holm-Bonferroni or Benjamini-Hochberg. Note also that every group here was reported, not selected — no group was dropped for being unflattering.
+
+
 ## Exploratory view — full validation window
 
 342 frauds / 41,313 rows. **Exploratory only**: the calibrator was fitted on the first half of this window (`val_cal`), so calibration gap and Brier would be in-sample for half the rows and are therefore excluded here; the policy capacity was fitted on `val_thr`.

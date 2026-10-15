@@ -1,6 +1,6 @@
 # Part 10 progress
 
-**Status:** done (SHAP explainability + subgroup fairness audit) · **Committed:** (pending) · **Pushed:** no
+**Status:** done (SHAP explainability + subgroup fairness audit) · **Committed:** `2751cc5` (code/tests/scripts) and `a74c922` (docs/results/figures) · **Pushed:** yes (`915cd57..a74c922`)
 
 ## What was built
 
@@ -59,7 +59,10 @@
   (age_band 1/4, income_band 2/4, archetype 1/5, region 1/6). FPR ratio is computable only for
   income_band: `fpr_any` 1.964 (high 0.0123 vs mid 0.0063), `flag_rate_any` 1.687, `recall` 1.062.
   11 of 39 group-vs-reference metric differences have a cluster-bootstrap CI excluding 0 (all FPR/flag
-  rate; recall differences are never distinguishable with 122 frauds).
+  rate; recall differences are never distinguishable with 122 frauds). These are **uncorrected for
+  multiple comparisons** — 39 tests at 95% would yield ≈2 chance positives and the tests share
+  bootstrap draws, so they are exploratory signals (stated in `docs/fairness_audit.md`), not confirmed
+  disparities.
 - **Proxy check:** 29 of 212 feature×attribute pairs cross the pre-registered thresholds — all 19
   `archetype` pairs (behavioural features encode archetype; `n_prior_tx` eta² 0.817), 6 `age_band`
   (amount features, |ρ| up to 0.467), 4 `income_band`, **0** `home_region_group`.
@@ -74,11 +77,14 @@
 ```
 
 Actual summaries:
-- `run_shap`: ~9 s end-to-end (global SHAP 8 s, gallery/latency <2 s); wrote 6 `results/shap_*` files,
-  10 figures, `docs/explanation_gallery.md`, 1 legible `E17` row.
+- `run_shap`: ~9 s end-to-end (global SHAP 8 s, gallery/latency <2 s); wrote 5 `results/shap_*` files
+  (`shap_global_dev.csv`, `shap_scenario_dev.csv`, `shap_dependence_dev.csv`, `shap_gallery_dev.csv`,
+  `shap_latency_dev.json`), 11 figures (`shap_global_bar`, `shap_beeswarm`, 3× `shap_dependence_*`,
+  6× `shap_waterfall_*`), `docs/explanation_gallery.md`, 1 legible `E17` row.
 - `fairness_audit`: ~75 s (cluster bootstrap dominates); wrote 6 `results/fairness_*` files,
   `docs/fairness_audit.md`, 1 `E18` row. (Bootstrap is also the slowest part to re-run.)
-- Tests: **182 passed, 8 deselected**; `ruff check .` clean.
+- Tests: `pytest -q -m "not db and not slow"` → **183 passed, 8 deselected**; full `pytest -q` →
+  **184 passed, 7 skipped** (the extra pass is a `db`-marked test). `ruff check .` clean.
 - `results/experiments.csv`: 56 → 58 data rows (E17, E18; `git diff` shows exactly +2 lines). No other
   tracked result/figure changed (S0's frozen dev artifacts were read, never written).
 
@@ -95,10 +101,19 @@ were **not** refit; the model was not retrained or altered.
   rendering next to the tables it renders.
 - **Gallery cold-start rule is `0 <= history_days < 2`,** not `history_days < 2` (see the finding
   below): negative history is a simulator defect, not a cold start.
-- **Gallery rule constants** are exactly those in `gallery.py` (`p ≥ 0.95` with 0.90 fallback,
-  stealth ≥ p75, travel ≥ p90, amount ≥ p99). The plan's earlier draft mentioned p ≥ 0.99 / stealth
-  ≥ p90 / history < 3d; the shipped rule is **less** selective so the pool is not near-empty, and the
-  chosen values are printed in the doc and in `results/shap_gallery_dev.csv`.
+- **Gallery rule constants — when they were set (exact chronology).** The shipped values
+  (`CLEAR_TP_P = 0.95` with `0.90` fallback, `STEALTH_PCT = 75`, `TRAVEL_PCT = 90`,
+  `AMOUNT_PCT = 99`, `COLD_START_HISTORY_DAYS = 2`, `0 <= history_days` lower bound) were written into
+  `gallery.py` **before any case was selected** — the first execution of `run_shap.py` produced the
+  gallery with these constants already in place, so the *selection* was not tuned on the selected rows.
+  They do differ from an earlier plan **draft** that mentioned p ≥ 0.99 / stealth ≥ p90 / history < 3d;
+  the draft numbers were never in code, and the shipped ones are deliberately **less** selective so the
+  pool is not near-empty. One rule was tightened **after** seeing output: the cold-start rule, initially
+  `history_days < 2` as drafted, was changed to `0 <= history_days < 2` because the first selection
+  returned a row with `history_days = -11.87` (the simulator defect below). That post-hoc change is a
+  researcher degree of freedom taken after observing one selected row; it narrows the pool to genuinely
+  opened accounts, it is disclosed here, and it is the only rule change made after seeing a case. The
+  final values are printed in `docs/explanation_gallery.md` and in `results/shap_gallery_dev.csv`.
 - **Dependence colour partner** comes from a 500-row `shap_interaction_values` subsample (10 s), not a
   pre-chosen feature; if that call ever fails the code falls back to the next global feature. No
   failure was observed.

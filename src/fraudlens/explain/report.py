@@ -163,6 +163,17 @@ def render_fairness_markdown(
     )
     pair_cols = ["attribute", "group", "metric", "point", "lo", "hi", "distinguishable"]
     parts.append(_md_table(_rounded(pairwise, pair_cols), pair_cols))
+    n_dist = int(pairwise["distinguishable"].sum()) if len(pairwise) else 0
+    parts.append(
+        f"\n**{n_dist} of {len(pairwise)}** differences are distinguishable from noise — and these "
+        f"are **uncorrected for multiple comparisons**. {len(pairwise)} tests at a 95% level would "
+        "throw up roughly 5% false positives by chance alone, and the tests share bootstrap draws "
+        "and reference groups, so the family-wise error rate is above 5%. Read them as "
+        "**exploratory signals**: a confirmatory analysis would pre-register a smaller family "
+        "(e.g. FPR per attribute) and apply Holm-Bonferroni or Benjamini-Hochberg. Note also that "
+        "every group here was reported, not selected — no group was dropped for being "
+        "unflattering.\n"
+    )
 
     parts.append("\n## Exploratory view — full validation window\n")
     parts.append(

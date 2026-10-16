@@ -675,5 +675,23 @@ _What happened, one line._
   proceed unchanged. Future parts should pre-register suppression rules without reading test labels.
 - **Test added:** none (process).
 
+### Finding: no CI persisted for the 83.23% cost-reduction ratio (Part 12C, review)
+- **What happened:** `results/final_results.json` records the amount-aware-vs-F1 cost reduction with a
+  **cluster-bootstrap CI in absolute INR** (`decision.meta.reduction_ci`), but the headline states the
+  reduction as a **percentage (83.23%)** with no CI of its own. Review asked for a percent CI.
+- **How detected:** pre-tag review (a deliverable headline printed a point percentage whose interval
+  was in different units).
+- **Effect:** the ratio's uncertainty is not directly quantified; it has to be inferred from the INR
+  interval. It cannot be derived from the stored `reduction_ci`, because `cost_reduction_ci`
+  (`final_evaluation.py:336`) resamples customers and recomputes **both** policy costs per resample, so
+  the ratio's denominator is random — rescaling the INR CI by the fixed F1 cost (~38.9%–138.0%) would
+  be statistically wrong.
+- **Fix:** labelling only (no re-run): the headline and `docs/final_results.md` now state 83.23% as a
+  **point estimate** and report the interval in INR. A true percent CI requires persisting the
+  per-resample ratio, i.e. a second test-window read (a rerun), which Part 12 permits only for a crash.
+  Logged as an open limitation; the code could be extended to persist `reduction_ci_pct` on a future
+  evaluation.
+- **Test added:** none (reporting gap; the absolute CI is still asserted to exclude 0 for H2).
+
 
 

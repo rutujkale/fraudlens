@@ -146,3 +146,20 @@ test CIs are tight. Unseen-customer recall@1% is 0.4324 vs 0.9242 seen (honest c
 - **Open:** tag `v1.0-eval` only after review. Item 9 sim-to-real uses the frozen XGB test PR-AUC with
   its prevalence beside it (53 vs 38 shared features); **no cross-dataset differencing**. Part 15:
   carry the dev-not-`main` deviation forward.
+
+### Review pass (pre-tag wording) and the percent-CI gap
+
+- Headline 2/3 text reworded: **drift reads "no degradation observed"** (XGB PR-AUC 0.9291 val →
+  0.9619 test, higher on test) with the rising structuring share (18%→45%) and possible validation
+  selection optimism labelled as **hypotheses, not established**; headline 2 states **capacity did not
+  bind on test** (`enforce_capacity` never exercised, 0 demotions) so the capacity-aware result is the
+  unconstrained policy, not evidence the cap works; headline 3 cites the anomaly null as **S1−S0 and
+  S1s−S0 = 0.0000**; headline 1 notes the **XGB CI (0.934-0.980) is wide with only 393 test frauds**.
+- **Gap (surfaced during review, not fixed):** `results/final_results.json` stores the reduction CI in
+  **absolute INR only** (`decision.meta.reduction_ci = {point 773067.40, lo 361479.74, hi 1281631.52,
+  excludes_zero true}`); there is **no CI for the 83.23% ratio**. A correct ratio CI cannot be derived
+  from the absolute CI because `cost_reduction_ci` (`final_evaluation.py:336`) resamples customers and
+  recomputes **both** the F1 and amount-aware costs, so the denominator is itself random — naively
+  rescaling the absolute CI by the fixed F1 cost (→ 38.9%–138.0%) would be wrong. Persisting it needs
+  the per-resample ratio distribution, i.e. a second test-window read (a rerun, which Part 12 reserves
+  for crashes). Headlines/docs now label 83.23% as a **point estimate** and report the interval in INR.

@@ -1,0 +1,3 @@
+﻿timestamp,caller,model_version,final,git_commit,reason
+2026-10-16T14:45:53,external:ieee_cis:R1-R5,external/ieee_cis_transfer_xgb,True,5cb2c33f495c202f32312d055035daf8b8d03a23,initial run (pre-R5-fix); exposed miscalibrated amount-aware R5
+2026-10-16T15:35:58,external:ieee_cis:R1-R5,external/ieee_cis_transfer_xgb,True,5cb2c33f495c202f32312d055035daf8b8d03a23,post-fix re-run: R1 sigmoid calibration for amount-aware R5 + full-native R4

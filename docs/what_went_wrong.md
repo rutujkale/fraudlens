@@ -570,4 +570,55 @@ _What happened, one line._
   (`test_prepare_dataset_masks_missing_features`); synthetic path unchanged (regression test on
   the split/encoding in the same file).
 
+### Finding: IEEE adapter crashed on `pd.NA` in string columns (Part 11, first real run)
+- **What happened:** the first real IEEE run died with
+  `TypeError: boolean value of NA is ambiguous` in `features/build_features.py:318`
+  (`np.count_nonzero(prior_device[e30d:s30d] == current_device[i])`). The identity CSV is read with
+  pandas `"string"` dtype; `astype("object")` then yields `pd.NA` for missing device ids, and
+  `pd.NA == value` propagates `NA` instead of `False`, so `count_nonzero` raised.
+- **How detected:** the real run (allowed after the manual Kaggle download). The fake-frame tests
+  used object/`NaN`, so they never exercised `pd.NA`.
+- **Effect:** no external results at all — the whole part was blocked.
+- **Fix:** `external/ieee_cis.py::_object_col` converts string columns to `object` **with `pd.NA`
+  mapped to `np.nan`** before `build_features` sees them (`merchant_category`, `device_id`).
+  (`device_id` is a categorical string so the comparison is `!=`, which is `NA`-safe; the fix
+  targets the numeric-identity comparisons.)
+- **Test added:** `test_ieee_adapter.py::test_adapter_missing_string_becomes_nan_not_pd_na`; the
+  fake-frame fixture now uses `"string"` dtype so the original failure mode is reproduced in CI.
+
+### Finding: a CLI "no data" test ran the real pipeline and polluted tracked results (Part 11)
+- **What happened:** `test_ieee_adapter.py::test_cli_exits_cleanly_without_files` invoked the real
+  `scripts/run_external_validation.py`; once the IEEE files were present it no longer took the
+  clean-exit path and ran the **full** R1–R5 pipeline (206 s), overwriting tracked
+  `results/external_*.csv` and appending E20–E24 to `results/experiments.csv` during `pytest`.
+- **How detected:** `git diff results/` showed unexpected changes right after a "quick" test run.
+- **Effect:** tests were non-hermetic and could silently rewrite the evidence files.
+- **Fix:** the test now `pytest.skip`s when the real files are present ("the missing-data path is
+  exercised on CI"); the accidental pollution was reverted.
+- **Test added:** none (the guard is the existing test; the end-to-end runner test already writes to
+  a `tmp_path` seam).
+
+### Finding: R5 amount-aware policy used the raw, uncalibrated R1 score (Part 11, first real run)
+- **What happened:** `runner.py` fed `R1_xgb`'s **raw** scores (class-weighted, `scale_pos_weight≈51`,
+  val ECE **0.4225**, Brier **0.239**) into `amount_aware_actions`. That function is only valid for
+  **calibrated** `p`; the inflated scores pushed legitimate rows into STEP_UP/BLOCK en masse and gave
+  `capacity_aware` realized cost 1,333,360.63 vs `approve_all` 423,984.89 (**−214.48 %**, i.e. far
+  worse than doing nothing). `f1_optimal`/`cost_optimal` were unaffected because they pick a
+  scalar threshold that absorbs any monotone miscalibration.
+- **How detected:** the first real run's R5 table (amount-aware losing to approve-all is a red flag),
+  cross-checked against the val ECE of the raw R1 score.
+- **Effect:** the headline decision-policy number for Part 11 was nonsense; a naive reader could
+  have concluded the cost framework doesn't work on real data.
+- **Fix:** fit a sigmoid calibrator on an **earlier** IEEE val slice, evaluate on the later slice
+  (never test), and feed the calibrated `p` to `amount_aware_actions`. Pre-registered cost values,
+  thresholds and capacity unchanged. After the fix `amount_aware` = 36.5 % and `capacity_aware` =
+  35.3 % saving vs approve-all; R1 val_thr ECE drops 0.417 → 0.0018.
+- **Test added:** `test_ieee_adapter.py::test_r5_calibrator_fit_on_earlier_slice_matches_prevalence_on_later`
+  (calibrated mean prediction on the later slice matches prevalence and beats the raw mean).
+- **Open item (logged, not fixed):** `risk/policy.py::enforce_capacity` only demotes **REVIEW** — it
+  never caps BLOCK/STEP_UP, so amount-aware rows auto-promoted to BLOCK survive capacity limits
+  (here 255 blocked, 17359 step-up after the cap). This is a design gap for the amount-aware policy,
+  not a Part 11 blocker (the pre-registered policy is REVIEW-capped). Guarded by
+  `test_policy.py::test_enforce_capacity_never_caps_non_review` so the behaviour is explicit.
+
 

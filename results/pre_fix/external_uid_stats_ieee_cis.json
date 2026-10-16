@@ -1,0 +1,11 @@
+{
+  "n_transactions": 590540,
+  "n_uids": 14845,
+  "tx_per_uid_mean": 39.78039744021556,
+  "tx_per_uid_p50": 4.0,
+  "tx_per_uid_p90": 41.0,
+  "tx_per_uid_p99": 676.239999999998,
+  "tx_per_uid_max": 14112,
+  "single_tx_uid_share": 0.27484001347254966,
+  "rows_in_single_tx_uids_share": 0.006908930809089986
+}

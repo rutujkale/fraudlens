@@ -1,11 +1,11 @@
 # Part 11 progress
 
-**Status:** implemented; real run **not executed** — IEEE-CIS files absent (**pre-registered before data**).
-**Committed:** (pending) · **Pushed:** no
+**Status:** implemented; **real IEEE-CIS run complete** (R1–R5 + gap + truncation check).
+**Committed:** code+tests and docs/results (two commits, this part) · **Pushed:** yes
 
-> **Part 11 is NOT complete until a real IEEE-CIS run finishes.** Today only the loader/adapter,
-> the pre-registration, the R1–R5 runner and its synthetic-frame tests exist; no external result
-> file exists yet.
+> **Part 11 is complete.** Pre-registration landed before any external row was seen; the run below
+> is the second (post-R5-fix) real run. The first run's evidence is preserved verbatim under
+> `results/pre_fix/` and explained in `docs/what_went_wrong.md`.
 
 ## Freeze notes (Part 12)
 
@@ -20,13 +20,12 @@
 
 | file | present |
 |---|---|
-| `data/external/ieee_cis/train_transaction.csv` | **NO** |
-| `data/external/ieee_cis/train_identity.csv` | **NO** |
+| `data/external/ieee_cis/train_transaction.csv` | yes (590,540 rows, 13 adapter cols, 3.499 % fraud) |
+| `data/external/ieee_cis/train_identity.csv` | yes |
 
-`data/external/` did not exist; `git ls-files data/external` → 0 tracked files. So R1–R5 cannot
-run yet. This part ships the loader/adapter, the pre-registered decisions, the runnable R1–R5
-runner, synthetic-frame tests, and the clean-exit path. R1–R5 execute only after the two Kaggle
-CSVs are placed in `data/external/ieee_cis/`.
+`data/external/` is gitignored (`git ls-files data/external` → 0 tracked files); only derived
+aggregates are written to `results/`. External split 60/20/20 + 3-day embargo:
+train=380,815 / val=95,763 / test=96,139 rows (`uids=14,845`, single-tx uid share 0.275).
 
 ## Pre-registration (fixed **before** any external row was seen)
 
@@ -84,6 +83,27 @@ code/tests in the Part 11 implementation commit, so no choice is tuned after loo
 - **Experiment ids:** E20 (R1), E21 (R2), E22 (R3), E23 (R4), E24 (R5), all
   `dataset_profile=dataset_version="ieee_cis"`.
 
+## Real run results (post-fix)
+
+Full generated tables live in [`docs/external_validation.md`](../external_validation.md)
+(`scripts/external_validation_report.py`). Headline (IEEE test window, prevalence 0.0345):
+
+| model | PR-AUC | lift@1% | recall@1% |
+|---|---|---|---|
+| R1_logreg | 0.1135 | 6.73 | 0.067 |
+| R1_xgb | 0.1362 | 7.78 | 0.078 |
+| R2 transfer dev XGB (S=38) | 0.0580 | 1.48 | 0.015 |
+| R3 transfer + sigmoid | 0.0580 | 1.48 | 0.015 |
+| R4 native (upper bound) | 0.4905 | 25.50 | 0.255 |
+
+- **Primary gap = R1 − R2 = 0.0782** (simulator-trained signal partially transfers). Secondary
+  dev-val `S` − IEEE test R2 = **0.8197**, labelled selection-optimistic.
+- **R3** sigmoid: test Brier 0.0367 → 0.0335, ECE 0.0274 → 0.0075 (ranking unchanged).
+- **R5** cost policy (IEEE test): approve_all 423,984.89; f1_optimal 396,497.56 (6.48 %);
+  cost_optimal 403,048.47 (4.94 %); **amount_aware 269,018.95 (36.55 %)**; capacity_aware
+  274,281.28 (35.31 %, 1,511 demoted).
+- **Truncation check**: 3 cuts, max abs diff **0.0**, passed (adapter + real `build_features`).
+
 ## What was built
 
 - `src/fraudlens/external/ieee_cis.py` — memory-efficient loader (`usecols`/dtypes, left-join
@@ -110,16 +130,18 @@ code/tests in the Part 11 implementation commit, so no choice is tuned after loo
 ## Commands run
 
 ```powershell
-.venv\Scripts\python.exe -c "from fraudlens.config import load_config; load_config('dev')"   # external block parses
-.venv\Scripts\python.exe -m pytest tests\test_ieee_adapter.py -q     # 12 passed
-.venv\Scripts\python.exe scripts\run_external_validation.py --profile dev   # skipped: data missing (exit 0)
-.venv\Scripts\python.exe -m ruff check .                             # All checks passed
-.venv\Scripts\python.exe -m pytest -q                                # 213 passed
+.venv\Scripts\python.exe -m pytest tests\test_ieee_adapter.py -q      # adapter/runner tests
+.venv\Scripts\python.exe scripts\run_external_validation.py            # real run, exit 0
+.venv\Scripts\python.exe scripts\external_validation_report.py         # fills docs tables
+.venv\Scripts\python.exe -m ruff check .                               # All checks passed
+.venv\Scripts\python.exe -m pytest -q                                  # full suite, 0 warnings
 ```
 
-Actual summaries: adapter/runner tests 12/12; full suite **213 passed** (was 201; +12);
-`ruff` clean; clean-exit prints `skipped: data missing` and exits 0; no `results/external_*` files
-written (no data). `data/external/ieee_cis/` created empty (gitignored).
+Actual summaries: real run **EXITCODE=0** in ~7 min; gap 0.0782; R5 amount_aware 36.55 % saving;
+truncation `passed=True max_abs_diff=0`; R1–R3 rows in `external_validation.csv` reproduce the
+`results/pre_fix/` values **exactly** (byte-for-byte on those rows) — only R4 changed, from the
+13-column shortcut to the full native column set (test PR-AUC 0.1607 → 0.4905), as intended for an
+upper-bound reference. `ruff` clean; full suite green with the imputer warning suppressed.
 
 ## Deviations (from prompt)
 
@@ -132,19 +154,34 @@ written (no data). `data/external/ieee_cis/` created empty (gitignored).
   parameters, keeping the default path byte-identical (regression test added).
 - **`build_features` change:** minimal guard so a regions-only `locations` frame yields NaN
   geographic features instead of raising (test added).
+- **R5 calibration added (post-first-run fix):** amount-aware R5 now uses an R1 sigmoid calibrator
+  fit on an earlier IEEE val slice (evaluated on the later slice, never test). Pre-registered cost
+  values/thresholds/capacity unchanged. See `what_went_wrong.md`.
+- **R4 uses the full native column set (V/C/D/M + identity)** via `load_ieee_cis_native`, not just
+  the 13 adapter columns; it is an upper-bound reference only and nothing is selected on it.
+- **`scripts/external_validation_report.py`** generates the `docs/external_validation.md` tables
+  from `results/` (numbers-integrity rule); new file, not in the original prompt.
 
 ## Bugs / what_went_wrong
 
-Two entries appended to `docs/what_went_wrong.md` (both caught by the new fake-frame tests before
-any real data was loaded): structurally-missing `unique_recipients_*` computing as **0** instead of
-NaN (misleading constant) — fixed by enforcing the availability contract in `prepare_dataset`; and a
-`KeyError` when `build_features` mapped customer home locations against an empty coordinate map —
-fixed with `.get(h)`.
+Five entries appended to `docs/what_went_wrong.md`: the two pre-data adapter bugs (structurally-
+missing `unique_recipients_*` computed as 0 → masked; `build_features` `KeyError` on a regions-only
+`locations` frame); and three from the real run — the `pd.NA` crash in the string columns, the CLI
+"no data" test that ran the full pipeline and polluted tracked results, and the **R5 uncalibrated-
+score bug** (raw class-weighted R1 scores fed to the amount-aware policy → −214 % saving), fixed
+with an R1 sigmoid calibrator. The `enforce_capacity` REVIEW-only design gap is logged as an open
+item (guarded by a test, not fixed).
+
+## Part 12 note (do not start Part 12 here)
+
+Part 12 (locked synthetic test window) will run on the **`dev`** profile, **not `main`** — `main`
+was never generated. Recorded here so the deviation is not lost; `part_12.md`/`part_15.md` will
+repeat it when those parts run.
 
 ## Open items
 
-- R1–R5 results are **pending the manual Kaggle download**. After the files are placed, run
-  `python scripts/run_external_validation.py` (or `make external`) and finalise the tables in
-  `docs/external_validation.md`; the gap table is finalized in Part 12 against the locked synthetic
-  test window.
-- `cat results/external_validation.csv` will exist only after that run.
+- Part 11 complete. Results are in `results/external_*.csv` and generated into
+  `docs/external_validation.md`.
+- `enforce_capacity` caps only REVIEW (BLOCK/STEP_UP pass through) — a design gap for amount-aware
+  policies; logged, not changed here (the pre-registered Part 11 policy is REVIEW-capped).
+- IEEE-CIS raw data is gitignored; only derived aggregates are tracked.

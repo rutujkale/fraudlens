@@ -1,0 +1,54 @@
+feature,status,reason,in_shared_subset
+amount,available,,True
+log_amount,available,,True
+hour,excluded_from_transfer,available but semantically incomparable,False
+day_of_week,excluded_from_transfer,available but semantically incomparable,False
+is_weekend,excluded_from_transfer,available but semantically incomparable,False
+is_night,excluded_from_transfer,available but semantically incomparable,False
+transaction_type,excluded_from_transfer,available but semantically incomparable,False
+channel,excluded_from_transfer,available but semantically incomparable,False
+merchant_category,excluded_from_transfer,available but semantically incomparable,False
+minutes_since_prev_tx,available,,True
+days_since_last_tx,available,,True
+n_prior_tx,available,,True
+history_days,available,,True
+is_cold_start,available,,True
+tx_count_10m,available,,True
+tx_count_1h,available,,True
+tx_count_6h,available,,True
+tx_count_24h,available,,True
+tx_count_7d,available,,True
+active_days_7d,available,,True
+active_days_30d,available,,True
+velocity_ratio_1h_vs_24h,available,,True
+amount_sum_1h,available,,True
+amount_sum_24h,available,,True
+max_amount_24h,available,,True
+count_near_threshold_24h,available,,True
+avg_amount_7d,available,,True
+avg_amount_30d,available,,True
+std_amount_30d,available,,True
+amount_ratio_to_7d_mean,available,,True
+amount_ratio_to_30d_mean,available,,True
+amount_zscore_30d,available,,True
+amount_vs_lifetime_median,available,,True
+new_merchant_flag,missing,requires merchant_id/recipient_id (absent in IEEE-CIS),False
+new_category_flag,available,,True
+category_freq_30d,available,,True
+merchant_freq_30d,missing,requires merchant_id/recipient_id (absent in IEEE-CIS),False
+is_new_device,available,,True
+device_age_days,available,,True
+tx_from_device_prior,available,,True
+accounts_seen_on_device,available,,True
+device_count_30d,available,,True
+unique_recipients_1h,missing,requires merchant_id/recipient_id (absent in IEEE-CIS),False
+unique_recipients_24h,missing,requires merchant_id/recipient_id (absent in IEEE-CIS),False
+is_new_recipient,missing,requires merchant_id/recipient_id (absent in IEEE-CIS),False
+distance_from_home_km,missing,no coordinates (addr1 is a region proxy and lat/lon are absent),False
+distance_from_prev_km,missing,no coordinates (addr1 is a region proxy and lat/lon are absent),False
+travel_speed_kmh,missing,no coordinates (addr1 is a region proxy and lat/lon are absent),False
+new_region_flag,available,,True
+region_freq_30d,available,,True
+hour_deviation,available,,True
+activity_change_7d_vs_prev_7d,available,,True
+amount_change_7d_vs_prev_7d,available,,True

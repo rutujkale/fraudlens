@@ -1,0 +1,2 @@
+primary_gap_pr_auc_r1_minus_r2_on_ieee_test,secondary_gap_dev_val_minus_ieee_test,secondary_note,r1_ieee_test_pr_auc,r2_ieee_test_pr_auc,r2_dev_val_shared_subset_pr_auc,ieee_test_prevalence,note
+0.07824646513618176,0.8196742751194924,selection-optimistic: dev-val is the R2 model's own selection window,0.13623980324250162,0.05799333810631986,0.8776676132258123,0.03445011909838879,lift is reported per dataset only; it is never differenced across datasets

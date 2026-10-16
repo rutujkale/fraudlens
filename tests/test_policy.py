@@ -68,6 +68,18 @@ def test_enforce_capacity_keeps_highest_saving():
     assert result.n_demoted == 2
 
 
+def test_enforce_capacity_never_caps_non_review():
+    # Design gap guard: only REVIEW is capacity-capped; BLOCK/STEP_UP are left as-is.
+    prob = np.array([0.95, 0.95, 0.95, 0.95])
+    amount = np.array([90000.0, 90000.0, 100.0, 100.0])
+    dates = np.array([0, 0, 0, 0])
+    actions = np.array([BLOCK, STEP_UP, REVIEW, REVIEW])
+    result = enforce_capacity(dates, prob, amount, actions, PARAMS, capacity_per_day=1)
+    assert result.actions[0] == BLOCK
+    assert result.actions[1] == STEP_UP
+    assert (result.actions == REVIEW).sum() == 1
+
+
 def test_top_k_actions_caps_per_day():
     key = np.array([0.1, 0.9, 0.5, 0.7, 0.3, 0.8])
     dates = np.array([0, 0, 0, 1, 1, 1])

@@ -11,13 +11,21 @@ import sys
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from fraudlens.config import load_config
 from fraudlens.data_gen.archetypes import CATEGORIES, CHANNELS, TRANSACTION_TYPES
-from fraudlens.evaluation.splits import chronological_window_split, make_temporal_split
+from fraudlens.evaluation.guard import TestSetGuard
+from fraudlens.evaluation.metrics import pr_auc
+from fraudlens.evaluation.splits import (
+    chronological_fraction_split,
+    chronological_window_split,
+    make_temporal_split,
+)
 from fraudlens.external import ieee_cis
 from fraudlens.external.runner import SyntheticRefs, native_matrix, run
 from fraudlens.features.registry import FEATURE_COLUMNS, FORBIDDEN_COLUMNS
+from fraudlens.models.calibration import fit_calibrators
 from fraudlens.models.xgb import encode_features
 from fraudlens.paths import REPO_ROOT
 
@@ -67,10 +75,10 @@ def _fake_raw(n: int = 600, n_uids: int = 50, seed: int = 0) -> pd.DataFrame:
             "card3": pd.Series(2, index=range(n), dtype="string"),
             "card5": pd.Series(3, index=range(n), dtype="string"),
             "DeviceInfo": pd.Series(
-                np.where(rng.random(n) < 0.5, "Windows", None), dtype="object"
+                np.where(rng.random(n) < 0.5, "Windows", None), dtype="string"
             ),
             "DeviceType": pd.Series(
-                np.where(rng.random(n) < 0.5, "desktop", None), dtype="object"
+                np.where(rng.random(n) < 0.5, "desktop", None), dtype="string"
             ),
             "V1": rng.normal(size=n).astype("float32"),
             "V2": rng.normal(size=n).astype("float32"),
@@ -105,6 +113,17 @@ def test_adapter_schema_and_labels() -> None:
     assert tx["recipient_id"].isna().all()
     assert tx["merchant_id"].isna().all()
     assert set(tx["transaction_type"].unique()) == {TRANSACTION_TYPES[0]}
+
+
+def test_adapter_missing_string_becomes_nan_not_pd_na() -> None:
+    raw = _fake_raw(n=50)
+    assert raw["DeviceInfo"].dtype == "string"
+    assert raw["DeviceInfo"].isna().any()
+    tx, _ = ieee_cis.adapt(raw, CFG.simulation.external)
+    dev = tx["device_id"].to_numpy()
+    assert any(isinstance(v, float) and np.isnan(v) for v in dev)
+    assert not any(v is pd.NA for v in dev)
+    assert not any(pd.isna(v) and not isinstance(v, float) for v in dev)
 
 
 def test_pseudo_timestamp_matches_transactiondt() -> None:
@@ -218,6 +237,9 @@ def test_native_matrix_drops_identifiers_and_labels() -> None:
 
 
 def test_cli_exits_cleanly_without_files() -> None:
+    tx_path, id_path = ieee_cis.ieee_cis_paths(CFG)
+    if tx_path.exists() or id_path.exists():
+        pytest.skip("IEEE-CIS files present; the missing-data path is exercised on CI")
     result = subprocess.run(
         [sys.executable, "scripts/run_external_validation.py", "--profile", "dev"],
         cwd=REPO_ROOT,
@@ -226,6 +248,31 @@ def test_cli_exits_cleanly_without_files() -> None:
     )
     assert result.returncode == 0
     assert "skipped: data missing" in result.stdout
+
+
+def test_guard_log_has_reason_column(tmp_path) -> None:
+    path = tmp_path / "log.csv"
+    TestSetGuard(path).access("ieee", model_version="m", final=True, reason="post-fix re-run")
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert "reason" in lines[0]
+    assert "post-fix re-run" in lines[1]
+
+
+def test_r5_calibrator_fit_on_earlier_slice_matches_prevalence_on_later() -> None:
+    rng = np.random.default_rng(0)
+    n = 6000
+    y = (rng.random(n) < 0.05).astype(int)
+    # class-weighted-like inflated scores: positives high, negatives well above the base rate
+    raw = np.where(y == 1, rng.uniform(0.6, 1.0, n), rng.uniform(0.05, 0.45, n))
+    cal_pos, thr_pos = chronological_fraction_split(np.arange(n), 0.5)
+    calibrator = fit_calibrators(raw[cal_pos], y[cal_pos], names=("sigmoid",))["sigmoid"]
+    p_thr = calibrator.predict(raw[thr_pos])
+    prev = float(y[thr_pos].mean())
+    # calibrated mean prediction on the *later* slice must beat the raw mean and sit near prevalence
+    assert abs(p_thr.mean() - prev) < abs(raw[thr_pos].mean() - prev)
+    assert abs(p_thr.mean() - prev) < 0.01
+    # ranking is unchanged by a monotone calibrator
+    assert pr_auc(y[thr_pos], p_thr) == pytest.approx(pr_auc(y[thr_pos], raw[thr_pos]), rel=1e-6)
 
 
 def test_runner_end_to_end_on_fake_frame(tmp_path) -> None:
@@ -245,11 +292,16 @@ def test_runner_end_to_end_on_fake_frame(tmp_path) -> None:
         "external_policy.csv",
         "external_feature_availability.csv",
         "external_feature_nan_share.csv",
+        "external_truncation_check.csv",
         "test_access_log_external.csv",
     ):
         assert (tmp_path / name).exists(), name
     assert "primary_gap_pr_auc_r1_minus_r2_on_ieee_test" in result["gap"]
-    assert len(result["policy"]) == 4
+    assert len(result["policy"]) == 5
+    assert result["truncation"]["passed"]
+    assert result["truncation"]["max_abs_diff"] <= 1e-9
+    last = result["policy"][-1]
+    assert {"n_approve", "n_stepup", "n_review", "n_block", "n_demoted"} <= set(last)
     # the external guard log is separate from the synthetic one
     assert "external" in (tmp_path / "test_access_log_external.csv").read_text(encoding="utf-8")
 

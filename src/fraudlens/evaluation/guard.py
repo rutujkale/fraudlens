@@ -15,7 +15,7 @@ from pathlib import Path
 from fraudlens.paths import results_dir
 from fraudlens.utils import git_commit
 
-LOG_COLUMNS = ["timestamp", "caller", "model_version", "final", "git_commit"]
+LOG_COLUMNS = ["timestamp", "caller", "model_version", "final", "git_commit", "reason"]
 
 
 def suspicious_pr_auc_action(
@@ -49,22 +49,25 @@ class TestSetGuard:
     def __init__(self, log_path: str | Path | None = None) -> None:
         self.log_path = Path(log_path) if log_path else Path(results_dir()) / "test_access_log.csv"
 
-    def access(self, caller: str, model_version: str = "", final: bool = False) -> bool:
+    def access(
+        self, caller: str, model_version: str = "", final: bool = False, reason: str = ""
+    ) -> bool:
         """Log the access attempt; raise unless ``final=True``. Returns True on success."""
-        self._append(caller, model_version, final)
+        self._append(caller, model_version, final, reason)
         if not final:
             raise PermissionError(
                 f"test-set access by {caller!r} denied: pass final=True only in Part 12"
             )
         return True
 
-    def _append(self, caller: str, model_version: str, final: bool) -> None:
+    def _append(self, caller: str, model_version: str, final: bool, reason: str = "") -> None:
         row = {
             "timestamp": datetime.now().isoformat(timespec="seconds"),
             "caller": caller,
             "model_version": model_version,
             "final": bool(final),
             "git_commit": git_commit(),
+            "reason": reason,
         }
         write_header = not self.log_path.exists()
         with open(self.log_path, "a", newline="", encoding="utf-8") as fh:

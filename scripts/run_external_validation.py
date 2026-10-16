@@ -33,7 +33,7 @@ def main() -> int:
         logger.warning(ieee_cis.missing_message(tx_path, missing))
         return 2 if args.strict else 0
 
-    run(cfg, ieee_cis.prepare_dataset(cfg))
+    run(cfg, ieee_cis.prepare_dataset(cfg), native_raw=ieee_cis.load_ieee_cis_native(cfg))
     return 0
 
 

@@ -9,7 +9,9 @@ Part 12. The R2 transfer model is written to ``artifacts/external/`` only.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -27,6 +29,7 @@ from fraudlens.evaluation.experiments import drop_experiment_rows, log_experimen
 from fraudlens.evaluation.experiments_lib import best_xgb_params, fit_xgb, load_supervised
 from fraudlens.evaluation.figures import plot_pr_curves, plot_reliability
 from fraudlens.evaluation.guard import TestSetGuard
+from fraudlens.evaluation.leakage import truncation_invariance
 from fraudlens.evaluation.metrics import (
     best_f1_threshold,
     brier,
@@ -86,16 +89,61 @@ def load_synthetic_refs(cfg: Config) -> SyntheticRefs:
 
 
 def native_matrix(raw: pd.DataFrame) -> pd.DataFrame:
-    """All-native numeric design matrix (identifiers/labels dropped, cats coded)."""
+    """All-native numeric design matrix (identifiers/labels dropped, cats coded).
+
+    ``float32`` throughout: the full native frame is ~590k x ~400 and R4 only
+    needs an upper-bound reference, not full precision.
+    """
     numeric = raw.select_dtypes(include=[np.number])
     numeric = numeric.drop(columns=[c for c in _NATIVE_DROP if c in numeric.columns])
-    out = numeric.astype("float64").copy()
+    out = numeric.astype("float32").copy()
     for col in raw.columns:
         if raw[col].dtype.name in ("string", "object", "category"):
             out[f"{col}__code"] = (
-                raw[col].astype("category").cat.codes.replace(-1, np.nan).astype("float64")
+                raw[col].astype("category").cat.codes.replace(-1, np.nan).astype("float32")
             )
     return out
+
+
+@contextlib.contextmanager
+def _quiet_all_nan_imputer():
+    """Silence the expected "all values missing" imputer warning (external path).
+
+    The 8 ``STRUCTURALLY_MISSING`` features are all-NaN on IEEE-CIS by design, so
+    sklearn warns on every LogReg fit *and* transform. Applied to the whole
+    ``run`` (both warn); the warning is expected, not a data problem.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Skipping features without any observed values",
+            category=UserWarning,
+        )
+        yield
+
+
+def truncation_check(
+    cfg: Config, tx: pd.DataFrame, *, sample_n: int = 50_000, n_cuts: int = 3, seed: int = 0
+) -> dict:
+    """Run the point-in-time truncation check on a prefix sample of IEEE rows.
+
+    Uses the adapter's canonical ``tx`` + synthesised entities and the real
+    ``build_features`` (via ``evaluation.leakage``); the isolated RNG keeps the
+    shared global seed untouched so R1-R3 results are unaffected.
+    """
+    sample = tx.sort_values(["timestamp", "transaction_id"], kind="stable").head(sample_n)
+    entities = ieee_cis.adapt_entities(sample)
+    ts = pd.to_datetime(sample["timestamp"]).sort_values()
+    quantiles = np.linspace(0.5, 0.85, n_cuts)
+    cuts = [ts.iloc[min(len(ts) - 1, int(q * len(ts)))] for q in quantiles]
+    rows = []
+    for i, cut in enumerate(cuts):
+        res = truncation_invariance(sample, entities, cfg, cut)
+        rows.append({"cut_index": i, "cut": str(cut), **res})
+    passed = all(r["passed"] for r in rows)
+    max_diff = max(r["max_abs_diff"] for r in rows)
+    return {"n_sample": int(len(sample)), "rows": rows, "passed": bool(passed),
+            "max_abs_diff": float(max_diff)}
 
 
 def best_cost_threshold(y, score, amount, params, n_grid: int = 200) -> float:
@@ -124,6 +172,17 @@ def _metric_row(name: str, y, score, ks, precision_targets) -> dict:
         "best_f1": m["best_f1"],
         "lift_at_top_0.01": lift_over_base_rate(y, score, 0.01),
         "recall_at_top_0.01": m["recall_at_top_0.01"],
+    }
+
+
+def _action_counts(actions) -> dict:
+    """Action-code counts in APPROVE/STEP_UP/REVIEW/BLOCK order."""
+    c = np.bincount(np.asarray(actions, dtype=int), minlength=4)
+    return {
+        "n_approve": int(c[0]),
+        "n_stepup": int(c[1]),
+        "n_review": int(c[2]),
+        "n_block": int(c[3]),
     }
 
 
@@ -162,6 +221,7 @@ def _log_external(
     )
 
 
+@_quiet_all_nan_imputer()
 def run(
     cfg: Config,
     ds: ieee_cis.ExternalDataset,
@@ -265,12 +325,30 @@ def run(
     amount = g["amount"].to_numpy(float)
     f1_thr, _ = best_f1_threshold(y[va], scores_val["R1_xgb"])
     cost_thr = best_cost_threshold(y[va], scores_val["R1_xgb"], amount[va], params)
+    # The amount-aware expected-cost policy is valid only for *calibrated* p
+    # (Part 07 framework). R1_xgb is class-weighted, so fit a sigmoid on the
+    # earlier IEEE val slice (never test) and use it for the per-row decisions.
+    calibrator_r1 = fit_calibrators(
+        scores_val["R1_xgb"][cal_pos], y[va][cal_pos], names=("sigmoid",)
+    )["sigmoid"]
+    p_r1_thr = calibrator_r1.predict(scores_val["R1_xgb"][thr_pos])
+    r3_table += [
+        {"stage": "R1_val_thr_raw", "brier": float(brier(y_thr, scores_val["R1_xgb"][thr_pos])),
+         "ece": float(ece(y_thr, scores_val["R1_xgb"][thr_pos]))},
+        {"stage": "R1_val_thr_sigmoid", "brier": float(brier(y_thr, p_r1_thr)),
+         "ece": float(ece(y_thr, p_r1_thr))},
+    ]
     val_days = max(1, int(pd.to_datetime(g.iloc[va]["timestamp"]).dt.normalize().nunique()))
     capacity = max(1, int(round(ext.costs.capacity_pct_of_daily_volume * len(va) / val_days)))
 
     # ---- one guarded IEEE-test evaluation (all test metrics) ----------------
     guard = TestSetGuard(out / "test_access_log_external.csv")
-    guard.access("external:ieee_cis:R1-R5", model_version=R2_MODEL_VERSION, final=True)
+    guard.access(
+        "external:ieee_cis:R1-R5",
+        model_version=R2_MODEL_VERSION,
+        final=True,
+        reason="post-fix re-run: R1 sigmoid calibration for amount-aware R5 + full-native R4",
+    )
     y_test = y[te]
     test_amount = amount[te]
     test_dates = pd.to_datetime(g.iloc[te]["timestamp"]).dt.normalize().to_numpy()
@@ -287,6 +365,7 @@ def run(
         _metric_row(name, y_test, s, ks, pt) | {"window": "test"}
         for name, s in test_scores.items()
     ]
+    p_r1_test = calibrator_r1.predict(test_scores["R1_xgb"])
 
     # ---- gap table (primary = R1 - R2 on IEEE test; no cross-dataset lift) --
     r1_test = next(r for r in test_rows if r["model"] == "R1_xgb")
@@ -305,19 +384,25 @@ def run(
     # ---- R5 realized-cost comparison on IEEE test ---------------------------
     f1_actions = np.where(test_scores["R1_xgb"] >= f1_thr, REVIEW, APPROVE)
     cost_actions = np.where(test_scores["R1_xgb"] >= cost_thr, REVIEW, APPROVE)
-    aware = amount_aware_actions(test_scores["R1_xgb"], test_amount, params)
-    capped = enforce_capacity(
-        test_dates, test_scores["R1_xgb"], test_amount, aware, params, capacity
-    )
+    aware = amount_aware_actions(p_r1_test, test_amount, params)
+    capped = enforce_capacity(test_dates, p_r1_test, test_amount, aware, params, capacity)
     policy_rows = []
-    for name, acts in [
-        ("approve_all", approve_all(len(te))),
-        ("f1_optimal", f1_actions),
-        ("cost_optimal", cost_actions),
-        ("capacity_aware", capped.actions),
+    for name, acts, demoted in [
+        ("approve_all", approve_all(len(te)), 0),
+        ("f1_optimal", f1_actions, 0),
+        ("cost_optimal", cost_actions, 0),
+        ("amount_aware", aware, 0),
+        ("capacity_aware", capped.actions, capped.n_demoted),
     ]:
         total = float(realized_cost(acts, y_test, test_amount, params).sum())
-        policy_rows.append({"policy": name, "realized_cost": total})
+        policy_rows.append(
+            {
+                "policy": name,
+                "realized_cost": total,
+                **_action_counts(acts),
+                "n_demoted": int(demoted),
+            }
+        )
     base_cost = policy_rows[0]["realized_cost"]
     for row in policy_rows:
         row["pct_saving_vs_approve_all"] = (
@@ -325,12 +410,16 @@ def run(
         )
     policy = pd.DataFrame(policy_rows)
 
+    # ---- point-in-time leakage check on IEEE rows (Part 11B item 6) ---------
+    trunc = truncation_check(cfg, ds.tx, seed=seed)
+
     # ---- write outputs ------------------------------------------------------
     table = pd.DataFrame(rows + test_rows)
     table.to_csv(out / "external_validation.csv", index=False)
     pd.DataFrame([gap]).to_csv(out / "external_gap.csv", index=False)
     pd.DataFrame(r3_table).to_csv(out / "external_calibration.csv", index=False)
     policy.to_csv(out / "external_policy.csv", index=False)
+    pd.DataFrame(trunc["rows"]).to_csv(out / "external_truncation_check.csv", index=False)
     pd.DataFrame(ieee_cis.availability_rows()).to_csv(
         out / "external_feature_availability.csv", index=False
     )
@@ -362,7 +451,13 @@ def run(
     if not log_experiments:
         logger.info("gap (primary R1-R2 on IEEE test): %.4f",
                     gap["primary_gap_pr_auc_r1_minus_r2_on_ieee_test"])
-        return {"gap": gap, "policy": policy_rows, "test": test_rows, "uid_stats": ds.uid_stats}
+        return {
+            "gap": gap,
+            "policy": policy_rows,
+            "test": test_rows,
+            "uid_stats": ds.uid_stats,
+            "truncation": trunc,
+        }
     _log_external("E20", "R1 logreg+xgb (shared pipeline)", ds,
                   metrics={"logreg_val_pr_auc": float(pr_auc(y[va], scores_val["R1_logreg"])),
                            "xgb_val_pr_auc": float(pr_auc(y[va], scores_val["R1_xgb"])),
@@ -390,16 +485,24 @@ def run(
                                r for r in test_rows if r["model"] == "R4_native_upper_bound"
                            )["pr_auc"]},
                   calibration="none", threshold_policy="rank_by_score",
-                  notes="uses native IEEE columns outside the FraudLens schema; reference only",
-                  chash=chash)
+                  notes="all native IEEE columns (V/C/D/M + identity) outside the "
+                        "FraudLens schema; reference only", chash=chash)
     _log_external("E24", "R5 cost policy on R1 xgb", ds,
                   metrics={"f1_threshold": f1_thr, "cost_threshold": cost_thr,
                            "realized_cost_f1": float(policy.set_index("policy").loc[
                                "f1_optimal", "realized_cost"]),
                            "realized_cost_cost_optimal": float(policy.set_index("policy").loc[
-                               "cost_optimal", "realized_cost"])},
-                  calibration="none", threshold_policy="cost_based_capacity_aware",
-                  notes=f"external cost config (USD-scale); capacity={capacity}/day from IEEE val",
+                               "cost_optimal", "realized_cost"]),
+                           "realized_cost_approve_all": float(policy.set_index("policy").loc[
+                               "approve_all", "realized_cost"]),
+                           "realized_cost_capacity_aware": float(policy.set_index("policy").loc[
+                               "capacity_aware", "realized_cost"]),
+                           "n_demoted": int(policy.set_index("policy").loc[
+                               "capacity_aware", "n_demoted"])},
+                  calibration="sigmoid (R1, earlier IEEE val slice)",
+                  threshold_policy="cost_based_capacity_aware",
+                  notes=f"amount-aware uses R1 sigmoid-calibrated p; capacity={capacity}/day "
+                        f"from IEEE val; F1/cost thresholds on raw val scores",
                   chash=chash)
 
     logger.info("gap (primary R1-R2 on IEEE test): %.4f",
@@ -407,7 +510,15 @@ def run(
     logger.info("external test PR-AUC: %s",
                 {k: round(float(pr_auc(y_test, v)), 4) for k, v in test_scores.items()})
     logger.info("R5 realized cost:\n%s", policy.to_string(index=False))
-    return {"gap": gap, "policy": policy_rows, "test": test_rows, "uid_stats": ds.uid_stats}
+    logger.info("truncation check: passed=%s max_abs_diff=%.3g over %d rows",
+                trunc["passed"], trunc["max_abs_diff"], trunc["n_sample"])
+    return {
+        "gap": gap,
+        "policy": policy_rows,
+        "test": test_rows,
+        "uid_stats": ds.uid_stats,
+        "truncation": trunc,
+    }
 
 
 def _write_figures(y_test, test_scores, y_thr, raw_thr, sig_thr, figs) -> None:

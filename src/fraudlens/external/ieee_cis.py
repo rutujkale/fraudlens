@@ -190,6 +190,35 @@ def uid_stats(uid: pd.Series) -> dict[str, float]:
     }
 
 
+def _object_col(series: pd.Series) -> np.ndarray:
+    """Object array whose missing values are ``np.nan`` (never ``pd.NA``).
+
+    The loader reads these columns as pandas ``"string"``, so ``astype("object")``
+    yields ``pd.NA``. ``build_features`` compares object columns with ``==``; ``pd.NA``
+    propagates through that comparison and breaks ``np.count_nonzero``. Convert to
+    ``np.nan`` so the external path matches the synthetic one (Part 11 finding).
+    """
+    return series.astype("object").where(series.notna(), np.nan).to_numpy()
+
+
+def load_ieee_cis_native(cfg: Config) -> pd.DataFrame:
+    """Load **all** native IEEE-CIS columns (V/C/D/M/dist/email + identity).
+
+    R4 is an upper-bound reference that deliberately uses columns outside the
+    FraudLens schema, so this is the only loader that reads the full table
+    (~590k x ~400). Identifiers and the label are dropped by ``native_matrix``;
+    nothing is selected on R4. ``load_ieee_cis`` stays the memory-light path for
+    the adapter.
+    """
+    tx_path, id_path = ieee_cis_paths(cfg)
+    missing = [p.name for p in (tx_path, id_path) if not p.exists()]
+    if missing:
+        raise IeeeCisMissingError(missing_message(tx_path, missing))
+    tx = pd.read_csv(tx_path, low_memory=False)
+    identity = pd.read_csv(id_path, low_memory=False)
+    return tx.merge(identity, on="TransactionID", how="left")
+
+
 def adapt(raw: pd.DataFrame, ext: ExternalIeeeCisConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Map the raw IEEE frame to the canonical transactions schema + a labels table.
 
@@ -203,8 +232,8 @@ def adapt(raw: pd.DataFrame, ext: ExternalIeeeCisConfig) -> tuple[pd.DataFrame, 
             "customer_id": uid.to_numpy(),
             "timestamp": ts.to_numpy(),
             "amount": raw["TransactionAmt"].astype("float64").to_numpy(),
-            "merchant_category": raw["ProductCD"].astype("object").to_numpy(),
-            "device_id": raw["DeviceInfo"].astype("object").to_numpy(),
+            "merchant_category": _object_col(raw["ProductCD"]),
+            "device_id": _object_col(raw["DeviceInfo"]),
             "location_id": raw["addr1"].astype("string").fillna("NA").to_numpy(),
             "recipient_id": np.nan,
             "merchant_id": np.nan,

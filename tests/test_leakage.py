@@ -21,6 +21,7 @@ from pandas.testing import assert_frame_equal
 import fraudlens.features
 import fraudlens.features.windows as W
 from fraudlens.config import load_config
+from fraudlens.evaluation.leakage import truncation_invariance
 from fraudlens.features.build_features import build_features
 from fraudlens.features.registry import (
     FEATURE_COLUMNS,
@@ -86,18 +87,8 @@ def _random_dataset(seed: int = 0, n_customers: int = 3, n_tx: int = 120):
 
 
 def _assert_truncation_invariance(tx, entities, cfg, cut_ts):
-    cut = pd.Timestamp(cut_ts)
-    full = build_features(tx, entities, cfg)
-    sub = tx[tx["timestamp"] <= cut]
-    trunc = build_features(sub, entities, cfg)
-    a = (
-        full[full["feature_as_of_timestamp"] <= cut]
-        .sort_values("transaction_id")
-        .reset_index(drop=True)
-    )
-    b = trunc.sort_values("transaction_id").reset_index(drop=True)
-    assert set(a["transaction_id"]) == set(b["transaction_id"])
-    assert_frame_equal(a[COLS], b[COLS], check_dtype=False, check_exact=False, rtol=1e-9, atol=1e-9)
+    result = truncation_invariance(tx, entities, cfg, cut_ts)
+    assert result["passed"], result
 
 
 def _assert_future_invariance(tx, entities, cfg, cut_ts, rng):

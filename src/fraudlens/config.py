@@ -87,6 +87,46 @@ class BootstrapConfig(StrictModel):
     cluster_by: str
 
 
+class ExternalUidConfig(StrictModel):
+    """Stable IEEE-CIS fields combined into a pseudo-customer ``uid`` (Part 11)."""
+
+    fields: list[str]
+
+
+class ExternalSplitsConfig(StrictModel):
+    """Chronological split of the external dataset (own axes, own embargo)."""
+
+    train_end_fraction: float
+    val_end_fraction: float
+    embargo_days: int
+
+
+class ExternalCalibrationConfig(StrictModel):
+    """External recalibration slice (R3): fit on the earlier val slice only."""
+
+    slice_fraction: float
+
+
+class ExternalIeeeCisConfig(StrictModel):
+    """External-validation settings (Part 11).
+
+    ``costs``/``cost_scenarios`` are deliberately separate from ``common.costs``:
+    IEEE-CIS amounts are USD-scale and its prevalence/fraud mechanisms differ, so
+    the INR-calibrated synthetic cost model is not transferable (see
+    ``docs/progress/part_11.md``).
+    """
+
+    subdir: str
+    transaction_file: str
+    identity_file: str
+    start_date: date
+    uid: ExternalUidConfig
+    splits: ExternalSplitsConfig
+    calibration: ExternalCalibrationConfig
+    costs: CostConfig
+    cost_scenarios: dict[str, CostScenario]
+
+
 class ApiConfig(StrictModel):
     max_batch: int
 
@@ -179,6 +219,7 @@ class CommonConfig(StrictModel):
     separability_gate: SeparabilityGateConfig
     models: ModelsConfig
     rules: RulesConfig
+    external: ExternalIeeeCisConfig
 
 
 class ProfileConfig(StrictModel):
@@ -232,6 +273,7 @@ class SimulationConfig(StrictModel):
     separability_gate: SeparabilityGateConfig
     models: ModelsConfig
     rules: RulesConfig
+    external: ExternalIeeeCisConfig
 
     @property
     def embargo_days(self) -> int:

@@ -38,7 +38,10 @@ code/tests in the Part 11 implementation commit, so no choice is tuned after loo
 - **Pseudo-timestamp:** `start_date (2017-11-30) + TransactionDT seconds`. The absolute date is
   arbitrary; only ordering and spacing matter, so all time-of-day features are meaningless here.
 - **External split:** chronological 60 / 20 / 20 of the external dataset with a **3-day embargo**
-  (  `internal axes`, separate from FraudLens). The IEEE test window is evaluated **once**, here.
+  (  `internal axes`, separate from FraudLens). The IEEE test window is evaluated **twice, both
+  logged** in `results/test_access_log_external.csv`: the initial run (which exposed the R5
+  uncalibrated-score bug) and the post-R5-fix re-run. Both accesses are recorded with a `reason`;
+  the first run's R1–R3 rows are preserved verbatim under `results/pre_fix/`.
 - **Device semantic mismatch:** IEEE `DeviceInfo` is not a bank device id and is absent for many
   rows, so the device features are NaN exactly where it is missing; the per-feature NaN share is
   written to `results/external_feature_nan_share.csv` and the mismatch is documented rather than
@@ -97,12 +100,21 @@ Full generated tables live in [`docs/external_validation.md`](../external_valida
 | R4 native (upper bound) | 0.4905 | 25.50 | 0.255 |
 
 - **Primary gap = R1 − R2 = 0.0782** (simulator-trained signal partially transfers). Secondary
-  dev-val `S` − IEEE test R2 = **0.8197**, labelled selection-optimistic.
+  dev-val `S` − IEEE test R2 = **0.8197**, labelled selection-optimistic; its raw-PR-AUC baselines
+  differ by prevalence (dev ≈ 0.6 % vs IEEE 3.45 %), so it is **not** trustworthy as a magnitude
+  and **must not feed any Part 12 headline number**.
 - **R3** sigmoid: test Brier 0.0367 → 0.0335, ECE 0.0274 → 0.0075 (ranking unchanged).
 - **R5** cost policy (IEEE test): approve_all 423,984.89; f1_optimal 396,497.56 (6.48 %);
   cost_optimal 403,048.47 (4.94 %); **amount_aware 269,018.95 (36.55 %)**; capacity_aware
   274,281.28 (35.31 %, 1,511 demoted).
 - **Truncation check**: 3 cuts, max abs diff **0.0**, passed (adapter + real `build_features`).
+- **Calibration matters on real data.** The first run's R1 raw scores (class-weighted, ECE 0.4247)
+  had to be sigmoid-calibrated before the amount-aware policy could use them (ECE → 0.0018). This
+  contrasts with the **Part 07 null result** on the near-separable synthetic data, where class
+  weighting already left the raw probabilities calibrated (xgb raw ECE 0.00032) and calibration
+  mildly *worsened* Brier. The direction flips between the synthetic and real regimes.
+- **The first-run R1–R3 numbers existed before the R5 fix** and are preserved byte-for-byte in
+  `results/pre_fix/`; only R5 (and R4's column set) changed in the re-run.
 
 ## What was built
 

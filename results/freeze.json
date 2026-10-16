@@ -1,0 +1,140 @@
+{
+  "part": "12A",
+  "created_at": "2026-10-16T16:23:44",
+  "profile": "dev",
+  "git_commit": "095388436943d70e8cabd2106062d4b76784283b",
+  "git_commit_note": "commit before results/freeze.json was added (Commit A)",
+  "tree_clean": true,
+  "forced": false,
+  "force_reason": null,
+  "dataset_version": "post_coldstart_fix",
+  "seed": 42,
+  "feature_version": "features_v1",
+  "config_hash": "4279ce47d91d0b9e77efeeeeacba0a1f20e081d58a7460e4e055a23ab2a833ae",
+  "retrain": false,
+  "retrain_rationale": "Part 06-07 artifacts (xgb/logreg) are used as-is; no retraining on train+val. A retrain would fork a new timestamped artifact and is out of scope.",
+  "systems": [
+    "rules",
+    "logreg",
+    "xgb"
+  ],
+  "anomaly": {
+    "adopted": false,
+    "profile": "unseen_lab",
+    "holdout": "structuring",
+    "dataset_version": "post_coldstart_fix",
+    "s1_minus_s0_bagged": 0.0,
+    "s1s_minus_s0_bagged": 0.0,
+    "reason": "not adopted: IF-strict shows no benefit (gain requires the detector to have seen the pattern unlabeled); per-seed S1 gain < 0.02 (driven by seed bagging); IF-all bagged CI does not exclude 0",
+    "source": "results\\exp_09_unseen_decision_unseen_lab_structuring.json",
+    "note": "Part 09 (isolation forest) was re-run post cold-start fix; the decision is unchanged (not adopted) and no isolation-forest artifact was saved, so no anomaly system is evaluated."
+  },
+  "cost_config": {
+    "fraud_loss_rate": 0.85,
+    "fraud_fixed_fee": 0.0,
+    "review_cost": 75.0,
+    "friction_cost": 150.0,
+    "review_catch_rate": 0.9,
+    "stepup_cost": 5.0,
+    "stepup_friction_cost": 40.0,
+    "stepup_stop_rate": 0.6,
+    "block_friction_cost": 450.0,
+    "capacity_pct_of_daily_volume": 0.01,
+    "analyst_daily_capacity": null
+  },
+  "cost_scenario": "balanced",
+  "cost_params": {
+    "alpha": 0.85,
+    "fixed_fee": 0.0,
+    "review_cost": 75.0,
+    "friction_cost": 150.0,
+    "catch_rate": 0.9,
+    "stepup_cost": 5.0,
+    "stepup_friction": 40.0,
+    "stop_rate": 0.6,
+    "block_friction": 450.0
+  },
+  "capacity_per_day": 23,
+  "avg_daily_volume": 2254.777777777778,
+  "capacity_source": "xgb_dev_20261015_v1/policy.json (val_thr)",
+  "frozen_thresholds": {
+    "f1_threshold": 0.4007214061946718,
+    "cost_optimal_threshold": 0.07566279261830741,
+    "cost_optimal_threshold_capacity": 0.188227173204461,
+    "selected_calibrator": "sigmoid"
+  },
+  "split_boundaries": {
+    "t0": "2026-01-01 00:17:00",
+    "t_train_end": "2026-03-13 23:59:00",
+    "t_val_end": "2026-04-06 23:53:00",
+    "t_end": "2026-04-30 23:47:00",
+    "embargo_days": "7"
+  },
+  "split_sizes": {
+    "n_train": 163323,
+    "n_val": 40585,
+    "n_test": 39823
+  },
+  "rules": {
+    "system": "rules",
+    "fitted_on": "train_legit rows only (no labels)",
+    "thresholds": {
+      "velocity_10m": 5.0,
+      "amount_ratio_30d": 8.146525888190792,
+      "new_device_amount": 2.0,
+      "travel_speed": 800.0,
+      "night_new_category": null,
+      "near_threshold": 3.0
+    },
+    "weights": {
+      "velocity_10m": 1.5,
+      "amount_ratio_30d": 1.0,
+      "new_device_amount": 1.5,
+      "travel_speed": 1.0,
+      "night_new_category": 1.0,
+      "near_threshold": 1.0
+    }
+  },
+  "models": {
+    "logreg": {
+      "model_version": "logreg_dev_20261015_v1",
+      "feature_version": "features_v1",
+      "calibration": "none",
+      "git_commit": "e57ba215daeeffbb9b97955293268e7c73b06109",
+      "config_hash_at_training": "7b6d94bf3274232b9370448f301b51d82d4a6d24511f14e5cbea71f9cec3db0a",
+      "files": {
+        "calibration.json": "6a07a011050814d090397a1de5409667a18f51bcefbdb7f2dfed56b2bb35170f",
+        "calibrator.joblib": "d0d490ed1fb0e20ef4e4a959ed97027fd55eb67d8d8e8b5a46c91b23eb1cad62",
+        "metadata.json": "e3a7e8f410d16a054d77cdba5f793b2cab39d70b5291824b9d3f5167c5c7aad2",
+        "model.joblib": "a3d42c47f57f342bed01852c11552b79e5ee9da8c7e7ca0cabb66fa6006b37b8",
+        "val_scores.parquet": "e1d6e7440016def425a6c71aba3f2d7230e57d8443b569986b96e26c673c36a0"
+      }
+    },
+    "xgb": {
+      "model_version": "xgb_dev_20261015_v1",
+      "feature_version": "features_v1",
+      "calibration": "none",
+      "git_commit": "e57ba215daeeffbb9b97955293268e7c73b06109",
+      "config_hash_at_training": "7b6d94bf3274232b9370448f301b51d82d4a6d24511f14e5cbea71f9cec3db0a",
+      "files": {
+        "calibration.json": "36fd08c4792fae05e023ca538eab2b12e38091c36482f34e242dc321cd27ef7f",
+        "calibrator.joblib": "ffdf9f196e96edcc544793e0e55b8ee0fbe1d55bbba147ba368e34bf5d4a29d0",
+        "metadata.json": "19cf0e8e85f449e1e07d471da724edfe096c6d9f73778635b05b6dc7338aaaff",
+        "model.joblib": "473fec0ed51bc817ae5a49495c718723196a62d0763735bd88c5f67dcf69143b",
+        "policy.json": "f95b0611dac147ecba7a00a32b73b9b304186b8868607334d5f32d04d373771a",
+        "val_scores.parquet": "50145962fd6265389a1650eb295d913e56de08faa6d06e11e4d7ae2abeba93d8"
+      }
+    }
+  },
+  "data_files": {
+    "data\\features\\dev\\features_v1.parquet": "0a02eb74bb93632a92945f445762a22293bf3f6dd7439e736c2bfb3c341b2458",
+    "data\\raw\\dev\\transactions.parquet": "354296d75dc3c84c2b1f1d8ef29f82a19914bb5f21f92cacdfdf99a1d0e8bc9c",
+    "data\\raw\\dev\\labels.parquet": "b5468576e1286292cfe36b2dd58bb860af5132e48e4a26964654fb0e753603f4"
+  },
+  "pre_registered_success": {
+    "H1_model": "XGB PR-AUC CI lower bound exceeds the Rules CI upper bound. LogReg ordering is reported either way.",
+    "H2_decision": "The amount-aware capacity policy's realized-cost reduction versus F1-optimal has a CI excluding 0.",
+    "H3_unseen": "The post-fix Part 09 \"not adopted\" decision stands, with no new Part 09 claim.",
+    "H4_engineering": "Counts come from code, and the latency figure comes from Part 13."
+  }
+}

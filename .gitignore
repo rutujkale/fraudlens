@@ -1,4 +1,8 @@
 data/
+# External datasets are downloaded manually and must never be committed (Part 11).
+# `data/` already covers this; kept explicit so the rule is obvious in review.
+data/external/
+data/external/ieee_cis/
 artifacts/
 .env
 __pycache__/

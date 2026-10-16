@@ -63,15 +63,38 @@ class Split:
 def make_temporal_split(tx: pd.DataFrame, cfg: Config) -> Split:
     """Chronological train/val/test split with an embargo gap after each cut."""
     sim = cfg.simulation
+    return chronological_window_split(
+        tx,
+        train_end_fraction=sim.splits.train_end_fraction,
+        val_end_fraction=sim.splits.val_end_fraction,
+        embargo_days=cfg.embargo_days,
+        profile=sim.profile,
+    )
+
+
+def chronological_window_split(
+    tx: pd.DataFrame,
+    *,
+    train_end_fraction: float,
+    val_end_fraction: float,
+    embargo_days: int,
+    profile: str,
+) -> Split:
+    """Time-axis 60/20/20-style split with an embargo, on explicit parameters.
+
+    Same contract as :func:`make_temporal_split` but the fractions and embargo are
+    passed directly so the external dataset (Part 11) can use its own axes without
+    a synthetic profile config.
+    """
     if not tx["timestamp"].is_monotonic_increasing:
-        raise ValueError("make_temporal_split requires tx sorted by (timestamp, transaction_id)")
+        raise ValueError("chronological_window_split requires tx sorted by (timestamp, id)")
     ts = tx["timestamp"].to_numpy()
     t0 = pd.Timestamp(ts[0])
     t_end = pd.Timestamp(ts[-1])
     span = t_end - t0
-    t_train_end = t0 + pd.Timedelta(span * sim.splits.train_end_fraction)
-    t_val_end = t0 + pd.Timedelta(span * sim.splits.val_end_fraction)
-    embargo = pd.Timedelta(int(cfg.embargo_days), unit="D")
+    t_train_end = t0 + pd.Timedelta(span * train_end_fraction)
+    t_val_end = t0 + pd.Timedelta(span * val_end_fraction)
+    embargo = pd.Timedelta(int(embargo_days), unit="D")
 
     train = (ts >= np.datetime64(t0)) & (ts < np.datetime64(t_train_end))
     val = (ts >= np.datetime64(t_train_end + embargo)) & (ts < np.datetime64(t_val_end))
@@ -82,15 +105,15 @@ def make_temporal_split(tx: pd.DataFrame, cfg: Config) -> Split:
         "t_train_end": str(t_train_end),
         "t_val_end": str(t_val_end),
         "t_end": str(t_end),
-        "embargo_days": str(int(cfg.embargo_days)),
+        "embargo_days": str(int(embargo_days)),
     }
     return Split(
         train_idx=np.flatnonzero(train),
         val_idx=np.flatnonzero(val),
         test_idx=np.flatnonzero(test),
         boundaries=boundaries,
-        embargo_days=int(cfg.embargo_days),
-        profile=sim.profile,
+        embargo_days=int(embargo_days),
+        profile=profile,
     )
 
 

@@ -25,6 +25,16 @@ def artifacts_dir(model_version: str) -> Path:
     return ensure_dir(REPO_ROOT / "artifacts" / model_version)
 
 
+def external_data_dir(subdir: str) -> Path:
+    """Location of a manual external dataset (e.g. IEEE-CIS); gitignored."""
+    return ensure_dir(REPO_ROOT / "data" / "external" / subdir)
+
+
+def external_artifacts_dir(model_version: str) -> Path:
+    """Artifacts for external-validation models: ``artifacts/external/<version>``."""
+    return ensure_dir(REPO_ROOT / "artifacts" / "external" / model_version)
+
+
 def results_dir() -> Path:
     return ensure_dir(REPO_ROOT / "results")
 

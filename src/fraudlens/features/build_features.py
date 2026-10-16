@@ -59,6 +59,17 @@ def _ratio(num: float, den: float) -> float:
     return float(num / den)
 
 
+def _value_map(frame: pd.DataFrame, column: str, key: str = "location_id") -> dict:
+    """``key -> column`` lookup, or an empty map when ``column`` is absent.
+
+    Lets an adapter supply a ``locations`` frame without coordinates (Part 11):
+    missing columns degrade to all-NaN features instead of a KeyError.
+    """
+    if column not in frame.columns:
+        return {}
+    return dict(zip(frame[key], frame[column]))
+
+
 def _global_device_features(
     ts: np.ndarray, dev: np.ndarray, cust: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -135,21 +146,21 @@ def build_features(tx: pd.DataFrame, entities, cfg) -> pd.DataFrame:
     cat = tx["merchant_category"].to_numpy()
 
     locations = entities.locations
-    lat_by_loc = dict(zip(locations["location_id"], locations["latitude"]))
-    lon_by_loc = dict(zip(locations["location_id"], locations["longitude"]))
-    region_by_loc = dict(zip(locations["location_id"], locations["region_group"]))
+    lat_by_loc = _value_map(locations, "latitude")
+    lon_by_loc = _value_map(locations, "longitude")
+    region_by_loc = _value_map(locations, "region_group")
     lat = tx["location_id"].map(lat_by_loc).to_numpy(dtype="float64")
     lon = tx["location_id"].map(lon_by_loc).to_numpy(dtype="float64")
     region = tx["location_id"].map(region_by_loc).to_numpy()
 
     customers = entities.customers
     home_loc = dict(zip(customers["customer_id"], customers["home_location_id"]))
-    home_lat = (
-        tx["customer_id"].map({c: lat_by_loc[h] for c, h in home_loc.items()}).to_numpy("float64")
-    )
-    home_lon = (
-        tx["customer_id"].map({c: lon_by_loc[h] for c, h in home_loc.items()}).to_numpy("float64")
-    )
+    home_lat = tx["customer_id"].map(
+        {c: lat_by_loc.get(h) for c, h in home_loc.items()}
+    ).to_numpy("float64")
+    home_lon = tx["customer_id"].map(
+        {c: lon_by_loc.get(h) for c, h in home_loc.items()}
+    ).to_numpy("float64")
     acct_open = dict(zip(customers["customer_id"], pd.to_datetime(customers["account_open_date"])))
     open_ns = pd.to_datetime(tx["customer_id"].map(acct_open)).to_numpy()
 

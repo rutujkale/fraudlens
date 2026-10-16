@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain external
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -110,8 +110,11 @@ fairness:
 
 ## explain: both Part 10 outputs.
 explain: shap fairness
+
+## external: IEEE-CIS external validation (Part 11); prints "skipped: data missing" if absent.
+external:
+	$(PY) scripts/run_external_validation.py --profile $(PROFILE)
 # TODO(part 09): unseen-fraud    - Isolation Forest experiment
-# TODO(part 11): external        - IEEE-CIS external validation
 # TODO(part 12): evaluate        - locked one-shot test evaluation
 # TODO(part 13): api             - FastAPI service + latency benchmark
 # TODO(part 14): streamlit       - analyst application

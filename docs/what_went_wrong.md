@@ -544,3 +544,30 @@ _What happened, one line._
 - **Fix:** `_dev_setup` now reads the id from `results/models_dev.json`
   (`evaluation/scores.py::load_model_versions`), so it tracks whatever `train.py` last wrote.
 - **Test added:** none (this *is* the test fixture; it now follows the active model).
+
+### Finding: structurally-missing `unique_recipients_*` computed as 0, not NaN (Part 11)
+- **What happened:** with no recipient column (IEEE-CIS adapter), `build_features` computes
+  `unique_recipients_1h/24h` as `0` (distinct count of an empty window), not NaN. The transfer
+  experiment (R2) would then read a **misleading constant 0** for features the availability
+  contract declares structurally missing.
+- **How detected:** the new `tests/test_ieee_adapter.py::test_prepare_dataset_masks_missing_features`
+  asserted every `STRUCTURALLY_MISSING` feature is all-NaN; it failed on `unique_recipients_1h`.
+- **Effect:** the R2 shared subset would carry two constant columns that look like real values.
+- **Fix:** `external/ieee_cis.py::prepare_dataset` enforces the contract by setting every
+  `STRUCTURALLY_MISSING` column to NaN after `build_features` runs.
+- **Test added:** the same test (now covers all 8 masked features).
+
+### Finding: `build_features` raised `KeyError` when coordinates are absent (Part 11)
+- **What happened:** the coordinate guard only covered the per-transaction mapping
+  (`tx["location_id"].map(lat_by_loc)`); the customer **home** mapping used `lat_by_loc[h]`
+  directly, so an empty coordinate map raised `KeyError: 130.0`.
+- **How detected:** building the IEEE adapter (`locations` has no `latitude`/`longitude`); the
+  first `prepare_dataset` call in the new tests crashed.
+- **Effect:** `build_features` could not run on any dataset that supplies a regions-only
+  `locations` frame.
+- **Fix:** `lat_by_loc.get(h)` / `lon_by_loc.get(h)` so a missing coordinate degrades to NaN.
+- **Test added:** covered by the Part 11 adapter tests
+  (`test_prepare_dataset_masks_missing_features`); synthetic path unchanged (regression test on
+  the split/encoding in the same file).
+
+

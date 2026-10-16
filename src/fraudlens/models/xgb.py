@@ -18,10 +18,16 @@ from fraudlens.data_gen.archetypes import CATEGORIES, CHANNELS, TRANSACTION_TYPE
 from fraudlens.evaluation.metrics import pr_auc
 from fraudlens.features.registry import FEATURE_COLUMNS
 
+# IEEE-CIS ``ProductCD`` levels (Part 11). Appended after the synthetic category
+# codes so the synthetic encoding is unchanged; only the external baseline (R1)
+# and native reference (R4) use them. R2 excludes categoricals entirely.
+IEEE_PRODUCT_CD = ["W", "C", "R", "H", "S"]
+
 _CAT_MAPS: dict[str, dict[str, int]] = {
     "transaction_type": {v: i for i, v in enumerate(TRANSACTION_TYPES)},
     "channel": {v: i for i, v in enumerate(CHANNELS)},
-    "merchant_category": {v: i for i, v in enumerate(CATEGORIES)},
+    "merchant_category": {v: i for i, v in enumerate(CATEGORIES)}
+    | {v: i + len(CATEGORIES) for i, v in enumerate(IEEE_PRODUCT_CD)},
 }
 
 

@@ -21,6 +21,10 @@ import pandas as pd
 PSI_MONITOR = 0.10
 PSI_SHIFT = 0.25
 
+# Tenure-style features dominate naive PSI (Part 08E): a new account legitimately
+# shows null device/history features, so PSI is reported with and without these.
+TENURE_FEATURES = ["history_days", "device_age_days", "n_prior_tx", "tx_from_device_prior"]
+
 
 def _bin_edges(valid: np.ndarray, bins: int) -> np.ndarray:
     if len(valid) == 0:

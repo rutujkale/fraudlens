@@ -100,3 +100,12 @@ def test_sha256_matches_hashlib(tmp_path):
     p = tmp_path / "f"
     p.write_bytes(b"abc")
     assert sha256_file(p) == hashlib.sha256(b"abc").hexdigest()
+
+
+def test_headline_builder_requires_keys(tmp_path):
+    from fraudlens.evaluation.headlines import load_final_results
+
+    p = tmp_path / "final_results.json"
+    p.write_text("{}", encoding="utf-8")
+    with pytest.raises(KeyError, match="missing required keys"):
+        load_final_results(p)

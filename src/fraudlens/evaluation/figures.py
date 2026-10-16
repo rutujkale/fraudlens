@@ -10,9 +10,9 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-from sklearn.metrics import precision_recall_curve  # noqa: E402
+from sklearn.metrics import precision_recall_curve, roc_curve  # noqa: E402
 
-from fraudlens.evaluation.metrics import pr_auc, recall_at_top_k  # noqa: E402
+from fraudlens.evaluation.metrics import pr_auc, recall_at_top_k, roc_auc  # noqa: E402
 
 
 def plot_pr_curves(y: np.ndarray, score_map: dict[str, np.ndarray], path: str | Path) -> Path:
@@ -25,6 +25,24 @@ def plot_pr_curves(y: np.ndarray, score_map: dict[str, np.ndarray], path: str | 
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
     ax.set_title("Validation PR curves")
+    ax.legend(loc="best", fontsize=8)
+    fig.tight_layout()
+    out = Path(path)
+    fig.savefig(out, dpi=120)
+    plt.close(fig)
+    return out
+
+
+def plot_roc_curve(y: np.ndarray, score_map: dict[str, np.ndarray], path: str | Path) -> Path:
+    """ROC curves for every model (with ROC-AUC in the legend)."""
+    fig, ax = plt.subplots(figsize=(6, 5))
+    for name, score in score_map.items():
+        fpr, tpr, _ = roc_curve(y, score)
+        ax.plot(fpr, tpr, label=f"{name} (AUC={roc_auc(y, score):.3f})")
+    ax.plot([0, 1], [0, 1], color="grey", ls="--", lw=0.8)
+    ax.set_xlabel("False-positive rate")
+    ax.set_ylabel("True-positive rate")
+    ax.set_title("Test ROC curves")
     ax.legend(loc="best", fontsize=8)
     fig.tight_layout()
     out = Path(path)

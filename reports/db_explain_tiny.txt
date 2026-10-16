@@ -1,0 +1,36 @@
+# EXPLAIN (ANALYZE, BUFFERS) — customer-history query — profile tiny
+# reference customer: C0000223
+# query: SELECT transaction_id, timestamp, amount, merchant_category, channel FROM raw.transactions WHERE customer_id = %s AND timestamp < %s ORDER BY timestamp DESC LIMIT 50
+
+===== BEFORE indexes.sql =====
+Limit  (cost=185.10..185.11 rows=5 width=122) (actual time=0.451..0.456 rows=50 loops=1)
+  Buffers: shared hit=147
+  ->  Sort  (cost=185.10..185.11 rows=5 width=122) (actual time=0.450..0.452 rows=50 loops=1)
+        Sort Key: "timestamp" DESC
+        Sort Method: quicksort  Memory: 32kB
+        Buffers: shared hit=147
+        ->  Seq Scan on transactions  (cost=0.00..185.04 rows=5 width=122) (actual time=0.009..0.424 rows=98 loops=1)
+              Filter: (("timestamp" < '2026-01-30 23:39:00'::timestamp without time zone) AND (customer_id = 'C0000223'::text))
+              Rows Removed by Filter: 4530
+              Buffers: shared hit=144
+Planning Time: 0.064 ms
+Execution Time: 0.469 ms
+
+===== AFTER indexes.sql =====
+Limit  (cost=30.95..30.97 rows=8 width=122) (actual time=0.170..0.175 rows=50 loops=1)
+  Buffers: shared hit=49 read=3
+  ->  Sort  (cost=30.95..30.97 rows=8 width=122) (actual time=0.168..0.171 rows=50 loops=1)
+        Sort Key: "timestamp" DESC
+        Sort Method: quicksort  Memory: 32kB
+        Buffers: shared hit=49 read=3
+        ->  Bitmap Heap Scan on transactions  (cost=4.36..30.83 rows=8 width=122) (actual time=0.070..0.140 rows=98 loops=1)
+              Recheck Cond: ((customer_id = 'C0000223'::text) AND ("timestamp" < '2026-01-30 23:39:00'::timestamp without time zone))
+              Heap Blocks: exact=49
+              Buffers: shared hit=49 read=3
+              ->  Bitmap Index Scan on idx_transactions_customer_ts  (cost=0.00..4.36 rows=8 width=0) (actual time=0.060..0.060 rows=98 loops=1)
+                    Index Cond: ((customer_id = 'C0000223'::text) AND ("timestamp" < '2026-01-30 23:39:00'::timestamp without time zone))
+                    Buffers: shared read=3
+Planning:
+  Buffers: shared hit=11 read=3
+Planning Time: 0.416 ms
+Execution Time: 0.200 ms

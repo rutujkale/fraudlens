@@ -1,6 +1,26 @@
 # 8E — Drift and retraining policy
 
+> **Superseded by the Part 02b cold-start fix (2026-10-16).** The numbers below were produced
+> on the pre-fix dataset with model `xgb_20261011_v1`; the data was regenerated and the dev model
+> retrained as `xgb_dev_20261015_v1`. See [../progress/part_02b.md](../progress/part_02b.md) for the before/after table.
+
 **Script:** `scripts/run_experiment_8E.py` · **Profile:** `drift_lab` (1,156,589 rows, 6,595 fraud)
+
+## Post-coldstart-fix re-check (2026-10-16)
+
+The Part 02b cold-start fix changed `drift_lab` to 1,097,615 rows / 6,275 fraud. Re-running 8E on the
+new data (behavioural adversarial AUC **0.6995**, all-features **0.9821**, tenure **0.9759**) leaves
+**every conclusion below unchanged** — magnitudes moved, nothing flipped:
+
+- The clock still dominates the naive metric: all-features 0.9821 vs behaviour-only 0.6995.
+- Behavioural covariate drift stays mild. PSI is still led by the tenure features (`history_days`
+  4.26, `device_age_days` 2.67, `n_prior_tx` 1.30, `tx_from_device_prior` 0.94); the top behavioural
+  feature is again `hour_deviation` (0.26, down from 0.53).
+- Retraining still recovers only ~0.04 PR-AUC (frozen 0.9475 → expanding 0.9878 in the last window).
+- The dataset-specific caveat stands: quote **0.6995**, never 0.9821.
+
+Source: `results/exp_8E_adversarial_summary_drift_lab.json`, `results/exp_8E_psi_drift_lab.csv`,
+`results/exp_8E_backtest_drift_lab.csv`.
 
 ## Question
 

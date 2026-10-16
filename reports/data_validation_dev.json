@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "n_checks": 23,
+  "n_checks": 24,
   "n_failed": 0,
   "checks": [
     {
@@ -144,10 +144,16 @@
       "n_offending": 0,
       "examples": [
         {
-          "fraud_rate": 0.0076137578914685896,
+          "fraud_rate": 0.007647501684035345,
           "max_fraud_rate": 0.05
         }
       ]
+    },
+    {
+      "name": "transactions_after_account_open",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
     },
     {
       "name": "no_orphan_foreign_keys",

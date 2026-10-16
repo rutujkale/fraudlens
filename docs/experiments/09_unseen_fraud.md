@@ -1,5 +1,9 @@
 # Part 09 — Isolation Forest and the unseen-fraud experiment (E15)
 
+> **Superseded by the Part 02b cold-start fix (2026-10-16).** The numbers below were produced
+> on the pre-fix dataset with model `xgb_20261011_v1`; the data was regenerated and the dev model
+> retrained as `xgb_dev_20261015_v1`. See [../progress/part_02b.md](../progress/part_02b.md) for the before/after table.
+
 **Script:** `scripts/run_unseen_experiment.py --profile unseen_lab --holdout structuring`
 **Profile:** `unseen_lab` (15,000 customers, 180 days, fraud rate 0.005, **structuring 35%** of
 fraud episodes) · **Seeds:** 42–46 · **Model:** Part-06 XGBoost config

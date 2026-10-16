@@ -1,5 +1,9 @@
 # Part 06 — Temporal Splits, Metrics & Three Core Models
 
+> **Superseded by the Part 02b cold-start fix (2026-10-16).** The numbers below were produced
+> on the pre-fix dataset with model `xgb_20261011_v1`; the data was regenerated and the dev model
+> retrained as `xgb_dev_20261015_v1`. See [part_02b.md](part_02b.md) for the before/after table.
+
 ## What was built
 
 Chronological evaluation machinery plus three models (rules → logistic regression →

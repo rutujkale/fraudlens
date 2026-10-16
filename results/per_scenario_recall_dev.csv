@@ -1,6 +1,6 @@
 scenario,n_val_fraud,captured_at_top,recall
-account_takeover,55,54,0.9818181818181818
-amount_anomaly,32,27,0.84375
-burst,189,180,0.9523809523809523
-geo_anomaly,23,23,1.0
-structuring,43,43,1.0
+account_takeover,149,129,0.8657718120805369
+amount_anomaly,38,24,0.631578947368421
+burst,133,129,0.9699248120300752
+geo_anomaly,16,15,0.9375
+structuring,24,24,1.0

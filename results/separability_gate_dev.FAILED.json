@@ -1,0 +1,132 @@
+{
+  "profile": "dev",
+  "n_rows": 277602,
+  "n_fraud": 2118,
+  "fraud_rate": 0.007629628028616509,
+  "signals": {
+    "amount_ratio": {
+      "roc_auc": 0.7224285549303773,
+      "pr_auc": 0.08505189284506941
+    },
+    "hour_dev": {
+      "roc_auc": 0.8173946663555377,
+      "pr_auc": 0.097103751409605
+    },
+    "dist_home_km": {
+      "roc_auc": 0.5357093285925795,
+      "pr_auc": 0.014166781208744152
+    },
+    "new_device_static": {
+      "roc_auc": 0.79021271262038,
+      "pr_auc": 0.19665228881149321
+    },
+    "cat_not_preferred": {
+      "roc_auc": 0.538434564797684,
+      "pr_auc": 0.008283284165064651
+    }
+  },
+  "best_single_signal_roc_auc": 0.8173946663555377,
+  "best_single_signal_pr_auc": 0.19665228881149321,
+  "tree_stump_pr_auc": 0.18270725446565111,
+  "tree_depth3_pr_auc": 0.5259936717073401,
+  "boosted_pr_auc": 0.5710460935065632,
+  "tree3_vs_boosted_gap": 0.045052421799223086,
+  "overlap": {
+    "amount_ratio": {
+      "hard_negative_mean": 2.147394260386043,
+      "fraud_median": 1.938220952163865,
+      "passes": true
+    },
+    "hour_dev": {
+      "hard_negative_mean": 5.15693689801438,
+      "fraud_median": 6.406950534777435,
+      "passes": false
+    },
+    "dist_home_km": {
+      "hard_negative_mean": 258.0725670915048,
+      "fraud_median": 0.0,
+      "passes": true
+    },
+    "new_device_static": {
+      "hard_negative_mean": 0.25341922695738356,
+      "fraud_median": 1.0,
+      "passes": false
+    },
+    "cat_not_preferred": {
+      "hard_negative_mean": 0.27819623389494547,
+      "fraud_median": 1.0,
+      "passes": false
+    }
+  },
+  "overlap_signals_passed": 2,
+  "overlap_by_type": {
+    "emergency_odd_hour": [
+      "amount_ratio",
+      "hour_dev",
+      "dist_home_km"
+    ],
+    "holiday_splurge": [
+      "amount_ratio",
+      "dist_home_km"
+    ],
+    "medical_bill": [
+      "amount_ratio",
+      "dist_home_km"
+    ],
+    "new_phone": [
+      "dist_home_km",
+      "new_device_static"
+    ],
+    "payday_burst": [
+      "dist_home_km",
+      "cat_not_preferred"
+    ],
+    "power_user_burst": [
+      "dist_home_km"
+    ],
+    "travel_trip": [
+      "dist_home_km"
+    ]
+  },
+  "top_gain_importances": [
+    {
+      "feature": "new_device_static",
+      "gain": 58.247894287109375,
+      "gain_share": 0.524598501823933
+    },
+    {
+      "feature": "cat_not_preferred",
+      "gain": 44.919227600097656,
+      "gain_share": 0.40455641857107405
+    },
+    {
+      "feature": "hour_dev",
+      "gain": 2.6909308433532715,
+      "gain_share": 0.024235353161038607
+    }
+  ],
+  "dominant_feature": null,
+  "conditions": {
+    "single_signal_roc_auc": {
+      "threshold": 0.85,
+      "observed": 0.8173946663555377,
+      "passed": true
+    },
+    "single_signal_pr_auc": {
+      "threshold": 0.2,
+      "observed": 0.19665228881149321,
+      "passed": true
+    },
+    "tree3_below_boosted": {
+      "threshold": 0.05,
+      "observed": 0.045052421799223086,
+      "passed": false
+    },
+    "hard_negative_overlap": {
+      "threshold": 2,
+      "observed": 2,
+      "passed": true
+    }
+  },
+  "passed": false
+}

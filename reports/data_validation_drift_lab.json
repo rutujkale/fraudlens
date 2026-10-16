@@ -1,0 +1,165 @@
+{
+  "passed": true,
+  "n_checks": 24,
+  "n_failed": 0,
+  "checks": [
+    {
+      "name": "no_null_required_columns",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "unique_transactions.transaction_id",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "unique_customers.customer_id",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "unique_accounts.account_id",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "unique_devices.device_id",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "unique_merchants.merchant_id",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "unique_locations.location_id",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "unique_labels.transaction_id",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "amount_positive",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "amount_not_absurd",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "transactions.timestamp_parsable",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "transactions.timestamp_in_window",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "valid_category",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "valid_transaction_type",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "valid_channel",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "valid_income_band",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "valid_archetype",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "valid_merchant_risk_group",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "labels_cover_transactions_exactly_once",
+      "passed": true,
+      "n_offending": 0,
+      "examples": [
+        {
+          "missing": 0,
+          "extra": 0
+        }
+      ]
+    },
+    {
+      "name": "no_label_columns_in_transactions",
+      "passed": true,
+      "n_offending": 0,
+      "examples": [
+        {
+          "leaked_columns": []
+        }
+      ]
+    },
+    {
+      "name": "label_available_at_ge_timestamp",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "fraud_rate_sanity",
+      "passed": true,
+      "n_offending": 0,
+      "examples": [
+        {
+          "fraud_rate": 0.005716940821690665,
+          "max_fraud_rate": 0.05
+        }
+      ]
+    },
+    {
+      "name": "transactions_after_account_open",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    },
+    {
+      "name": "no_orphan_foreign_keys",
+      "passed": true,
+      "n_offending": 0,
+      "examples": []
+    }
+  ]
+}

@@ -2,21 +2,21 @@
   "xgb": {
     "selected": "sigmoid",
     "reason": "Brier CI contains 0 (tie -> simpler)",
-    "brier_sigmoid": 0.0011816015748157386,
-    "brier_isotonic": 0.0012370715135596793,
-    "diff_point": -5.54699387439407e-05,
-    "diff_lo": -0.00012047589330497905,
-    "diff_hi": 1.2375435097658727e-05,
-    "n_cal_positives": 220
+    "brier_sigmoid": 0.0019290341201446133,
+    "brier_isotonic": 0.0019155016699005211,
+    "diff_point": 1.3532450244092137e-05,
+    "diff_lo": -2.8627657944707077e-05,
+    "diff_hi": 5.245307131669602e-05,
+    "n_cal_positives": 177
   },
   "logreg": {
     "selected": "sigmoid",
-    "reason": "sigmoid lower Brier",
-    "brier_sigmoid": 0.001857933022576046,
-    "brier_isotonic": 0.0019626059151393632,
-    "diff_point": -0.00010467289256331719,
-    "diff_lo": -0.00020053337195072798,
-    "diff_hi": -1.7368209027168255e-05,
-    "n_cal_positives": 220
+    "reason": "Brier CI contains 0 (tie -> simpler)",
+    "brier_sigmoid": 0.00271918784574752,
+    "brier_isotonic": 0.0027530319378458743,
+    "diff_point": -3.384409209835444e-05,
+    "diff_lo": -0.0001364992510557665,
+    "diff_hi": 7.219600657526203e-05,
+    "n_cal_positives": 177
   }
 }

@@ -27,7 +27,7 @@ Per-experiment notes:
 ## Headline findings
 
 1. **`scale_pos_weight = neg/pos` is the best imbalance lever** (PR-AUC
-   0.9663 vs 0.9614 unweighted) and it barely distorts probabilities on this
+   0.9271 vs 0.9258 unweighted) and it barely distorts probabilities on this
    near-separable task; random undersampling *hurts* ranking and distorts the
    base rate, and sigmoid calibration only repairs the distorted models. (8A)
 2. **No single feature group is load-bearing overall** — dropping any one group
@@ -35,16 +35,19 @@ Per-experiment notes:
    scenario was *simulated* (device↔account-takeover, geographic↔geo-anomaly,
    transaction↔amount-anomaly). Structuring is the most redundant scenario. (8B)
 3. **Saturation looks data-limited, not capacity-limited** — a *trend*, not a
-   measured law: val PR-AUC saturates at depth ≈ 8, train PR-AUC hits 1.0 by
-   depth 6, and doubling the training set (+0.034) buys more than any depth
-   change, but the 10%-row point is ±0.14 and the claim rests on three seeds of
+   measured law: val PR-AUC saturates at depth ≈ 6–8, train PR-AUC hits 1.0 by
+   depth 6, and doubling the training set (+0.028) buys more than any depth
+   change, but the 10%-row point is ±0.07 and the claim rests on three seeds of
    one synthetic split. A linear model plateaus ~0.06 below XGBoost even with
    interactions/binning. (8C)
-4. **The three importance methods agree on the top families (ρ 0.57–0.65) but
+4. **The three importance methods agree on the top families (ρ 0.52–0.58) but
    disagree on the tail**, and gain/permutation correctly flag the planted
    control columns as unimportant while path-dependent mean|SHAP| does not. (8D)
-5. **Behavioural drift is mild (adversarial AUC 0.7072)**; the naive
-   "adversarial AUC 0.9998" on all features is almost entirely the monotonic
+5. **Behavioural drift is mild (adversarial AUC 0.6995)**; the naive
+   "adversarial AUC 0.9821" on all features is almost entirely the monotonic
    tenure clock, not fraud drift. Retraining recovers only ~0.04 PR-AUC over a
    frozen model — a property of this simulator's scenario-mix drift, to re-test
    on real data (Part 11). (8E)
+
+> Numbers above are post-coldstart-fix (Part 02b, dataset regenerated 2026-10-16); the
+> per-experiment notes below still show the pre-fix figures under a superseded banner.

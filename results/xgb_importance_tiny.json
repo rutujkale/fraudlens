@@ -1,0 +1,45 @@
+{
+  "profile": "tiny",
+  "val_pr_auc": 1.0,
+  "top5_gain": [
+    {
+      "feature": "tx_count_6h",
+      "gain": 524.9935913085938,
+      "gain_share": 0.19472175072256848
+    },
+    {
+      "feature": "is_night",
+      "gain": 289.1769714355469,
+      "gain_share": 0.10725663527858408
+    },
+    {
+      "feature": "days_since_last_tx",
+      "gain": 217.0047149658203,
+      "gain_share": 0.0804877215888879
+    },
+    {
+      "feature": "minutes_since_prev_tx",
+      "gain": 151.0767059326172,
+      "gain_share": 0.05603481863325427
+    },
+    {
+      "feature": "amount",
+      "gain": 150.75772094726562,
+      "gain_share": 0.055916506113196554
+    }
+  ],
+  "dominant_feature": null,
+  "is_new_device_ablation": {
+    "with": 1.0,
+    "without": 0.9666666666666666,
+    "drop": 0.03333333333333344
+  },
+  "guard": {
+    "threshold": 0.95,
+    "n_val_positives": 5,
+    "n_val_positive_customers": 1,
+    "n_val_positive_episodes": 1,
+    "bypass_min_positives": 30,
+    "action": "bypassed: small-sample"
+  }
+}

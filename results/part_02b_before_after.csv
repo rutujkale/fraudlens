@@ -1,0 +1,62 @@
+group,scope,quantity,source,pre,pre_source,post
+simulator,tiny,n_transactions,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),4628
+simulator,tiny,n_fraud_transactions,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),90
+simulator,tiny,n_fraud_episodes,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),15
+simulator,tiny,fraud_rate,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),0.019447
+simulator,tiny,fraud_rate_vs_target_pct,simulation_report.json (new field),n/a [CalledProcessError],git:pre-coldstart-fix,-2.766
+simulator,tiny,cold_start_gate,simulation_report.json (new field),n/a [CalledProcessError],git:pre-coldstart-fix,"{'normal_rows_masked': 92, 'episode_day_redraws': 2, 'episode_customer_fallbacks': 0}"
+simulator,tiny,pre_open_rows,transactions x customers parquet,n/a [CalledProcessError],git:pre-coldstart-fix,0
+simulator,dev,n_transactions,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),277607
+simulator,dev,n_fraud_transactions,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),2123
+simulator,dev,n_fraud_episodes,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),322
+simulator,dev,fraud_rate,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),0.007648
+simulator,dev,fraud_rate_vs_target_pct,simulation_report.json (new field),n/a [CalledProcessError],git:pre-coldstart-fix,-4.406
+simulator,dev,cold_start_gate,simulation_report.json (new field),n/a [CalledProcessError],git:pre-coldstart-fix,"{'normal_rows_masked': 11738, 'episode_day_redraws': 57, 'episode_customer_fallbacks': 0}"
+simulator,dev,pre_open_rows,transactions x customers parquet,n/a [CalledProcessError],git:pre-coldstart-fix,0
+simulator,drift_lab,n_transactions,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),1097615
+simulator,drift_lab,n_fraud_transactions,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),6275
+simulator,drift_lab,n_fraud_episodes,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),845
+simulator,drift_lab,fraud_rate,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),0.005717
+simulator,drift_lab,fraud_rate_vs_target_pct,simulation_report.json (new field),n/a [CalledProcessError],git:pre-coldstart-fix,-4.718
+simulator,drift_lab,cold_start_gate,simulation_report.json (new field),n/a [CalledProcessError],git:pre-coldstart-fix,"{'normal_rows_masked': 56517, 'episode_day_redraws': 217, 'episode_customer_fallbacks': 0}"
+simulator,drift_lab,pre_open_rows,transactions x customers parquet,n/a [CalledProcessError],git:pre-coldstart-fix,0
+simulator,unseen_lab,n_transactions,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),1259735
+simulator,unseen_lab,n_fraud_transactions,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),5994
+simulator,unseen_lab,n_fraud_episodes,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),849
+simulator,unseen_lab,fraud_rate,data/raw/<p>/simulation_report.json,,docs/what_went_wrong.md (data/raw is gitignored),0.004758
+simulator,unseen_lab,fraud_rate_vs_target_pct,simulation_report.json (new field),n/a [CalledProcessError],git:pre-coldstart-fix,-4.837
+simulator,unseen_lab,cold_start_gate,simulation_report.json (new field),n/a [CalledProcessError],git:pre-coldstart-fix,"{'normal_rows_masked': 56496, 'episode_day_redraws': 227, 'episode_customer_fallbacks': 0}"
+simulator,unseen_lab,pre_open_rows,transactions x customers parquet,n/a [CalledProcessError],git:pre-coldstart-fix,0
+separability_gate,dev,passed,results/separability_gate_dev.json,True,git:pre-coldstart-fix,True
+separability_gate,dev,best_single_signal_roc_auc,results/separability_gate_dev.json,0.810515,git:pre-coldstart-fix,0.794904
+separability_gate,dev,best_single_signal_pr_auc,results/separability_gate_dev.json,0.183074,git:pre-coldstart-fix,0.19545
+separability_gate,dev,tree_depth3_pr_auc,results/separability_gate_dev.json,0.576916,git:pre-coldstart-fix,0.522108
+separability_gate,dev,boosted_pr_auc,results/separability_gate_dev.json,0.641674,git:pre-coldstart-fix,0.646038
+separability_gate,dev,tree3_vs_boosted_gap,results/separability_gate_dev.json,0.0647575,git:pre-coldstart-fix,0.12393
+separability_gate,dev,overlap_signals_passed,results/separability_gate_dev.json,2,git:pre-coldstart-fix,2
+models,dev,E01.pr_auc,results/experiments.csv,0.37872,git:pre-coldstart-fix,0.29233
+models,dev,E02.pr_auc,results/experiments.csv,0.902126,git:pre-coldstart-fix,0.863839
+models,dev,E03.pr_auc,results/experiments.csv,0.966733,git:pre-coldstart-fix,0.929086
+models,tiny,E03.pr_auc,results/experiments.csv,0.766667,git:pre-coldstart-fix,1
+calibration,dev,E04.pr_auc,results/experiments.csv,0.945766,git:pre-coldstart-fix,0.923994
+calibration,dev,E04.ece,results/experiments.csv,0.000999,git:pre-coldstart-fix,0.000157
+policy,dev,E05.realized_cost_amount_aware,results/experiments.csv,59684.4,git:pre-coldstart-fix,68795.6
+policy,dev,E05.pct_saving_vs_f1,results/experiments.csv,83.4081,git:pre-coldstart-fix,60.8516
+policy,dev,E05.recall,results/experiments.csv,0.959016,git:pre-coldstart-fix,0.923497
+policy,dev,E05.flagged_per_day,results/experiments.csv,3.7778,git:pre-coldstart-fix,5.8889
+calibration,dev,selected_calibrator,results/calibration_selection_dev.json,sigmoid,git:pre-coldstart-fix,sigmoid
+policy,dev,flagged_per_day,results/policy_comparison_dev.csv[amount_aware_capacity],3.77778,git:pre-coldstart-fix,5.88889
+policy,dev,recall,results/policy_comparison_dev.csv[amount_aware_capacity],0.959016,git:pre-coldstart-fix,0.923497
+policy,dev,precision,results/policy_comparison_dev.csv[amount_aware_capacity],0.400685,git:pre-coldstart-fix,0.316479
+policy,dev,fpr,results/policy_comparison_dev.csv[amount_aware_capacity],0.00852204,git:pre-coldstart-fix,0.0181502
+policy,dev,total_realized_cost,results/policy_comparison_dev.csv[amount_aware_capacity],59684.4,git:pre-coldstart-fix,68795.6
+policy,dev,pct_cost_reduction_vs_f1,results/policy_comparison_dev.csv[amount_aware_capacity],83.4081,git:pre-coldstart-fix,60.8516
+exp8E,drift_lab,adversarial_auc_behavioral,results/exp_8E_adversarial_summary_drift_lab.json,0.707192,git:pre-coldstart-fix,0.699509
+exp9,unseen_lab,S1_holdout_recall_diff,results/exp_09_unseen_decision_unseen_lab_structuring.json,0.0291,git:pre-coldstart-fix,0
+exp8,dev,exp8A.imbalance_winner,results/exp_8A_imbalance_summary_dev.csv,spw_full pr_auc=0.9663 rec@1pct=0.9542,git:pre-coldstart-fix,spw_full pr_auc=0.9271 rec@1pct=0.8898
+exp8,dev,exp8B.max_scenario_delta,results/exp_8B_scenario_delta_dev.csv,structuring=-1.0000,git:pre-coldstart-fix,structuring=-1.0000
+shap,dev,top_mean_abs_shap,results/shap_global_dev.csv,tx_from_device_prior (1.0851),git:pre-coldstart-fix,tx_from_device_prior (0.9453)
+shap,dev,p50_ms,results/shap_latency_dev.json,7.4444,git:pre-coldstart-fix,7.01655
+shap,dev,p95_ms,results/shap_latency_dev.json,8.71245,git:pre-coldstart-fix,7.92639
+part10,dev,gallery_rows,results/shap_gallery_dev.csv,clear_tp=T0217039;subtle_tp=T0230915;false_negative=T0230912;hard_negative_fp=T0229331;high_amount_tn=T0215456;cold_start=T0231027,git:pre-coldstart-fix,clear_tp=T0212883;subtle_tp=T0200869;false_negative=T0200867;hard_negative_fp=T0210287;high_amount_tn=T0203070;cold_start=T0218309
+part10,dev,fairness_distinguishable,results/fairness_pairwise_dev.csv,11 of 39,git:pre-coldstart-fix,15 of 39

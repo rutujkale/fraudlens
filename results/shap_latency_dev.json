@@ -1,11 +1,11 @@
 {
   "profile": "dev",
-  "model_version": "xgb_20261011_v1",
+  "model_version": "xgb_dev_20261015_v1",
   "n_calls": 200,
   "warmup_calls": 20,
-  "p50_ms": 7.444399932865053,
-  "p95_ms": 8.712449978338555,
-  "max_ms": 9.595099953003228,
-  "mean_ms": 7.586504995706491,
+  "p50_ms": 7.016550000116695,
+  "p95_ms": 7.926394999776676,
+  "max_ms": 8.203299999877345,
+  "mean_ms": 7.084079499991276,
   "note": "warm TreeExplainer, single-row explain_local on dev validation rows"
 }

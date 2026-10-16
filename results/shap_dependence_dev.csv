@@ -1,4 +1,4 @@
 feature,color_feature,binary,perm_pr_auc_drop
-is_new_recipient,new_merchant_flag,True,0.0513161204901612
-minutes_since_prev_tx,device_count_30d,False,0.0457030513202658
-new_merchant_flag,is_new_recipient,True,0.0407838942966387
+is_new_recipient,new_merchant_flag,True,0.0561760025990631
+minutes_since_prev_tx,tx_from_device_prior,False,0.0369457604488262
+new_merchant_flag,is_new_recipient,True,0.0356107509699546

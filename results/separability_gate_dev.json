@@ -1,59 +1,59 @@
 {
   "profile": "dev",
-  "n_rows": 289870,
-  "n_fraud": 2207,
-  "fraud_rate": 0.0076137578914685896,
+  "n_rows": 277607,
+  "n_fraud": 2123,
+  "fraud_rate": 0.007647501684035345,
   "signals": {
     "amount_ratio": {
-      "roc_auc": 0.7375208179876934,
-      "pr_auc": 0.11033079579426402
+      "roc_auc": 0.7308710300667725,
+      "pr_auc": 0.09449045955117165
     },
     "hour_dev": {
-      "roc_auc": 0.8105150458137608,
-      "pr_auc": 0.08545897510331861
+      "roc_auc": 0.7949042580190112,
+      "pr_auc": 0.07172846966303965
     },
     "dist_home_km": {
-      "roc_auc": 0.5414295897684399,
-      "pr_auc": 0.01554708307496034
+      "roc_auc": 0.5354923102222288,
+      "pr_auc": 0.013292968818626497
     },
     "new_device_static": {
-      "roc_auc": 0.7824305268372885,
-      "pr_auc": 0.18307426370549623
+      "roc_auc": 0.7888117384434954,
+      "pr_auc": 0.19545049959803742
     },
     "cat_not_preferred": {
-      "roc_auc": 0.5246960002146323,
-      "pr_auc": 0.008016490255561311
+      "roc_auc": 0.5140634630953432,
+      "pr_auc": 0.0078705780821032
     }
   },
-  "best_single_signal_roc_auc": 0.8105150458137608,
-  "best_single_signal_pr_auc": 0.18307426370549623,
-  "tree_stump_pr_auc": 0.17515630725284795,
-  "tree_depth3_pr_auc": 0.5769162855525762,
-  "boosted_pr_auc": 0.6416737544568325,
-  "tree3_vs_boosted_gap": 0.06475746890425627,
+  "best_single_signal_roc_auc": 0.7949042580190112,
+  "best_single_signal_pr_auc": 0.19545049959803742,
+  "tree_stump_pr_auc": 0.20091155712817177,
+  "tree_depth3_pr_auc": 0.522108388560279,
+  "boosted_pr_auc": 0.6460381102699075,
+  "tree3_vs_boosted_gap": 0.12392972170962857,
   "overlap": {
     "amount_ratio": {
-      "hard_negative_mean": 2.1624469531490758,
-      "fraud_median": 2.057486393757045,
+      "hard_negative_mean": 2.147394260386043,
+      "fraud_median": 2.0050024726730546,
       "passes": true
     },
     "hour_dev": {
-      "hard_negative_mean": 5.037889807920072,
-      "fraud_median": 6.136625788997362,
+      "hard_negative_mean": 5.15693689801438,
+      "fraud_median": 5.785823353945336,
       "passes": false
     },
     "dist_home_km": {
-      "hard_negative_mean": 226.2070109321131,
+      "hard_negative_mean": 258.0725670915048,
       "fraud_median": 0.0,
       "passes": true
     },
     "new_device_static": {
-      "hard_negative_mean": 0.2642674010065521,
+      "hard_negative_mean": 0.25341922695738356,
       "fraud_median": 1.0,
       "passes": false
     },
     "cat_not_preferred": {
-      "hard_negative_mean": 0.26369765454372807,
+      "hard_negative_mean": 0.27819623389494547,
       "fraud_median": 1.0,
       "passes": false
     }
@@ -74,6 +74,7 @@
       "dist_home_km"
     ],
     "new_phone": [
+      "hour_dev",
       "dist_home_km",
       "new_device_static"
     ],
@@ -91,35 +92,35 @@
   "top_gain_importances": [
     {
       "feature": "new_device_static",
-      "gain": 68.9306640625,
-      "gain_share": 0.5580110648123348
+      "gain": 51.89705276489258,
+      "gain_share": 0.593110297643544
     },
     {
       "feature": "cat_not_preferred",
-      "gain": 46.469844818115234,
-      "gain_share": 0.376185083101896
+      "gain": 28.010272979736328,
+      "gain_share": 0.32011801169809107
     },
     {
-      "feature": "hour_dev",
-      "gain": 2.998476266860962,
-      "gain_share": 0.024273419634671025
+      "feature": "dist_home_km",
+      "gain": 2.677422046661377,
+      "gain_share": 0.030599167051100322
     }
   ],
   "dominant_feature": null,
   "conditions": {
     "single_signal_roc_auc": {
       "threshold": 0.85,
-      "observed": 0.8105150458137608,
+      "observed": 0.7949042580190112,
       "passed": true
     },
     "single_signal_pr_auc": {
       "threshold": 0.2,
-      "observed": 0.18307426370549623,
+      "observed": 0.19545049959803742,
       "passed": true
     },
     "tree3_below_boosted": {
       "threshold": 0.05,
-      "observed": 0.06475746890425627,
+      "observed": 0.12392972170962857,
       "passed": true
     },
     "hard_negative_overlap": {

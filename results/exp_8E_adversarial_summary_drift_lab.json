@@ -1,7 +1,7 @@
 {
-  "adversarial_auc_all": 0.9997690814,
-  "adversarial_auc_behavioral": 0.7071924681999999,
-  "adversarial_auc_tenure": 0.9988696874,
+  "adversarial_auc_all": 0.9821411534,
+  "adversarial_auc_behavioral": 0.6995089394,
+  "adversarial_auc_tenure": 0.9758729198,
   "tenure_features": [
     "history_days",
     "device_age_days",

@@ -407,3 +407,97 @@ _What happened, one line._
   add a `(history_days >= 0).all()` assertion to `data_quality/validation.py`.
 - **Test added:** `tests/test_explain.py::test_gallery_cold_start_excludes_negative_history`
   (the selection rule); the data-quality assertion is deferred with the regeneration.
+
+---
+
+### Fix applied: cold-start gate (Part 02b)
+- **What happened:** the deferred fix above was implemented and all four profiles regenerated.
+  `data_gen/normal.py` drops each customer's pre-opening rows at emit time (skipping
+  `buf.add_row`, counting `normal_rows_masked`) so customers already open at the window start
+  keep byte-identical rows; `fraud.py`/`hard_negatives.py` redraw an episode's day into the
+  customer's valid window (`episode_day_redraws`) and fall back to a same-archetype customer
+  when the drawn customer has no room (`episode_customer_fallbacks`).
+- **Detected / verified:** `generate_data.py` now asserts no transaction precedes its
+  customer's `account_open_date`; `data_quality/validation.py` has a
+  `transactions_after_account_open` check; `features/build_features.py` raises on any
+  `history_days < 0`. All four profiles pass the 24-check validation and have `0` pre-open
+  rows (dev was 12,329). `simulation_report.json` gained `cold_start_gate` and
+  `fraud_rate_vs_target_pct` (all profiles within ±5% of target; `drift_lab` −4.94% is the
+  tightest).
+- **Effect:** the frozen Part 04–09 results describe the old dataset. `results/experiments.csv`
+  gained a `dataset_version` column (`pre_coldstart_fix` on the old rows, `post_coldstart_fix`
+  on re-runs); 8E, Part 09 and every re-runnable trainer/experiment now replace only their own
+  version's rows, so old evidence is kept.
+- **Test added:** `tests/test_simulator.py::test_no_transactions_before_account_open`,
+  `test_normal_rows_for_open_customers_unchanged`,
+  `test_episode_falls_back_when_account_opens_after_window`;
+  `tests/test_validation.py::test_transaction_before_account_open_fails`.
+
+### Finding: `if bu < 4: break` in the structuring branch could drop the whole scenario
+- **What happened:** `data_gen/fraud.py` had `if bu < 4: break` inside the per-episode loop
+  when picking a structuring amount. On the regenerated `tiny` data the structuring draw hit
+  with too little remaining budget, and the `break` ended fraud generation entirely — the
+  profile came out with **no structuring episodes at all**, and `test_all_scenarios_present`
+  failed with `structuring` missing from the label set.
+- **How detected:** the regenerated `tiny` scenario list (`account_takeover, amount_anomaly,
+  burst, geo_anomaly`) lacked `structuring`, and the simulator test that asserts all five
+  scenarios are present failed.
+- **Effect:** a whole fraud archetype silently disappears from any profile where the
+  structuring draw lands late — the drift/structuring experiments would then report on a
+  scenario that was never generated.
+- **Fix:** changed `break` to `continue` (the outer loop already stops on `bud <= 0`).
+- **Test added:** covered by `test_all_scenarios_present` (now run on a high-coverage fixture).
+
+### Finding: masking pre-opening days before the vectorised draws changed every customer's data
+- **What happened:** the first version of the normal.py gate removed pre-opening days *before*
+  the vectorised draws by zeroing per-customer counts. That shrank `nt`, which realigned every
+  subsequent `rng.standard_normal(nt)` / `rng.random(nt)` draw, so the random numbers assigned
+  to every later row changed — roughly 99.9% of all normal rows differed from an ungated run,
+  including customers who were already open and should be unaffected.
+- **How detected:** `test_normal_rows_for_open_customers_unchanged` compares an ungated run
+  with a gated run for customers open at the window start; it failed because the rows differed.
+- **Effect:** a data change far larger than the intended fix, silently altering the whole
+  normal-transaction stream (and every downstream result) for a change meant to touch only
+  cold-start customers.
+- **Fix:** moved the filter to emit time — `if day[pos] < open_day[ci]: continue` immediately
+  before `buf.add_row(...)` — leaving all draws and per-customer state untouched. Known,
+  documented impurity: a cold customer's retained rows reflect the state their own dropped
+  days produced (features are recomputed on the final table, which has no pre-open rows).
+- **Test added:** `tests/test_simulator.py::test_normal_rows_for_open_customers_unchanged`.
+
+### Simulator shortcut: cold-start fix regressed the Part 03 separability gate
+- **What happened:** after the cold-start fix, the Part 03 gate failed on dev:
+  `tree3_vs_boosted_gap = 0.0451` (needs ≥ 0.05). Removing the buggy pre-open rows shrank the
+  pool of legitimate new-device transactions, so `new_device_static` became a stronger single
+  signal (PR-AUC 0.1831 → 0.1967) that a depth-3 tree could exploit, narrowing the gap to the
+  boosted reference.
+- **How detected:** `scripts/separability_gate.py --profile dev` (thresholds are fixed by
+  design; a failing gap means the simulator is too easy, not that the bar should move).
+- **Effect:** the dataset no longer demonstrated that interactions (not one cheap signal) are
+  needed — the exact shortcut the gate exists to catch.
+- **Fix:** re-tuned the intended difficulty knob `fraud_device_reuse_prob` 0.35 → 0.50
+  (fraud reuses a known device more often, weakening the new-device shortcut). Gate now:
+  gap **0.124**, single-signal ROC 0.795 (< 0.85), PR 0.195 (< 0.20), overlap 2 → PASS. No
+  gate threshold was changed.
+- **Test added:** none (the gate is the check); numbers recorded in
+  `results/part_02b_before_after.csv` and `docs/progress/part_02b.md`.
+
+### Finding: tiny XGB val PR-AUC = 1.0 — guard bypassed as small-sample
+- **What happened:** after regeneration, `train.py --profile tiny` tripped the suspicious-PR-AUC
+  guard (`val_pr_auc 1.0000 > 0.95`, exit 3), up from a pre-fix `0.7667`. The tiny validation
+  window (`[t_train_end+3d, t_val_end)`, 487 rows) contains **5 fraud positives, all from one
+  episode** (`EP_F_00006`, account_takeover, customer `C0000043`). PR-AUC over a single
+  episode's five transactions is not meaningful.
+- **How detected:** the guard itself; the diagnostic (`results/xgb_importance_tiny.json`) shows
+  no dominant feature (top gain share 0.195) and an `is_new_device` ablation drop of only 0.033,
+  i.e. no leakage signature. An earlier count of 11 val frauds was wrong: it used
+  `timestamp >= t_train_end` and so included 6 rows inside the 3-day embargo gap that
+  `make_temporal_split` excludes.
+- **Effect:** a small validation window can reach PR-AUC 1.0 by chance; treating it as leakage
+  would block a CI-profile run that carries no evidence either way.
+- **Fix:** added `evaluation/guard.py::suspicious_pr_auc_action` — when val positives are below
+  `models.xgb.suspicious_pr_auc_bypass_min_positives` (30) the trip is recorded as
+  `bypassed: small-sample` (guard output now also carries the positive/ customer / episode
+  counts) and the run continues; larger profiles (dev has 342 val positives) keep the exit-3
+  hard stop. Tiny was **not** enlarged and its PR-AUC is not used as evidence anywhere.
+- **Test added:** `tests/test_splits.py::test_pr_auc_guard_small_sample_bypass`.

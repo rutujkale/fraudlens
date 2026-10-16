@@ -41,14 +41,14 @@ evidence.
 The API (Part 13) and the point-in-time SQL cross-check both fetch a customer's recent
 history with `ORDER BY timestamp DESC LIMIT n`. `reports/db_explain_dev.txt` records
 `EXPLAIN (ANALYZE, BUFFERS)` before and after `sql/indexes.sql` on `dev`
-(`raw.transactions`, 289,870 rows):
+(`raw.transactions`, 277,607 rows):
 
 | plan | execution time | buffers | scan |
 |---|---|---|---|
-| without `idx_transactions_customer_ts` | 23.519 ms | 5267 | `Seq Scan` + `Sort`, 289,517 rows removed by filter |
-| with `idx_transactions_customer_ts` | 0.136 ms | 49 | `Index Scan Backward`, index cond pushdown, no sort |
+| without `idx_transactions_customer_ts` | 22.739 ms | 5075 | `Seq Scan` + `Sort`, 277,257 rows removed by filter |
+| with `idx_transactions_customer_ts` | 0.131 ms | 52 | `Index Scan Backward`, index cond pushdown, no sort |
 
-That is **≈173× faster** (23.519 → 0.136 ms) and **≈107× fewer buffers** (5267 → 49),
+That is **≈174× faster** (22.739 → 0.131 ms) and **≈98× fewer buffers** (5075 → 52),
 because the composite `(customer_id, timestamp)` index turns "scan the whole table then
 sort the top 50" into "walk the index backwards from the cutoff and stop at 50". The index
 also serves the strictly-prior `timestamp < before_ts` predicate directly
@@ -58,7 +58,7 @@ also serves the strictly-prior `timestamp < before_ts` predicate directly
 
 `TreeExplainer(model, model_output="raw")` attributes the **raw margin** (log-odds) that
 `predict_proba` sees, so `base_value + Σ SHAP = margin` and the attested identity holds to
-`1.6e-5` on dev (`tests/test_explain.py::test_shap_additivity_and_best_iteration`). Two
+`1.2e-5` on dev (`tests/test_explain.py::test_shap_additivity_and_best_iteration`). Two
 consequences:
 
 - **Never plot a SHAP value as a position on the 0–100 risk score.** `risk_score` is
@@ -66,9 +66,9 @@ consequences:
   margin, so a "+0.6 SHAP" contribution is not "0.6 risk points". SHAP answers *which
   features moved the model rank / margin*, and the calibrated probability (plus the
   amount-aware action) is the only thing quoted as a risk number.
-- **The explainer must honour `best_iteration`.** The dev artifact early-stopped at 592 of
-  600 rounds; explaining all 600 would attribute trees the model does not score with
-  (margin off by 0.108). `ShapExplainer.raw_margin` passes
+- **The explainer must honour `best_iteration`.** The dev artifact early-stopped at 450 of
+  481 built rounds; explaining past `best_iteration` would attribute trees the model does not
+  score with (margin off by 0.410 worst-case, 0.198 mean). `ShapExplainer.raw_margin` passes
   `iteration_range=(0, best_iteration + 1)`, matching the booster default.
 
 `mean|SHAP|` is a **usage** measure, not a utility measure: a feature can dominate

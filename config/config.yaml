@@ -21,7 +21,9 @@ common:
   stealth_beta_period_a: [2.0, 3.0]   # fairly obvious fraud (mean ≈ 0.40)
   stealth_beta_period_b: [3.0, 2.0]   # subtler fraud (mean ≈ 0.60)
   hard_negative_target_share: 0.04    # ≈4% of legit tx belong to hard-negative episodes
-  fraud_device_reuse_prob: 0.35       # fraud often reuses a known device (weakens new-device shortcut)
+  fraud_device_reuse_prob: 0.50       # fraud often reuses a known device (weakens new-device shortcut;
+                                      # raised from 0.35 in Part 02b: removing pre-open rows shrank the
+                                      # legit new-device pool and strengthened the shortcut past the gate)
   family_shared_device_share: 0.04    # legit shared devices so device-sharing is not a trivial signal
   splits: {train_end_fraction: 0.60, val_end_fraction: 0.80}   # embargo = max label delay (days)
   # windows_minutes: 10m, 1h, 6h, 24h, 7d(=10080), 30d(=43200). Feature code keys
@@ -80,6 +82,13 @@ common:
       n_trials: 30
       n_estimators: 600            # cap; early stopping on val aucpr decides
       early_stopping_rounds: 30
+      # A val PR-AUC above the threshold usually means leakage -> stop and inspect.
+      # On a small val window (fewer positives than the bypass count) a handful of
+      # easy events can reach 1.0 by chance, so the trip is recorded as
+      # "bypassed: small-sample" instead of stopping the run (Part 02b; only `tiny`
+      # qualifies, dev and the labs keep the hard stop).
+      suspicious_pr_auc_threshold: 0.95
+      suspicious_pr_auc_bypass_min_positives: 30
       scale_pos_weight_modes: [one, sqrt, full]   # 1, sqrt(neg/pos), neg/pos
       scale_pos_weight_continuous: [1.0, 130.0]
       param_space:

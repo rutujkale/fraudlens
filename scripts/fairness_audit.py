@@ -200,7 +200,7 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    drop_experiment_rows("E18", args.profile)
+    drop_experiment_rows("E18", args.profile, dataset_version=cfg.simulation.dataset_version)
     log_experiment(
         {
             "experiment_id": "E18",

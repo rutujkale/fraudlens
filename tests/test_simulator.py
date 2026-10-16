@@ -50,6 +50,32 @@ def drift_result(tmp_path, monkeypatch) -> GeneratedResult:
     return generate_profile("tiny")
 
 
+@pytest.fixture()
+def coverage_result(tmp_path, monkeypatch) -> GeneratedResult:
+    """tiny at a high fraud rate so every scenario / hard-negative type appears.
+
+    At the normal 2% rate a 30-day window yields ~15 fraud episodes, which is too
+    few to guarantee all five scenarios (Part 02b: the device-reuse change moved
+    the RNG stream and dropped ``geo_anomaly`` from tiny); the raised
+    hard-negative share likewise lifts the hard-negative episode count. This
+    fixture tests the generator's coverage, not the tiny profile's own mix.
+    """
+    with open(cfg_module._config_path(), encoding="utf-8") as fh:
+        raw = yaml.safe_load(fh)
+    raw["common"]["hard_negative_target_share"] = 0.12
+    raw["profiles"]["tiny"] = {
+        "customers": 300,
+        "days": 30,
+        "target_fraud_rate": 0.15,
+        "label_delay_days": [1, 3],
+        "drift": {"start_fraction": None, "strength": 0.0},
+    }
+    cfg_file = tmp_path / "config_coverage.yaml"
+    cfg_file.write_text(yaml.safe_dump(raw), encoding="utf-8")
+    monkeypatch.setenv("FRAUDLENS_CONFIG_PATH", str(cfg_file))
+    return generate_profile("tiny")
+
+
 def test_determinism():
     a = generate_profile("tiny")
     b = generate_profile("tiny")
@@ -202,12 +228,12 @@ def test_fraud_rate_within_tolerance(result):
     assert abs(result.report["fraud_rate"] - target) <= 0.10 * target
 
 
-def test_all_scenarios_present(result):
-    assert set(result.labels["fraud_scenario"].dropna().unique()) == SCENARIOS
+def test_all_scenarios_present(coverage_result):
+    assert set(coverage_result.labels["fraud_scenario"].dropna().unique()) == SCENARIOS
 
 
-def test_all_hard_negative_types_present(result):
-    present = set(result.labels["hard_negative_type"].dropna().unique())
+def test_all_hard_negative_types_present(coverage_result):
+    present = set(coverage_result.labels["hard_negative_type"].dropna().unique())
     assert present == HN_TYPES
 
 

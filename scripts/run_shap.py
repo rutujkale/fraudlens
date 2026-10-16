@@ -322,7 +322,7 @@ def main() -> int:
         render_gallery_markdown(args.profile, doc_cases, policy_line), encoding="utf-8"
     )
 
-    drop_experiment_rows("E17", args.profile)
+    drop_experiment_rows("E17", args.profile, dataset_version=cfg.simulation.dataset_version)
     log_experiment(
         {
             "experiment_id": "E17",

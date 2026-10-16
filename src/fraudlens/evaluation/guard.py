@@ -18,6 +18,28 @@ from fraudlens.utils import git_commit
 LOG_COLUMNS = ["timestamp", "caller", "model_version", "final", "git_commit"]
 
 
+def suspicious_pr_auc_action(
+    val_pr_auc: float,
+    n_val_positives: int,
+    *,
+    threshold: float,
+    bypass_min_positives: int,
+) -> str:
+    """Classify a suspiciously high XGB validation PR-AUC (Part 02b).
+
+    A PR-AUC above ``threshold`` usually means leakage and must stop the run —
+    but on a small validation window a handful of positives can reach 1.0 by
+    chance. When ``n_val_positives`` is below ``bypass_min_positives`` the trip
+    is recorded as ``"bypassed: small-sample"`` instead of stopping; larger
+    profiles keep the hard stop. Returns ``"ok"`` when not suspicious.
+    """
+    if val_pr_auc <= threshold:
+        return "ok"
+    if n_val_positives < bypass_min_positives:
+        return "bypassed: small-sample"
+    return "stop"
+
+
 class TestSetGuard:
     """Audited gate for any function that touches the test window."""
 

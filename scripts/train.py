@@ -17,7 +17,8 @@ import pandas as pd
 
 from fraudlens.config import Config, config_hash, load_config
 from fraudlens.evaluation.dataset import load_feature_dataset
-from fraudlens.evaluation.experiments import log_experiment
+from fraudlens.evaluation.experiments import drop_experiment_rows, log_experiment
+from fraudlens.evaluation.guard import suspicious_pr_auc_action
 from fraudlens.evaluation.metrics import evaluate_scores
 from fraudlens.evaluation.splits import Split, make_temporal_split, save_split
 from fraudlens.features.registry import FEATURE_COLUMNS, FEATURE_VERSION
@@ -35,15 +36,16 @@ from fraudlens.utils import get_logger, set_global_seed
 
 logger = get_logger(__name__)
 
-SUSPICIOUS_PR_AUC = 0.95
 DOMINANT_GAIN_SHARE = 0.60
 
 
 def _attach_labels(df: pd.DataFrame, labels: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df["is_fraud"] = df["transaction_id"].map(
-        labels.set_index("transaction_id")["is_fraud"]
-    )
+    lut = labels.set_index("transaction_id")
+    df["is_fraud"] = df["transaction_id"].map(lut["is_fraud"])
+    # diagnostic only (never a feature): lets the PR-AUC guard report how many
+    # customers/episodes the validation positives actually come from
+    df["episode_id"] = df["transaction_id"].map(lut["episode_id"])
     return df
 
 
@@ -64,12 +66,22 @@ def _compact(metrics: dict) -> dict:
 
 
 def _suspicious_check(
-    model, x_val: pd.DataFrame, y_val: np.ndarray, best_pr: float, profile: str
+    model,
+    x_val: pd.DataFrame,
+    y_val: np.ndarray,
+    best_pr: float,
+    profile: str,
+    *,
+    threshold: float,
+    bypass_min_positives: int,
+    n_pos_customers: int,
+    n_pos_episodes: int,
 ) -> dict:
     """Top-5 gain importances + is_new_device ablation, written to results/."""
     imp = gain_importances(model).head(5)
     top5 = imp.to_dict(orient="records")
     full = float(best_pr)
+    n_pos = int(y_val.sum())
     ablated = float(ablation_pr_auc(model, x_val, y_val, "is_new_device"))
     diagnostic = {
         "profile": profile,
@@ -79,6 +91,19 @@ def _suspicious_check(
             (t["feature"] for t in top5 if t["gain_share"] > DOMINANT_GAIN_SHARE), None
         ),
         "is_new_device_ablation": {"with": full, "without": ablated, "drop": full - ablated},
+        "guard": {
+            "threshold": threshold,
+            "n_val_positives": n_pos,
+            "n_val_positive_customers": n_pos_customers,
+            "n_val_positive_episodes": n_pos_episodes,
+            "bypass_min_positives": bypass_min_positives,
+            "action": suspicious_pr_auc_action(
+                full,
+                n_pos,
+                threshold=threshold,
+                bypass_min_positives=bypass_min_positives,
+            ),
+        },
     }
     out = results_dir()
     (out / f"xgb_importance_{profile}.json").write_text(
@@ -86,9 +111,13 @@ def _suspicious_check(
     )
     imp.assign(**{}).to_csv(out / f"xgb_importance_{profile}.csv", index=False)
     logger.warning(
-        "SUSPICIOUS: val PR-AUC %.4f > %.2f. Top-5 gain: %s",
+        "SUSPICIOUS: val PR-AUC %.4f > %.2f (%d val positives from %d customers / %d episodes). "
+        "Top-5 gain: %s",
         full,
-        SUSPICIOUS_PR_AUC,
+        threshold,
+        n_pos,
+        n_pos_customers,
+        n_pos_episodes,
         ", ".join(f"{t['feature']}={t['gain_share']:.3f}" for t in top5),
     )
     logger.warning(
@@ -111,6 +140,9 @@ def train_rules(df, split, cfg: Config, chash: str) -> np.ndarray:
     score = engine.score(df.iloc[split.val_idx][FEATURE_COLUMNS]).to_numpy()
     metrics = evaluate_scores(
         y[split.val_idx], score, cfg.simulation.ks, cfg.simulation.precision_targets
+    )
+    drop_experiment_rows(
+        "E01", cfg.simulation.profile, dataset_version=cfg.simulation.dataset_version
     )
     log_experiment(
         {
@@ -169,6 +201,9 @@ def train_logreg(df, split, cfg: Config, chash: str) -> tuple[np.ndarray, str]:
     val_scores = df.iloc[split.val_idx][["transaction_id", "customer_id"]].copy()
     val_scores["raw_score"] = score
     model_io.save_model(model, version, metadata, val_scores)
+    drop_experiment_rows(
+        "E02", cfg.simulation.profile, dataset_version=cfg.simulation.dataset_version
+    )
     log_experiment(
         {
             "experiment_id": "E02",
@@ -226,6 +261,9 @@ def train_xgb(df, split, cfg: Config, chash: str) -> tuple[np.ndarray, str, dict
     val_scores = df.iloc[split.val_idx][["transaction_id", "customer_id"]].copy()
     val_scores["raw_score"] = score
     model_io.save_model(model, version, metadata, val_scores)
+    drop_experiment_rows(
+        "E03", cfg.simulation.profile, dataset_version=cfg.simulation.dataset_version
+    )
     log_experiment(
         {
             "experiment_id": "E03",
@@ -246,9 +284,20 @@ def train_xgb(df, split, cfg: Config, chash: str) -> tuple[np.ndarray, str, dict
     logger.info("xgb: val PR-AUC=%.4f", best_pr)
 
     diagnostic = None
-    if best_pr > SUSPICIOUS_PR_AUC:
+    xgb_cfg = cfg.simulation.models.xgb
+    if best_pr > xgb_cfg.suspicious_pr_auc_threshold:
+        val_pos = df.iloc[split.val_idx]
+        val_pos = val_pos[val_pos["is_fraud"] == 1]
         diagnostic = _suspicious_check(
-            model, x.iloc[split.val_idx], y[split.val_idx], best_pr, cfg.simulation.profile
+            model,
+            x.iloc[split.val_idx],
+            y[split.val_idx],
+            best_pr,
+            cfg.simulation.profile,
+            threshold=xgb_cfg.suspicious_pr_auc_threshold,
+            bypass_min_positives=xgb_cfg.suspicious_pr_auc_bypass_min_positives,
+            n_pos_customers=int(val_pos["customer_id"].nunique()),
+            n_pos_episodes=int(val_pos["episode_id"].nunique()),
         )
     return score, version, diagnostic
 
@@ -289,10 +338,19 @@ def main() -> int:
         )
 
     if diagnostic is not None:
+        guard = diagnostic["guard"]
+        if guard["action"] == "bypassed: small-sample":
+            logger.warning(
+                "bypassed: small-sample — %d val positives < %d; guard trip recorded in %s",
+                guard["n_val_positives"],
+                guard["bypass_min_positives"],
+                f"results/xgb_importance_{args.profile}.json",
+            )
+            return 0
         logger.warning(
             "STOP: XGBoost val PR-AUC %.4f > %.2f — inspect %s and %s before continuing.",
             diagnostic["val_pr_auc"],
-            SUSPICIOUS_PR_AUC,
+            guard["threshold"],
             f"results/xgb_importance_{args.profile}.json",
             "docs/what_went_wrong.md",
         )

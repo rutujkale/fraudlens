@@ -128,6 +128,8 @@ class XgbConfig(StrictModel):
     scale_pos_weight_modes: list[str]
     scale_pos_weight_continuous: list[float]
     param_space: dict[str, list[float]]
+    suspicious_pr_auc_threshold: float
+    suspicious_pr_auc_bypass_min_positives: int
 
 
 class LogregConfig(StrictModel):

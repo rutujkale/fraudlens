@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from fraudlens.config import load_config
-from fraudlens.evaluation.guard import TestSetGuard
+from fraudlens.evaluation.guard import TestSetGuard, suspicious_pr_auc_action
 from fraudlens.evaluation.splits import (
     customer_holdout,
     make_temporal_split,
@@ -140,3 +140,11 @@ def test_guard_denies_until_final(tmp_path):
     rows = (tmp_path / "log.csv").read_text(encoding="utf-8").strip().splitlines()
     assert len(rows) == 3  # header + 2 accesses
     assert rows[0].startswith("timestamp,caller")
+
+
+def test_pr_auc_guard_small_sample_bypass():
+    kw = {"threshold": 0.95, "bypass_min_positives": 30}
+    assert suspicious_pr_auc_action(0.90, 5, **kw) == "ok"
+    assert suspicious_pr_auc_action(1.0, 11, **kw) == "bypassed: small-sample"
+    assert suspicious_pr_auc_action(1.0, 342, **kw) == "stop"
+    assert suspicious_pr_auc_action(1.0, 30, **kw) == "stop"

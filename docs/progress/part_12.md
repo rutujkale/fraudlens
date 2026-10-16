@@ -160,6 +160,6 @@ test CIs are tight. Unseen-customer recall@1% is 0.4324 vs 0.9242 seen (honest c
   excludes_zero true}`); there is **no CI for the 83.23% ratio**. A correct ratio CI cannot be derived
   from the absolute CI because `cost_reduction_ci` (`final_evaluation.py:336`) resamples customers and
   recomputes **both** the F1 and amount-aware costs, so the denominator is itself random — naively
-  rescaling the absolute CI by the fixed F1 cost (→ 38.9%–138.0%) would be wrong. Persisting it needs
+  rescaling the absolute CI by the fixed F1 cost would be wrong. Persisting it needs
   the per-resample ratio distribution, i.e. a second test-window read (a rerun, which Part 12 reserves
   for crashes). Headlines/docs now label 83.23% as a **point estimate** and report the interval in INR.

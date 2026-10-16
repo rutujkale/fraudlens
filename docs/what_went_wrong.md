@@ -684,7 +684,7 @@ _What happened, one line._
 - **Effect:** the ratio's uncertainty is not directly quantified; it has to be inferred from the INR
   interval. It cannot be derived from the stored `reduction_ci`, because `cost_reduction_ci`
   (`final_evaluation.py:336`) resamples customers and recomputes **both** policy costs per resample, so
-  the ratio's denominator is random — rescaling the INR CI by the fixed F1 cost (~38.9%–138.0%) would
+  the ratio's denominator is random — rescaling the INR CI by the fixed F1 cost would
   be statistically wrong.
 - **Fix:** labelling only (no re-run): the headline and `docs/final_results.md` now state 83.23% as a
   **point estimate** and report the interval in INR. A true percent CI requires persisting the
@@ -692,6 +692,10 @@ _What happened, one line._
   Logged as an open limitation; the code could be extended to persist `reduction_ci_pct` on a future
   evaluation.
 - **Test added:** none (reporting gap; the absolute CI is still asserted to exclude 0 for H2).
+- **Lesson:** persist the **per-resample bootstrap distributions** (not just `point`/`lo`/`hi`) in
+  `results/` whenever a CI will be reported in more than one form, so derived statistics like the
+  percent-reduction ratio CI can be computed later **without another test-window read**. Any future
+  evaluation should save the resample vector for each cost policy.
 
 
 

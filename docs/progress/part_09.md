@@ -1,8 +1,11 @@
 # Part 09 progress
 
-> **Superseded by the Part 02b cold-start fix (2026-10-16).** The numbers below were produced
-> on the pre-fix dataset with model `xgb_20261011_v1`; the data was regenerated and the dev model
-> retrained as `xgb_dev_20261015_v1`. See [part_02b.md](part_02b.md) for the before/after table.
+> **Updated after the Part 02b cold-start fix (2026-10-16).** Part 09 was **re-run** on the
+> post-fix data (`results/exp_09_*`, `dataset_version post_coldstart_fix`, git `e57ba215`); the
+> adoption decision is **unchanged: not adopted** (S1−S0 and S1s−S0 bagged CIs = 0.0000), and no
+> isolation-forest artifact was saved. The quantitative results and command output quoted below are
+> from the **original pre-fix run**; the post-fix values and the before/after table are in
+> [part_02b.md](part_02b.md).
 
 **Status:** done (holdout: structuring) · **Committed:** (pending) · **Pushed:** no
 

@@ -89,6 +89,7 @@ def build_headlines(results: dict) -> dict:
         "rules": f"Rules {_ci(rules)}",
         "logreg": f"LogReg {_ci(logreg)}",
         "test_prevalence": comp["prevalence"],
+        "n_test_frauds": comp["frauds"],
         "recall_at_top_0.01": xgb["recall_at_top_0.01"],
         "recall_at_capacity_budget": aware["recall"],
         "assumptions": (
@@ -108,20 +109,29 @@ def build_headlines(results: dict) -> dict:
             f"{aware['flagged_per_day']:.1f}/day vs {capacity}/day"
         ),
         "n_demoted": dmeta["n_demoted"],
+        "capacity_note": (
+            f"Capacity did not bind on test: the policy flags {aware['flagged_per_day']:.1f}/day "
+            f"against a {capacity}/day cap with {dmeta['n_demoted']} demotions, so "
+            "`enforce_capacity` was never exercised and the capacity-aware result is NOT evidence "
+            "the cap works — it is the unconstrained policy."
+        ),
         "assumptions": (
             "Costs (INR): alpha=0.85 of amount lost, review_cost=75, friction_cost=150, "
             f"step-up 5/40, block friction 450; analyst capacity {capacity}/day "
             f"(avg daily volume {dmeta['avg_daily_volume']:.1f}). Realized cost on test "
-            "with the frozen validation threshold; the reduction CI resamples customers."
+            "with the frozen validation threshold; the reduction CI resamples customers. The "
+            "83.23% is a point estimate: the CI is reported in absolute INR, and no separate CI "
+            "for the ratio is persisted because its denominator (the resampled F1 cost) is itself "
+            "random."
         ),
     }
 
     h3 = {
         "structuring_recall_anomaly_before_after": None,
         "structuring_recall_note": (
-            "Part 09 isolation forest was re-run post cold-start fix and NOT adopted "
-            "(S1-S0 and S1s-S0 bagged CIs include 0); no anomaly feature is in the policy, "
-            "so there is no before/after gain to report."
+            "the Part 09 isolation forest was re-run post cold-start fix and NOT adopted — the "
+            "S1-S0 and S1s-S0 bagged CIs are 0.0000 (they include 0) — so there is no anomaly "
+            "before/after gain to report; this is a null result, not a failure."
         ),
         "drift_val_to_test_pr_auc_xgb": {
             "val": drift["per_model_pr_auc"]["xgb"]["val_pr_auc"],
@@ -129,10 +139,16 @@ def build_headlines(results: dict) -> dict:
         },
         "drift_switch_date": drift["switch_date"],
         "post_switch_share_of_test_frauds": post.get("post_share_of_frauds"),
+        "hypotheses": (
+            "Hypotheses for why test beats val (not established): the structuring share of frauds "
+            "rose from 18% pre-switch to 45% post-switch (structuring is an easier, high-signal "
+            "scenario), and the validation window may be selection-optimistic."
+        ),
         "assumptions": (
             f"The drift switch {drift['switch_date']} sits inside the test window; "
             f"{post.get('post_share_of_frauds', float('nan')):.0%} of test frauds are "
-            "post-switch, so val->test degradation mixes drift with the window change."
+            "post-switch, so drift and the window change are conflated; the observed val->test "
+            "movement is upward (no degradation observed)."
         ),
     }
 
@@ -150,11 +166,13 @@ def build_headlines(results: dict) -> dict:
         f"{xgb['pr_auc']:.3f} (CI {xgb['pr_auc_lo']:.3f}-{xgb['pr_auc_hi']:.3f}) vs Rules "
         f"{rules['pr_auc']:.3f} at {comp['prevalence'] * 100:.2f}% prevalence "
         "[results/final_results.json:model_comparison.xgb]",
-        "Cost-based capacity policy cut realized fraud cost "
-        f"{pct:.1f}% vs F1-optimal (CI {ci['lo']:,.0f}-{ci['hi']:,.0f} INR) under a "
-        f"{capacity}/day analyst cap [final_results.json:decision.meta.reduction_ci]",
+        "Amount-aware cost policy cut realized fraud cost "
+        f"{pct:.1f}% vs F1-optimal (CI {ci['lo']:,.0f}-{ci['hi']:,.0f} INR); capacity "
+        f"{capacity}/day was non-binding on this window "
+        "[final_results.json:decision.meta.reduction_ci]",
         f"Reported concept drift as a finding: {post.get('post_share_of_frauds', 0):.0%} of "
-        "test frauds fall after the drift switch [final_results.json:drift.post_switch]",
+        "test frauds fall after the drift switch, yet XGB val->test PR-AUC rose "
+        "(0.929->0.962, no degradation observed) [final_results.json:drift]",
         f"{meta['n_features']}-feature registry, {counts['n_leakage_tests']} leakage tests, "
         f"{counts['n_tests']} automated tests [final_results.json:meta]",
     ]
@@ -195,6 +213,8 @@ def headline_markdown(results: dict) -> str:
         f"- {h1['logreg']}",
         f"- recall@1% budget: {h1['recall_at_top_0.01']:.4f}; "
         f"recall at capacity policy: {h1['recall_at_capacity_budget']:.4f}",
+        f"- CI width: with only {h1['n_test_frauds']} test frauds the XGB PR-AUC CI "
+        f"(0.934-0.980) is wide; read the point estimate with that in mind.",
         f"- _assumptions:_ {h1['assumptions']}",
         "",
         "## 2. Business decision",
@@ -203,15 +223,19 @@ def headline_markdown(results: dict) -> str:
         f"- CI excludes 0: {h2['ci_excludes_zero']}",
         f"- demand vs capacity: {h2['flagged_per_day_vs_capacity']}",
         f"- n_demoted: {h2['n_demoted']}",
+        f"- capacity: {h2['capacity_note']}",
         f"- _assumptions:_ {h2['assumptions']}",
         "",
         "## 3. Unseen fraud & drift",
         "",
         f"- anomaly before/after: {h3['structuring_recall_anomaly_before_after']} "
         f"— {h3['structuring_recall_note']}",
-        f"- XGB PR-AUC val->test: {h3['drift_val_to_test_pr_auc_xgb']}",
+        f"- drift: **no degradation observed** (XGB PR-AUC "
+        f"{h3['drift_val_to_test_pr_auc_xgb']['val']:.4f} val -> "
+        f"{h3['drift_val_to_test_pr_auc_xgb']['test']:.4f} test, higher on test)",
         f"- drift switch {h3['drift_switch_date']}; post-switch share of test frauds: "
-        f"{h3['post_switch_share_of_test_frauds']}",
+        f"{h3['post_switch_share_of_test_frauds']:.0%}",
+        f"- {h3['hypotheses']}",
         f"- _assumptions:_ {h3['assumptions']}",
         "",
         "## 4. Engineering",
@@ -422,11 +446,14 @@ def final_results_markdown(results: dict) -> str:
         f"**Decision.** Analysts are capped at {dmeta['capacity_per_day']}/day but the "
         f"amount-aware "
         f"policy flags only {aware['flagged_per_day']:.1f}/day, so capacity never binds "
-        f"(n_demoted {dmeta['n_demoted']}) and the policy is identical with or without the cap. It "
+        f"(n_demoted {dmeta['n_demoted']}) and the policy is identical with or without the cap "
+        "(so this is not evidence the cap works). It "
         f"cuts realized cost "
         f"{_f(dmeta['amount_aware_capacity_pct_reduction_vs_f1'], 2)}% versus the "
         f"F1-optimal threshold (CI {_money(dmeta['reduction_ci']['lo'])}-"
-        f"{_money(dmeta['reduction_ci']['hi'])} INR, excluding 0), driven by catching "
+        f"{_money(dmeta['reduction_ci']['hi'])} INR, excluding 0; absolute INR — the "
+        f"{_f(dmeta['amount_aware_capacity_pct_reduction_vs_f1'], 2)}% is a "
+        f"point estimate, the ratio has no persisted CI), driven by catching "
         f"high-value fraud "
         "while accepting a higher flag volume than F1 — H2 holds. Sensitivity shows the saving is "
         "positive under all four cost scenarios, largest when false-positive friction is cheap.",
@@ -438,10 +465,13 @@ def final_results_markdown(results: dict) -> str:
         f"structuring. Despite that, XGB PR-AUC does not degrade from validation to test "
         f"({_f(val)} → {_f(xgb['pr_auc'])}); the ranking survives the shift even though the "
         f"top PSI "
-        "features are the tenure/behavioural counters. On unseen customers (no training history) "
-        f"recall@1% drops to {_f(hold['unseen']['recall_at_top_0.01'])} from "
+        "features are the tenure/behavioural counters; a likely contributor is the rising "
+        "structuring share (18% pre-switch to 45% post-switch, an easier scenario) plus possible "
+        "validation selection optimism — hypotheses, not established. On unseen customers (no "
+        f"training history) recall@1% drops to {_f(hold['unseen']['recall_at_top_0.01'])} from "
         f"{_f(hold['seen']['recall_at_top_0.01'])}, the honest cost of thin history. The Part 09 "
-        "isolation forest remains not adopted, so there is no anomaly before/after gain to claim.",
+        "isolation forest remains not adopted (S1-S0 and S1s-S0 bagged CIs 0.0000), so there is no "
+        "anomaly before/after gain to claim.",
         "",
     ]
     return "\n".join(L)

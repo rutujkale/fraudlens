@@ -1,2 +1,3 @@
 timestamp,caller,model_version,final,git_commit,reason
 2026-10-16T16:25:08,part12_label_composition,,False,d11d34c9c896d6f1404386b17c59779c86ea34bd,"pre-guard composition only: read dev test-window label counts (frauds by scenario/archetype/hard-negative, prevalence) to pre-register the n_pos<30 suppression list. No model scores, features or metrics; no evaluation."
+2026-10-16T17:00:48,final_evaluation,xgb_dev_20261015_v1,True,c31c8c8db06a4f38c230df2a45ac132b61bd2f44,

@@ -621,4 +621,59 @@ _What happened, one line._
   not a Part 11 blocker (the pre-registered policy is REVIEW-capped). Guarded by
   `test_policy.py::test_enforce_capacity_never_caps_non_review` so the behaviour is explicit.
 
+### Finding: drift PSI computed on categorical feature columns (Part 12B, dry-run)
+- **What happened:** the dry-run of the locked evaluation crashed in `monitoring/drift.py::psi_table`
+  because `drift_block` passed the full `FEATURE_COLUMNS` (53), which include categoricals such as
+  `transaction_type`. PSI needs numeric bins and raised `ValueError` on the first categorical.
+  Experiment 8E never hit this because it passed `NUMERIC_COLUMNS`; the local `TENURE_FEATURES`
+  constant it also used was inside the script, not the library.
+- **How detected:** the mandatory dry-run on `val_thr` (condition before the guarded run), before any
+  test access.
+- **Effect:** the evaluation could not run; without the dry-run gate this would have been a failed
+  test-window access (a log row for a crash, not evidence).
+- **Fix:** `drift_block` now uses `NUMERIC_COLUMNS` for both PSI passes (all-numeric, and
+  numeric-minus-tenure); `TENURE_FEATURES` was promoted to `monitoring/drift.py`. `tests/test_final_guard.py`
+  gained `test_headline_builder_requires_keys`.
+- **Test added:** dry-run reproduces the frozen validation policy exactly (F1 cost 175,730.36;
+  amount-aware-capacity 68,795.64; 60.85%) — a regression check that the pipeline is wired correctly
+  before the one-shot run.
+
+### Finding: `part_12.md` carried a wrong drift-switch time (14:14)
+- **What happened:** an earlier draft stated the dev drift switch was at "14:14", derived from a
+  span-based estimate. The code (`data_gen/drift.py::drift_start_date`) uses an **integer-day** offset
+  (`start_date + int(0.88 × 120) d` → 2026-01-01 + 105 d), so the switch is **2026-04-16 00:00:00**.
+- **How detected:** code audit during 12B planning (read the actual generator instead of trusting the
+  prose), then confirmed by the test-window split (pre-switch 83 frauds / post-switch 310).
+- **Effect:** a deliverable doc asserted a wrong timestamp; any downstream window split would be
+  off by ~14 h.
+- **Fix:** corrected `part_12.md` to 2026-04-16 00:00:00 with the formula; `freeze.json` never held a
+  time (only the split boundaries), so no frozen artifact was wrong.
+- **Test added:** none (prose; the split is already frozen in `results/split_dev.json`).
+
+### Finding: runtime `config_hash` ≠ each artifact's training `config_hash`
+- **What happened:** the pre-run verifier would abort because the live `config_hash 4279ce47…` did not
+  equal `config_hash_at_training 7b6d94bf…` stored in `xgb_dev_20261015_v1` / `logreg_dev_20261015_v1`.
+- **How detected:** the config-hash check in the verifier, before the test window opened.
+- **Effect:** if treated as a mismatch the one-shot run would refuse; if ignored, the freeze guarantee
+  would be silently weakened.
+- **Fix:** `evaluation/locked.py::reconstructed_training_config_hash` removes exactly the keys added
+  **after** training — the Part 11 `external:` block (`dc9c8f6`) and the two Part 02b
+  `models.xgb.suspicious_pr_auc_*` leakage-guard flags (`230ab14`) — and reproduces `7b6d94bf…`
+  exactly. So the config is proven unchanged on every training-relevant section; both hashes are
+  recorded in `freeze.json`.
+- **Test added:** `tests/test_final_guard.py::test_reconstructed_hash_matches_frozen_training_hash`.
+
+### Process note: test-window label composition read before the freeze (Part 12A)
+- **What happened:** during Part 12A planning the dev **test-window label composition** (frauds by
+  scenario/archetype/hard-negative, prevalence) was read to pre-register the `n_pos < 30` suppression
+  list — i.e. test labels were observed *before* the freeze.
+- **How detected:** self-disclosed during review and recorded in `part_12.md`.
+- **Effect:** no model scores, features or metrics were read, and the freeze happened after; the only
+  thing that could change is the pre-registered suppression list, which is a reporting choice, not a
+  model/threshold decision. It is still a real ordering violation of "freeze before touching test".
+- **Fix:** disclosed in `part_12.md` and in the access log; the freeze and the single evaluation
+  proceed unchanged. Future parts should pre-register suppression rules without reading test labels.
+- **Test added:** none (process).
+
+
 

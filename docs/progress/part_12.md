@@ -1,7 +1,8 @@
 # Part 12 progress — Freeze, locked test evaluation, headline numbers
 
-**Status:** 12A (freeze) complete and committed; 12B/12C **not run** — awaiting review before the
-one-shot test evaluation. · **Committed:** yes (freeze) · **Pushed:** no
+**Status:** 12A (freeze) + 12B (locked evaluation) + 12C (headlines) + 12D (final results doc)
+complete. The test window was accessed **once**; no re-runs. Tag `v1.0-eval` deferred pending review.
+· **Committed:** yes (freeze, eval code, results) · **Pushed:** no
 
 ## Deviation from the prompt
 
@@ -99,13 +100,49 @@ payday_burst 16.
 scenarios `amount_anomaly` (25), `geo_anomaly` (22); archetypes `high_spend` (27),
 `business_like` (13); hard-negative type `payday_burst` (16).
 
-## Open items
+## Locked evaluation (12B) — run order and result
 
-- 12B locked evaluation not run (awaiting review). The verifier is implemented in
-  `src/fraudlens/evaluation/locked.py` (unit-tested in `tests/test_final_guard.py`, 8 tests): hash
-  checks accepting both path separators, clean-tree + HEAD-contains-`freeze.json` precondition, and
-  a `final=False` disclosure row that does **not** count as a prior evaluation. The run will open the
-  test window only via `TestSetGuard(final=True)`.
-- Item 9 sim-to-real: use the main-frozen XGB **test** PR-AUC with its prevalence beside it; note the
-  53 (synthetic) vs 38 (IEEE shared-subset) feature-set difference; **no cross-dataset differencing**.
-- Part 15: carry the dev-not-`main` deviation forward.
+Evaluation code committed **before** the run so the access-log row and `final_results.json` carry its
+hash: `c31c8c8` (`eval: Part 12B locked evaluation pipeline (pre-run)`). Pipeline:
+`src/fraudlens/evaluation/final_evaluation.py` (+ `headlines.py`, thin `scripts/final_evaluation.py`,
+`scripts/make_headline_numbers.py`); it prints and verifies **all 14** frozen hashes against
+`freeze.json` (aborts on mismatch), re-proves the config hash, then opens the test window only via
+`TestSetGuard(final=True)`. `--dry-run` runs the same path on the **validation** slice (no guard, no
+final files).
+
+- Dry-run first (on `val_thr`): one crash (`psi_table` called on categorical columns) fixed to
+  `NUMERIC_COLUMNS`; second dry-run clean, all 6 figures, and it reproduced the frozen validation
+  policy exactly (F1 cost 175,730.36; amount-aware-capacity 68,795.64; 60.85%). The tree-clean guard
+  also fired once on a stray log file and refused — as intended, before opening the window.
+- Single guarded run: all 14 hashes `OK`, config reconstruction `OK`, wrote `results/final_results.json`
+  + `final_model_comparison.csv` + `final_policy_comparison.csv` + `final_sensitivity.csv` + 6 figures.
+- `results/test_access_log.csv` (2 rows): the pre-guard `final=False` composition disclosure, then the
+  single `final_evaluation, final=True` row at `2026-10-16T17:00:48`, `git_commit c31c8c8`.
+
+### Four headline results (test window, frozen)
+
+1. **Model** — XGB PR-AUC **0.9619** (CI 0.9340-0.9798) vs LogReg 0.8873 (0.8383-0.9233) vs Rules
+   0.2036 (0.0873-0.3492); prevalence 0.987%; recall@1% 0.9059; recall at the capacity policy 0.9669.
+2. **Decision** — amount-aware capacity policy realized-cost reduction vs F1-optimal **83.23%**
+   (773,067 INR; CI 361,480-1,281,632, excludes 0); demand 5.9/day vs capacity 23/day;
+   **n_demoted 0** (capacity does not bind on test); H2 holds.
+3. **Unseen & drift** — anomaly before/after **null** (Part 09 IF not adopted); XGB PR-AUC
+   val 0.9291 → test 0.9619 (no degradation); drift switch `2026-04-16`; **79% of test frauds
+   post-switch**.
+4. **Engineering** — 53 features, 233 automated tests, 12 leakage tests; API p95 latency placeholder
+   (Part 13).
+
+Pre-registered outcomes all hold: H1 (XGB lo 0.9340 > Rules hi 0.3492), H2 (CI excludes 0), H3
+(Part 09 unchanged), H4 (counts from code). The H1 low-power caveat did **not** bite — the 393-fraud
+test CIs are tight. Unseen-customer recall@1% is 0.4324 vs 0.9242 seen (honest cost of no history).
+
+## Headline numbers (12C) and final results doc (12D)
+
+- `scripts/make_headline_numbers.py` → `reports/headline_numbers.md` (four headlines + assumptions +
+  resume bullet candidates, every number read from `final_results.json`).
+- Same script regenerates `docs/final_results.md` (12D) from the JSON: model/calibration/policy/
+  sensitivity/drift/holdout/per-scenario/fairness tables + figure links + a three-paragraph
+  interpretation limited to the numbers.
+- **Open:** tag `v1.0-eval` only after review. Item 9 sim-to-real uses the frozen XGB test PR-AUC with
+  its prevalence beside it (53 vs 38 shared features); **no cross-dataset differencing**. Part 15:
+  carry the dev-not-`main` deviation forward.

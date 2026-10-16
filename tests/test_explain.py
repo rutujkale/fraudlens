@@ -15,6 +15,7 @@ import pytest
 
 from fraudlens.evaluation.cost_model import APPROVE, BLOCK, REVIEW, STEP_UP
 from fraudlens.evaluation.experiments_lib import load_supervised
+from fraudlens.evaluation.scores import load_model_versions
 from fraudlens.explain.fairness import (
     AUDIT_ATTRIBUTES,
     age_band,
@@ -40,7 +41,7 @@ def _dev_setup():
     """(explainer, x_sample, y_sample) from the dev artifact — loaded once."""
     set_global_seed(42)
     sup = load_supervised(PROFILE)
-    bundle = model_io.load_serving_bundle("xgb_20261011_v1")
+    bundle = model_io.load_serving_bundle(load_model_versions(PROFILE)["xgb"])
     explainer = ShapExplainer(bundle["model"])
     y_val = sup.y_val()
     sample = stratified_val_sample(y_val, max_frauds=200, max_legit=400, seed=42)

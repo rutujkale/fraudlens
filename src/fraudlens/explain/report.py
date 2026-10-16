@@ -243,11 +243,10 @@ def render_gallery_markdown(profile: str, cases: list[dict], policy_line: str) -
         "representative it is. SHAP here explains the raw model margin; the reported "
         "probability is the calibrated one (the honesty rule in `docs/methodology.md`).",
         "",
-        "Caveat: the simulator gives ~10% of customers a mid-window `account_open_date` but "
-        "still generates their transactions from day 0, so ~4% of rows have "
-        "`history_days < 0` (see `docs/what_went_wrong.md`). The cold-start case therefore "
-        "requires `0 <= history_days < 2`; a negative-history row would be a generation "
-        "defect, not a cold start.",
+        "Caveat: since the Part 02b cold-start fix, generated transactions are gated on the "
+        "customer's `account_open_date`, so no row has `history_days < 0` (the features builder "
+        "asserts this). The cold-start case is defined by `0 <= history_days < 2` — a genuinely "
+        "brand-new account, not the pre-fix generation defect (see `docs/what_went_wrong.md`).",
         "",
         f"**Policy:** {policy_line}",
         "",

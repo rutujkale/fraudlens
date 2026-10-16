@@ -386,14 +386,11 @@ def _case_commentary(case: dict, thr: pd.DataFrame) -> str:
             "one clear."
         )
     return (
-        f"Cold start by the book: the account opened {case['history_days']:.1f} days before this "
-        f"transaction, p={case['p']:.4f} -> {action}. Note the contradiction the rule exposes: "
-        f"this customer already has n_prior_tx={case['n_prior_tx']:.0f} and the device shows "
-        "prior activity, i.e. the simulator generated this customer's history before the "
-        "declared `account_open_date` (see the `history_days < 0` finding in "
-        "`docs/what_went_wrong.md`). A genuinely empty-history cold start cannot be exhibited "
-        "with this dataset; what this case does show is that the model is comfortable "
-        "approving a low-risk brand-new-account transaction."
+        f"Cold start by the book: the account opened {case['history_days']:.2f} days before this "
+        f"transaction, p={case['p']:.4f} -> {action}. The account is brand-new, so its own "
+        f"behavioural history is thin (n_prior_tx={case['n_prior_tx']:.0f}) and adds little; "
+        "this case shows how the amount-aware policy treats a low-history account, not a "
+        "generation defect (post Part 02b the simulator no longer emits pre-open rows)."
     )
 
 

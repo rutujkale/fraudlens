@@ -136,7 +136,7 @@ def train_rules(df, split, cfg: Config, chash: str) -> np.ndarray:
     engine = RuleEngine(cfg.simulation.rules).fit(
         train_legit[FEATURE_COLUMNS]
     )
-    write_rules_doc(engine, cfg.simulation.profile, docs_dir() / "rules_baseline.md")
+    write_rules_doc(engine, cfg.simulation.profile, docs_dir())
     score = engine.score(df.iloc[split.val_idx][FEATURE_COLUMNS]).to_numpy()
     metrics = evaluate_scores(
         y[split.val_idx], score, cfg.simulation.ks, cfg.simulation.precision_targets

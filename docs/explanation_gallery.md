@@ -2,7 +2,7 @@
 
 Six validation cases selected by **pre-registered rules** (not by looks): each row below records the pool it was drawn from, so a reader can see how representative it is. SHAP here explains the raw model margin; the reported probability is the calibrated one (the honesty rule in `docs/methodology.md`).
 
-Caveat: the simulator gives ~10% of customers a mid-window `account_open_date` but still generates their transactions from day 0, so ~4% of rows have `history_days < 0` (see `docs/what_went_wrong.md`). The cold-start case therefore requires `0 <= history_days < 2`; a negative-history row would be a generation defect, not a cold start.
+Caveat: since the Part 02b cold-start fix, generated transactions are gated on the customer's `account_open_date`, so no row has `history_days < 0` (the features builder asserts this). The cold-start case is defined by `0 <= history_days < 2` — a genuinely brand-new account, not the pre-fix generation defect (see `docs/what_went_wrong.md`).
 
 **Policy:** amount-aware policy `cost_policy_v1` (scenario `balanced`), calibrator `sigmoid`, capacity 23/day
 
@@ -66,7 +66,7 @@ Caveat: the simulator gives ~10% of customers a mid-window `account_open_date` b
 
 ## cold_start
 
-`T0218309` — Cold start by the book: the account opened 1.3 days before this transaction, p=0.5320 -> BLOCK. Note the contradiction the rule exposes: this customer already has n_prior_tx=3 and the device shows prior activity, i.e. the simulator generated this customer's history before the declared `account_open_date` (see the `history_days < 0` finding in `docs/what_went_wrong.md`). A genuinely empty-history cold start cannot be exhibited with this dataset; what this case does show is that the model is comfortable approving a low-risk brand-new-account transaction.
+`T0218309` — Cold start by the book: the account opened 1.34 days before this transaction, p=0.5320 -> BLOCK. The account is brand-new, so its own behavioural history is thin (n_prior_tx=3) and adds little; this case shows how the amount-aware policy treats a low-history account, not a generation defect (post Part 02b the simulator no longer emits pre-open rows).
 
 - **Raises risk:** Only 1 minute since the previous transaction; 0.0 days since the previous transaction; 0 prior transactions from this device; merchant category (encoded category code) = 5
 - **Mitigating:** Account opened 1.3 days ago; Amount is 0.2x the customer's lifetime median; 1-hour activity is 0.3x the 24-hour rate; hour deviation: no prior history

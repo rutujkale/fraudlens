@@ -501,3 +501,46 @@ _What happened, one line._
   counts) and the run continues; larger profiles (dev has 342 val positives) keep the exit-3
   hard stop. Tiny was **not** enlarged and its PR-AUC is not used as evidence anywhere.
 - **Test added:** `tests/test_splits.py::test_pr_auc_guard_small_sample_bypass`.
+
+### Finding: `docs/rules_baseline.md` was not profile-suffixed (tiny overwrote dev)
+- **What happened:** `scripts/train.py` wrote the rule-definitions doc to a fixed
+  `docs/rules_baseline.md`. Running `train.py --profile tiny` after `--profile dev` silently
+  overwrote the dev file, so the tracked doc ended up holding the `tiny` rules (its header
+  said ``profile `tiny```) with no dev copy left.
+- **How detected:** review before pushing the Part 02b commits (the file's header profile did
+  not match the dev run that documents it).
+- **Effect:** one profile's documentation could be lost with no error; a reader of Part 06
+  would see `tiny` thresholds while Part 06 describes `dev`.
+- **Fix:** `models/rules.py::rules_doc_path` builds `docs/rules_baseline_<profile>.md` and
+  `write_rules_doc` writes there; `train.py` no longer passes a filename. Regenerated
+  `docs/rules_baseline_dev.md` and `docs/rules_baseline_tiny.md` and removed the stale
+  `docs/rules_baseline.md`. (Regenerated via the committed renderer rather than re-running
+  `train.py`, which would fork a new `..._{datetime.now()}_v1` artifact because the version
+  name carries the run date.)
+- **Test added:** `tests/test_rules.py::test_rules_doc_path_is_profile_suffixed`.
+
+### Finding: gallery caveat and cold-start commentary hard-coded the pre-fix defect
+- **What happened:** `explain/report.py::render_gallery_markdown` and
+  `scripts/run_shap.py::_case_commentary` embedded prose claiming the simulator emits rows
+  with `history_days < 0` and that a genuine cold start "cannot be exhibited". After the Part
+  02b fix there are no pre-open rows (`min history_days = 0`, 0 rows `< 0` on dev), so the
+  regenerated `docs/explanation_gallery.md` still carried a false caveat and a wrong cold-start
+  narrative even though the case data was fresh.
+- **How detected:** the Part 02b doc-review pass asked to confirm the gallery doc had no
+  `history_days < 0` caveat.
+- **Effect:** a deliverable doc contradicted the fixed data — the exact kind of stale claim the
+  project bans.
+- **Fix:** rewrote both strings to describe the post-fix state (account genuinely brand-new,
+  `0 <= history_days < 2`) and regenerated the gallery doc.
+- **Test added:** none (prose; the gallery data itself is covered by the existing Part 10 tests).
+
+### Finding: `tests/test_explain.py` pinned the pre-fix dev artifact
+- **What happened:** `_dev_setup` loaded the hard-coded `"xgb_20261011_v1"`. After the re-run
+  the current dev artifact was `xgb_dev_20261015_v1`, so the explain tests silently exercised
+  the old model against the new feature matrix (the old artifact directory still exists).
+- **How detected:** the same pre-push review (grep for literal `xgb_2026` model ids).
+- **Effect:** the SHAP/additivity tests would keep passing while no longer testing the model
+  the results reference; a future re-run could make them fail or mislead.
+- **Fix:** `_dev_setup` now reads the id from `results/models_dev.json`
+  (`evaluation/scores.py::load_model_versions`), so it tracks whatever `train.py` last wrote.
+- **Test added:** none (this *is* the test fixture; it now follows the active model).

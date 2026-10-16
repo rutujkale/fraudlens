@@ -193,8 +193,8 @@ the tracked doc that recorded them.
 | exp8 | dev | exp8A.imbalance_winner | spw_full pr_auc=0.9663 rec@1pct=0.9542 | spw_full pr_auc=0.9271 rec@1pct=0.8898 |
 | exp8 | dev | exp8B.max_scenario_delta | structuring=-1.0000 | structuring=-1.0000 |
 | shap | dev | top_mean_abs_shap | tx_from_device_prior (1.0851) | tx_from_device_prior (0.9453) |
-| shap | dev | p50_ms | 7.4444 | 7.01655 |
-| shap | dev | p95_ms | 8.71245 | 7.92639 |
+| shap | dev | p50_ms | 7.4444 | 6.4846 |
+| shap | dev | p95_ms | 8.71245 | 7.34999 |
 | part10 | dev | gallery_rows | clear_tp=T0217039;subtle_tp=T0230915;false_negative=T0230912;hard_negative_fp=T0229331;high_amount_tn=T0215456;cold_start=T0231027 | clear_tp=T0212883;subtle_tp=T0200869;false_negative=T0200867;hard_negative_fp=T0210287;high_amount_tn=T0203070;cold_start=T0218309 |
 | part10 | dev | fairness_distinguishable | 11 of 39 | 15 of 39 |
 <!-- END part_02b_table -->

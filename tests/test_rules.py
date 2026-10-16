@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from fraudlens.config import load_config
-from fraudlens.models.rules import RuleEngine, rules_markdown
+from fraudlens.models.rules import RuleEngine, rules_doc_path, rules_markdown
 
 
 def _train_legit(n: int = 200) -> pd.DataFrame:
@@ -60,3 +60,8 @@ def test_rules_markdown_lists_all_rules():
     md = rules_markdown(engine, "tiny")
     for name in engine.cfg.rules:
         assert name in md
+
+
+def test_rules_doc_path_is_profile_suffixed(tmp_path):
+    assert rules_doc_path("tiny", tmp_path).name == "rules_baseline_tiny.md"
+    assert rules_doc_path("dev", tmp_path) != rules_doc_path("tiny", tmp_path)

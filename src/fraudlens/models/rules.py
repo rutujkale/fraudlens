@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 
 from fraudlens.config import RulesConfig
+from fraudlens.paths import docs_dir
 
 # Feature column used to derive a percentile threshold per rule.
 _PERCENTILE_COLUMN = {
@@ -120,7 +121,7 @@ _CONDITION_TEXT = {
 
 
 def rules_markdown(engine: RuleEngine, profile: str) -> str:
-    """Render the fitted rule definitions to markdown for ``docs/rules_baseline.md``."""
+    """Render the fitted rule definitions to markdown for ``docs/rules_baseline_<profile>.md``."""
     lines = [
         f"# Rules baseline — profile `{profile}`",
         "",
@@ -142,7 +143,19 @@ def rules_markdown(engine: RuleEngine, profile: str) -> str:
     return "\n".join(lines)
 
 
-def write_rules_doc(engine: RuleEngine, profile: str, path: str | Path) -> Path:
-    out = Path(path)
+def rules_doc_path(profile: str, directory: str | Path | None = None) -> Path:
+    """``docs/rules_baseline_<profile>.md``.
+
+    Profile-suffixed so a run for one profile cannot overwrite another's rule
+    definitions (see ``docs/what_went_wrong.md``, 2026-10-16).
+    """
+    base = Path(directory) if directory is not None else docs_dir()
+    return base / f"rules_baseline_{profile}.md"
+
+
+def write_rules_doc(
+    engine: RuleEngine, profile: str, directory: str | Path | None = None
+) -> Path:
+    out = rules_doc_path(profile, directory)
     out.write_text(rules_markdown(engine, profile), encoding="utf-8")
     return out

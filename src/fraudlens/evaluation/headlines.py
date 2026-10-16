@@ -85,9 +85,9 @@ def build_headlines(results: dict) -> dict:
     pct = dmeta["amount_aware_capacity_pct_reduction_vs_f1"]
 
     h1 = {
-        "xgb": _ci(xgb),
-        "rules": _ci(rules),
-        "logreg": _ci(logreg),
+        "xgb": f"XGB {_ci(xgb)}",
+        "rules": f"Rules {_ci(rules)}",
+        "logreg": f"LogReg {_ci(logreg)}",
         "test_prevalence": comp["prevalence"],
         "recall_at_top_0.01": xgb["recall_at_top_0.01"],
         "recall_at_capacity_budget": aware["recall"],
@@ -190,7 +190,7 @@ def headline_markdown(results: dict) -> str:
     lines += [
         "## 1. Model performance",
         "",
-        f"- XGB: {h1['xgb']}",
+        f"- {h1['xgb']}",
         f"- {h1['rules']}",
         f"- {h1['logreg']}",
         f"- recall@1% budget: {h1['recall_at_top_0.01']:.4f}; "
@@ -237,4 +237,218 @@ def write_headline_numbers(results: dict, path: str | Path | None = None) -> Pat
 
     out = Path(path) if path else reports_dir() / "headline_numbers.md"
     out.write_text(headline_markdown(results), encoding="utf-8")
+    return out
+
+
+def _table(headers: list[str], rows: list[list[str]]) -> str:
+    lines = ["| " + " | ".join(headers) + " |", "|" + "|".join(["---"] * len(headers)) + "|"]
+    lines += ["| " + " | ".join(r) + " |" for r in rows]
+    return "\n".join(lines)
+
+
+def _f(v: float | None, nd: int = 4) -> str:
+    if v is None or v != v:
+        return "n/a"
+    return f"{v:.{nd}f}"
+
+
+def _money(v: float) -> str:
+    return f"{v:,.0f}"
+
+
+def final_results_markdown(results: dict) -> str:
+    """Render ``docs/final_results.md`` (Part 12D): tables from the JSON + interpretation."""
+    m, comp = results["meta"], results["composition"]
+    policies = results["decision"]["policies"]
+    dmeta = results["decision"]["meta"]
+    drift = results["drift"]
+    post = drift["post_switch"]
+    hold = results["holdout"]
+    sim = results["sim_to_real"]
+    out = results["pre_registered_outcomes"]
+
+    L: list[str] = [
+        "# FraudLens — final locked evaluation results",
+        "",
+        f"Profile `{m['profile']}` · frozen evaluation · freeze commit "
+        f"`{m['freeze_git_commit'][:10]}` · "
+        f"eval commit `{m['evaluation_git_commit'][:10]}` · generated {m['generated_at']}.",
+        "",
+        f"Test window (held out, accessed once): {comp['rows']:,} rows · {comp['frauds']} frauds · "
+        f"prevalence {comp['prevalence'] * 100:.3f}%.  All "
+        f"{len(m['verified_hashes'])} frozen hashes "
+        f"matched `results/freeze.json` ({m['freeze_verified']}); config reconstruction proof OK.",
+        "",
+        "## 1. Model comparison (test, frozen thresholds)",
+        "",
+        _table(
+            ["Model", "PR-AUC (CI)", "ROC-AUC", "F1@thr", "Prec", "Rec", "FPR", "Lift@1%",
+             "recall@1%", "recall@90%P", "Accuracy*"],
+            [[
+                r["model"],
+                f"{_f(r['pr_auc'])} ({_f(r['pr_auc_lo'])}-{_f(r['pr_auc_hi'])})",
+                _f(r["roc_auc"]), _f(r["f1_at_thr"]), _f(r["precision_at_thr"]),
+                _f(r["recall_at_thr"]), _f(r["fpr_at_thr"], 5), _f(r["lift_at_top_0.01"], 2),
+                _f(r["recall_at_top_0.01"]), _f(r["recall_at_precision_0.9"]),
+                _f(r["accuracy_at_thr"]),
+            ] for r in results["model_comparison"]],
+        ),
+        "",
+        "*Accuracy is a footnote only (imbalanced data; PR-AUC is primary). "
+        f"CI = cluster bootstrap over customers (n=500, seed {m['seed']}).",
+        "",
+        "## 2. Calibration (frozen calibrator)",
+        "",
+        _table(
+            ["Model", "Brier raw", "Brier calibrated", "ECE raw", "ECE calibrated"],
+            [[n, _f(c["brier_raw"]), _f(c["brier_calibrated"]), _f(c["ece_raw"], 6),
+              _f(c["ece_calibrated"], 6)] for n, c in results["calibration"].items()
+             if isinstance(c, dict)],
+        ),
+        "",
+        f"Test base rate {_f(results['calibration']['base_rate'], 5)}.",
+        "",
+        "## 3. Decision policy (test, frozen validation thresholds)",
+        "",
+        _table(
+            ["Policy", "Flagged/day", "Recall", "Precision", "FPR", "Fraud loss (INR)",
+             "Review (INR)", "Friction (INR)", "Total cost (INR)", "% vs F1", "Feasible"],
+            [[
+                p["policy"], _f(p["flagged_per_day"], 1), _f(p["recall"]), _f(p["precision"]),
+                _f(p["fpr"], 5), _money(p["fraud_loss"]), _money(p["review_cost"]),
+                _money(p["friction_cost"]), _money(p["total_realized_cost"]),
+                _f(p["pct_cost_reduction_vs_f1"], 2), str(p["feasible"]),
+            ] for p in policies],
+        ),
+        "",
+        f"F1-optimal threshold {_f(dmeta['f1_threshold'], 6)}; cost-optimal global "
+        f"{_f(dmeta['cost_optimal_threshold'], 6)}; under capacity "
+        f"{_f(dmeta['cost_optimal_threshold_capacity'], 6)}. Capacity "
+        f"{dmeta['capacity_per_day']}/day "
+        f"(avg daily volume {_f(dmeta['avg_daily_volume'], 1)}). n_demoted {dmeta['n_demoted']}. "
+        f"Amount-aware capacity reduction vs F1: "
+        f"{_f(dmeta['amount_aware_capacity_pct_reduction_vs_f1'], 2)}% "
+        f"(CI {_money(dmeta['reduction_ci']['lo'])} to {_money(dmeta['reduction_ci']['hi'])} INR, "
+        f"excludes 0: {dmeta['reduction_ci']['excludes_zero']}).",
+        "",
+        "## 4. Cost sensitivity (val threshold re-derived per scenario, evaluated on test)",
+        "",
+        _table(
+            ["Scenario", "val thr", "Test cost (INR)", "Recall", "Flagged/day", "% saving vs F1"],
+            [[s["scenario"], _f(s["cost_optimal_threshold"], 6), _money(s["test_realized_cost"]),
+              _f(s["test_recall"]), _f(s["test_flagged_per_day"], 1), _f(s["pct_saving_vs_f1"], 2)]
+             for s in results["sensitivity"]],
+        ),
+        "",
+        "## 5. Drift: validation (pre-switch) vs test (post-switch)",
+        "",
+        _table(
+            ["Model", "val PR-AUC", "test PR-AUC"],
+            [[n, _f(v["val_pr_auc"]), _f(v["test_pr_auc"])]
+             for n, v in drift["per_model_pr_auc"].items()],
+        ),
+        "",
+        f"Score PSI val→test {_f(drift['score_psi_val_test'], 4)}. Drift switch "
+        f"`{drift['switch_date']}` "
+        f"is inside the test window: {post['rows_pre']:,} rows / {post['frauds_pre']} frauds pre, "
+        f"{post['rows_post']:,} rows / {post['frauds_post']} frauds post — "
+        f"**{post['post_share_of_frauds']:.0%} of test frauds are post-switch**.",
+        "",
+        _table(
+            ["Feature (top PSI)", "PSI", "Flag"],
+            [[p["feature"], _f(p["psi"], 3), p["flag"]] for p in drift["psi_train_test_top"][:8]],
+        ),
+        "",
+        "## 6. Customer holdout (Setting B): unseen vs seen customers on test",
+        "",
+        _table(
+            ["Group", "Rows", "Frauds", "PR-AUC", "ROC-AUC", "recall@1%"],
+            [[g, f"{hold[g]['n']:,}", str(hold[g]["n_fraud"]), _f(hold[g]["pr_auc"]),
+              _f(hold[g]["roc_auc"]),
+              _f(hold[g]["recall_at_top_0.01"])] for g in ("seen", "unseen")],
+        ),
+        "",
+        f"_unseen customers = test rows whose `customer_id` never appears in train+validation_ "
+        f"({hold['n_unseen']:,} rows).",
+        "",
+        "## 7. Per-scenario recall at the frozen policy",
+        "",
+        _table(
+            ["Scenario", "n fraud", "recall@frozen", "recall@top1%"],
+            [[s["scenario"], str(s["n_fraud"]), _f(s["recall_at_frozen_policy"]),
+              _f(s["recall_at_top_0.01"])] for s in results["per_scenario"]],
+        ),
+        "",
+        "## 8. Fairness slice (test, frozen policy); cells with n_pos<30 suppressed",
+        "",
+        _table(
+            ["Attribute", "groups", "suppressed groups", "reported groups"],
+            [[s["attribute"], str(s["n_groups"]), str(s["suppressed_positives"]),
+              str(s["reported"])]
+             for s in results["fairness"]["suppression"]],
+        ),
+        "",
+        "## 9. Sim-to-real finalization (no cross-scale differencing)",
+        "",
+        f"Synthetic test XGB PR-AUC {_f(sim['synthetic_test_pr_auc_xgb'])} at prevalence "
+        f"{_f(sim['synthetic_test_prevalence'], 5)}; features {sim['n_features_synthetic']} vs "
+        f"{sim['n_features_external_shared']} shared with IEEE-CIS. {sim['note']}",
+        "",
+        "## Figures",
+        "",
+    ]
+    L += [f"- `reports/figures/{name}`" for name in (
+        "final_pr_curves.png", "final_roc.png", "final_calibration.png", "final_recall_at_k.png",
+        "final_cost_bars.png", "final_sensitivity.png")]
+    L += ["", "## Pre-registered outcomes (verbatim)", ""]
+    L += [f"- **{k}** — holds={b['holds']}: {b['wording']}" for k, b in out.items()]
+
+    xgb = _model(results, "xgb")
+    rules = _model(results, "rules")
+    aware = next(p for p in policies if p["policy"] == "amount_aware_capacity")
+    val = drift["per_model_pr_auc"]["xgb"]["val_pr_auc"]
+    L += [
+        "",
+        "## Interpretation",
+        "",
+        f"**Models.** XGBoost leads on the test window (PR-AUC {_f(xgb['pr_auc'])}, "
+        f"CI {_f(xgb['pr_auc_lo'])}-{_f(xgb['pr_auc_hi'])}) ahead of LogReg "
+        f"({_f(_model(results, 'logreg')['pr_auc'])}) and far ahead of the Rules baseline "
+        f"({_f(rules['pr_auc'])}); H1 holds (XGB lower bound clears the Rules upper bound). "
+        f"Absolute brier/ECE are small because prevalence is {comp['prevalence'] * 100:.2f}%, so "
+        "calibration is best read on the reliability diagram rather than on raw magnitude; the "
+        "frozen calibrator is applied and reported both ways.",
+        "",
+        f"**Decision.** Analysts are capped at {dmeta['capacity_per_day']}/day but the "
+        f"amount-aware "
+        f"policy flags only {aware['flagged_per_day']:.1f}/day, so capacity never binds "
+        f"(n_demoted {dmeta['n_demoted']}) and the policy is identical with or without the cap. It "
+        f"cuts realized cost "
+        f"{_f(dmeta['amount_aware_capacity_pct_reduction_vs_f1'], 2)}% versus the "
+        f"F1-optimal threshold (CI {_money(dmeta['reduction_ci']['lo'])}-"
+        f"{_money(dmeta['reduction_ci']['hi'])} INR, excluding 0), driven by catching "
+        f"high-value fraud "
+        "while accepting a higher flag volume than F1 — H2 holds. Sensitivity shows the saving is "
+        "positive under all four cost scenarios, largest when false-positive friction is cheap.",
+        "",
+        f"**Drift & unseen fraud.** The {drift['switch_date']} drift switch sits inside the test "
+        f"window; {post['post_share_of_frauds']:.0%} of test frauds ({post['frauds_post']}/"
+        f"{post['frauds_post'] + post['frauds_pre']}) are post-switch and the mixture shifts "
+        f"toward "
+        f"structuring. Despite that, XGB PR-AUC does not degrade from validation to test "
+        f"({_f(val)} → {_f(xgb['pr_auc'])}); the ranking survives the shift even though the "
+        f"top PSI "
+        "features are the tenure/behavioural counters. On unseen customers (no training history) "
+        f"recall@1% drops to {_f(hold['unseen']['recall_at_top_0.01'])} from "
+        f"{_f(hold['seen']['recall_at_top_0.01'])}, the honest cost of thin history. The Part 09 "
+        "isolation forest remains not adopted, so there is no anomaly before/after gain to claim.",
+        "",
+    ]
+    return "\n".join(L)
+
+
+def write_final_results_doc(results: dict, path: str | Path | None = None) -> Path:
+    """Write ``docs/final_results.md`` (Part 12D) from ``results``."""
+    out = Path(path) if path else REPO_ROOT / "docs" / "final_results.md"
+    out.write_text(final_results_markdown(results), encoding="utf-8")
     return out

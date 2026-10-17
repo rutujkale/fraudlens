@@ -737,6 +737,21 @@ _What happened, one line._
   postgres and in-memory providers must return the **same** strictly-prior history and the **same**
   feature row on a 25-row tiny sample.
 
+### Finding: the `tiny` validation slice contains zero frauds (Part 14)
+- **What happened:** `make_app_artifacts.py --profile tiny` builds fine, but the tiny validation slice
+  has 0 frauds. The validation PR/ROC/calibration curve artifacts are therefore degenerate, and the
+  preset picker finds only 2 of the 4 demo stories (the burst and travel presets need a fraud /
+  hard-negative row that tiny lacks). The smoke test does not fail because it only checks that pages
+  run and elements exist, not that the curves are meaningful.
+- **How detected:** building tiny artifacts while writing the app smoke tests (sklearn emitted
+  "No positive class found in y_true").
+- **Effect:** tiny is usable for CI smoke only; the two-minute demo and any inspection of per-model
+  curves must use `dev` (20,293-row val_thr slice, 183 frauds). No result is wrong; the tiny
+  artifacts are simply not informative.
+- **Fix:** none needed for correctness - the demo/acceptance path uses `dev`. The smoke test builds
+  tiny into a temp dir (never committed) and asserts behaviour, not metric values.
+- **Test added:** none (documented limitation, not a bug).
+
 
 
 

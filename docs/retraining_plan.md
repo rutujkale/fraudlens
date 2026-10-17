@@ -21,6 +21,12 @@ recomputed):
 
 Outputs: `results/monitoring_dev.csv`, `results/monitoring_psi_dev.csv`, and three
 figures (`reports/figures/monitoring_dev_{psi_heatmap,score_dist,performance}.png`).
+The per-period table carries a **`sample`** column: `in_sample` (the model was
+trained on it), `validation` (held out), or `mixed` (straddles `train_end`). So the
+`dev` months read: 2026-01 `in_sample`, 2026-02 `in_sample`, 2026-03 `mixed`,
+2026-04 `validation`. **Only the validation rows are out-of-sample** — the January
+and February PR-AUCs (~1.0000) are in-sample fits and must never be quoted as
+performance, and March is part training, part validation.
 
 ## Pre-stated retraining rules (`monitoring.metrics.retraining_trigger`)
 
@@ -34,6 +40,14 @@ Documented **before** looking at any run:
 If either fires, retrain. On the `dev` run neither fires
 (`retraining_trigger -> {'retrain': False, 'reasons': []}`), which matches the
 published "no degradation observed" drift line.
+
+**This "no retrain" verdict is close to guaranteed on this run and is not
+evidence the trigger works under real drift.** The monitoring table ends at the
+validation boundary — there is **no test or post-freeze month** — so no period can
+show the degradation the rules are designed to catch. The trigger logic is
+exercised only on **synthetic series in `tests/test_monitoring.py`** (PSI streak,
+single-spike non-trip, recall-floor trip, stable series), never on observed drift.
+Re-test the trigger against a post-freeze window before trusting the verdict.
 
 ## What 8E says about *how* to retrain
 

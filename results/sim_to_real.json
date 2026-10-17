@@ -1,0 +1,8 @@
+{
+  "primary_gap_pr_auc_r1_minus_r2_on_ieee_test": 0.0782464651361817,
+  "r1_ieee_test_pr_auc": 0.1362398032425016,
+  "r2_ieee_test_pr_auc": 0.0579933381063198,
+  "ieee_test_prevalence": 0.0344501190983887,
+  "note": "Primary gap only: R1 - R2 PR-AUC on the IEEE-CIS test window (both numbers on the same dataset, same prevalence). Any cross-dataset (dev-val vs IEEE) or differenced lift is deliberately excluded as selection-optimistic and not comparable.",
+  "source": "results/external_gap.csv"
+}

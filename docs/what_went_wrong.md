@@ -42,6 +42,16 @@ changed the system were:
 - **A small `tiny` API detail.** The tiny model has no calibrator/policy, so the
   scorer refuses to start; this shaped the CI smoke-test fallback
   (`.github/workflows/ci.yml`, `docs/progress/part_15.md`).
+- **A test that needed a local-only artifact.** The first remote CI run failed
+  `test_ieee_adapter.py::test_runner_end_to_end_on_fake_frame` because
+  `experiments_lib.best_xgb_params` read a gitignored `artifacts/` file that a fresh
+  clone does not have. Fixed at the root (a fallback when the artifact is absent,
+  plus a regression test) instead of loosening the check.
+- **`make ci-local` dirtied tracked files.** The tiny smoke run rewrote
+  `results/{models_tiny.json,experiments.csv}` and `reports/db_explain_tiny.txt`.
+  Fixed by snapshotting and restoring them around the run
+  (`scripts/ci_local.py`); the local DB is still reset to `tiny` and must be reloaded
+  to `dev`.
 
 Each has a full entry (what happened → how detected → effect → fix → test) below.
 
@@ -720,7 +730,7 @@ _What happened, one line._
 ### Finding: no CI persisted for the 83.23% cost-reduction ratio (Part 12C, review)
 - **What happened:** `results/final_results.json` records the amount-aware-vs-F1 cost reduction with a
   **cluster-bootstrap CI in absolute INR** (`decision.meta.reduction_ci`), but the headline states the
-  reduction as a **percentage (83.23%)** with no CI of its own. Review asked for a percent CI.
+  reduction as a **percentage (83.23%)** with no CI of its own. Review asked for an interval on the percentage.
 - **How detected:** pre-tag review (a deliverable headline printed a point percentage whose interval
   was in different units).
 - **Effect:** the ratio's uncertainty is not directly quantified; it has to be inferred from the INR
@@ -729,7 +739,7 @@ _What happened, one line._
   the ratio's denominator is random — rescaling the INR CI by the fixed F1 cost would
   be statistically wrong.
 - **Fix:** labelling only (no re-run): the headline and `docs/final_results.md` now state 83.23% as a
-  **point estimate** and report the interval in INR. A true percent CI requires persisting the
+  **point estimate** and report the interval in INR. A true interval on the percentage requires persisting the
   per-resample ratio, i.e. a second test-window read (a rerun), which Part 12 permits only for a crash.
   Logged as an open limitation; the code could be extended to persist `reduction_ci_pct` on a future
   evaluation.
@@ -793,6 +803,36 @@ _What happened, one line._
 - **Fix:** none needed for correctness - the demo/acceptance path uses `dev`. The smoke test builds
   tiny into a temp dir (never committed) and asserts behaviour, not metric values.
 - **Test added:** none (documented limitation, not a bug).
+
+### Finding: a test needed a local-only artifact, failing the first remote CI run (Part 15)
+- **What happened:** the first remote CI run (`.github/workflows/ci.yml`, push `4e57ac8`) failed one
+  test, `tests/test_ieee_adapter.py::test_runner_end_to_end_on_fake_frame`. The test builds a fake IEEE
+  frame and runs the adapter runner; the runner calls
+  `fraudlens.evaluation.experiments_lib.best_xgb_params`, which read `results/models_dev.json` and
+  trusted its recorded artifact path under the gitignored `artifacts/` dir. A fresh clone has the tracked
+  `results/models_dev.json` but no `artifacts/`, so the read raised.
+- **How detected:** CI (GitHub Actions), not locally - locally the `dev` artifact exists, so the test
+  passed.
+- **Effect:** CI red on first run. The test was correct; the production helper was silently coupled to a
+  local artifact.
+- **Fix:** root cause, not the caller. `experiments_lib` gained `_tuned_metadata(profile, model)`, which
+  returns `None` when the artifact `metadata.json` is not present locally, and `best_xgb_params` /
+  `best_logreg_params` fall through to the search log / `FALLBACK_XGB_PARAMS` /
+  `{"C": 1.0, "class_weight": None}`. No test check was loosened.
+- **Test added:** `tests/test_experiments.py::test_best_xgb_params_falls_back_when_artifact_is_not_local`.
+
+### Finding: `make ci-local` dirtied tracked files (Part 15)
+- **What happened:** running `make ci-local` executed the `tiny` pipeline, which rewrote tracked
+  `results/models_tiny.json`, `results/experiments.csv`, `reports/db_explain_tiny.txt` and
+  `docs/data_dictionary_features.md`, and reset the local Postgres DB to the `tiny` profile.
+- **How detected:** `git status` after the first `make ci-local` run (used at Part 15 acceptance).
+- **Effect:** a "read-only" smoke check mutated the repo and left the local DB on `tiny`, which would
+  make a later API postgres smoke or benchmark read the wrong data.
+- **Fix:** `scripts/ci_local.py` snapshots those tracked files, runs ruff + the tiny pipeline + pytest,
+  and restores the snapshots. The DB reset is inherent to the run and is reported; reload with
+  `python scripts/load_db.py --profile dev` afterwards (done).
+- **Test added:** none (a Makefile/CLI wrapper; verified by inspecting `git status` after a run).
+
 
 
 

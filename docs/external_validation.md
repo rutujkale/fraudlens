@@ -21,10 +21,13 @@ features, temporal validation, calibration, cost-based decisions) carries over t
 - external split 60/20/20 with a 3-day embargo; IEEE test evaluated **twice, both logged**.
 - shared subset `S` = 38 of 53 features; 8 structurally missing, 7 excluded from transfer
   (see `progress/part_11.md`).
-- **primary gap = R1 − R2 on the IEEE test window**; secondary = dev-val `S` − IEEE-test R2,
-  labelled **selection-optimistic** (its raw-PR-AUC baselines differ by prevalence, dev ≈ 0.6 % vs
-  IEEE 3.45 % — see the caveat below; it must not feed Part 12 headline numbers);
-  **lift reported per dataset, never differenced**.
+- **primary gap = R1 − R2 on the IEEE test window** (both PR-AUCs on the same dataset,
+  so they are comparable). A cross-dataset comparison (dev-val `S` vs IEEE-test R2)
+  exists in the raw record `results/external_gap.csv` but is **deliberately not reported as a
+  number** here: it is selection-optimistic (dev-val is R2's own selection window) and its two
+  baselines come from datasets with different prevalence (dev ≈ 0.6 % vs IEEE 3.45 %), so it is
+  not a magnitude and must not feed any headline number. `results/sim_to_real.json` carries the
+  primary gap only.
 - separate guard log `results/test_access_log_external.csv`.
 
 ## Tables (generated from `results/`)
@@ -53,12 +56,10 @@ Sim-to-real gap:
 | metric | value |
 |---|---|
 | primary (R1 - R2 PR-AUC, IEEE test) | 0.0782 |
-| secondary (dev-val S - IEEE test R2) | 0.8197 |
 | R1 IEEE test PR-AUC | 0.1362 |
 | R2 IEEE test PR-AUC | 0.0580 |
-| R2 dev-val (shared S) PR-AUC | 0.8777 |
 
-Secondary note: *selection-optimistic: dev-val is the R2 model's own selection window*. **Caveat:** the secondary row's two raw-PR-AUC baselines come from datasets with very different prevalence (dev ≈ 0.6 % vs IEEE 3.45 %), so it is not a magnitude and **must not feed any Part 12 headline number**. Lift is reported per dataset only; it is never differenced across datasets.
+Primary gap only: R1 - R2 PR-AUC on the IEEE-CIS test window (both numbers on the same dataset, same prevalence). Any cross-dataset (dev-val vs IEEE) or differenced lift is deliberately excluded as selection-optimistic and not comparable.
 
 Calibration (Brier / ECE):
 
@@ -78,8 +79,6 @@ R5 cost policy (IEEE test):
 | cost_optimal | 403048.4650 | 4.9380 | 86990 | 0 | 9149 | 0 | 0 |
 | amount_aware | 269018.9458 | 36.5499 | 77574 | 15936 | 2462 | 167 | 0 |
 | capacity_aware | 274281.2849 | 35.3087 | 77574 | 17359 | 951 | 255 | 1511 |
-
-External cost config used by R5 (`common.external.costs`; USD-scale, distinct from the synthetic INR costs): `fraud_loss_rate 0.85`, `fraud_fixed_fee 0`, `review_cost 5.0`, `friction_cost 10.0`, `review_catch_rate 0.90`, `stepup_cost 0.5`, `stepup_friction_cost 3.0`, `stepup_stop_rate 0.60`, `block_friction_cost 30.0`, `capacity_pct_of_daily_volume 0.01` (`analyst_daily_capacity` null → capacity = 0.01 × daily volume).
 
 Point-in-time truncation check (adapter + real `build_features`):
 
@@ -106,9 +105,11 @@ R4 is a **reference only and not a comparable model**: it sits **outside the poi
 pipeline**, is **not leakage-checked**, and relies on **vendor-engineered V/C/D/M features** whose
 construction time is unknown. Nothing is selected on R4.
 
-The secondary dev-val-vs-IEEE figure is larger and **optimistic** (dev-val is R2's own selection
-window), and its baselines differ in prevalence (dev ≈ 0.6 % vs IEEE 3.45 %); it is reported with
-that caveat and **must not feed any Part 12 headline number**. Lift is reported per dataset only.
+A cross-dataset comparison (dev-val vs IEEE test) is **deliberately not reported as a
+number**: it is selection-optimistic (dev-val is R2's own selection window) and its
+baselines differ in prevalence (dev ≈ 0.6 % vs IEEE 3.45 %), so it is not a magnitude
+and must not feed any Part 12 headline number. The primary gap above is the only
+sim-to-real figure quoted.
 
 ## Hypotheses if the gap is large (each labelled)
 

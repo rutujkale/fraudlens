@@ -31,7 +31,7 @@ the committed results, not estimated.
   PR-AUC confidence interval is wide (XGBoost `0.9340–0.9798`). The point estimate
   is reported with the interval for exactly this reason.
 - The cost-reduction headline is **83.23% as a point estimate**; the interval is
-  reported in **INR** (`361,480–1,281,632`). A percentage CI is not quoted because
+  reported in **INR** (`361,480–1,281,632`). An interval on the percentage is not quoted because
   the ratio's denominator is itself resampled.
 
 ## Decisions and signals a real institution would add

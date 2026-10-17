@@ -144,9 +144,9 @@ frozen global capacity threshold is
 `[freeze.json:frozen_thresholds; risk/policy.py]`. Cost-optimal beat F1-optimal on
 realized cost by 773,067 INR (83.23%), CI 361,480 to 1,281,632.
 
-**Follow-up: is the percentage CI-worthy?** No — I report the percentage as a point
-estimate and give the CI in INR, because the ratio's denominator is itself resampled
-`[final_results.json:decision.meta.reduction_ci]`.
+**Follow-up: should the percentage carry a confidence interval?** No — I report the
+percentage as a point estimate and give the interval in INR, because the ratio's
+denominator is itself resampled `[final_results.json:decision.meta.reduction_ci]`.
 
 ## 10. Why does review capacity matter, and how was it modeled?
 

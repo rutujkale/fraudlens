@@ -68,6 +68,8 @@ python scripts/final_audit.py
 | fairness | `make fairness` | `docs/fairness_audit.md` |
 | app data | `make app-artifacts` | `artifacts/appdata_<profile>/` |
 | monitoring | `make monitor` | `results/monitoring_<profile>.csv`, `results/monitoring_psi_<profile>.csv`, figures |
+| sim-to-real | `make sim-to-real` | `results/sim_to_real.json` (primary R1−R2 gap only) |
+| external report | `make external-report` | the generated tables in `docs/external_validation.md` (primary gap only) |
 | render | `make render` | `README.md`, `docs/model_card.md`, `docs/interview_notes.md` |
 
 The locked test evaluation is **not** part of `all-dev`: it is a one-shot run
@@ -95,8 +97,11 @@ Rough figures — hardware differs; treat them as order-of-magnitude.
 - `results/final_results.json` — the four pre-registered outcomes and the decision
   tables. XGBoost test PR-AUC `0.9619` (CI `0.9340–0.9798`); cost reduction
   `773,067 INR (83.23%)`, CI `361,480–1,281,632`.
-- `results/monitoring_dev.csv` — one row per month with prevalence, calibration,
-  PR-AUC and recall at the frozen policy (train + validation only).
+- `results/monitoring_dev.csv` — one row per month with a `sample` column
+  (`in_sample` / `validation` / `mixed`), prevalence, calibration, PR-AUC and recall at
+  the frozen policy (train + validation only; only `validation` rows are out-of-sample).
+- `results/sim_to_real.json` — the primary R1−R2 gap only (no cross-dataset differenced
+  lift; the raw record stays in `results/external_gap.csv`).
 - `README.md` — no hand-typed numbers: every figure is a `{{key}}` filled from
   `results/final_results.json` and `results/latency.json` by `scripts/render_readme.py`.
 

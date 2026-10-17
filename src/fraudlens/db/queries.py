@@ -54,51 +54,59 @@ def fetch_transactions(
         return _rows(conn.execute(sql, params))
 
 
-def fetch_customer_history(
-    customer_id: str,
+def _history_rows(
+    column: str,
+    value: str,
     before_ts: datetime,
-    lookback_days: int,
-    *,
-    engine: Engine | None = None,
+    lookback_days: int | None,
+    engine: Engine | None,
 ) -> list[dict[str, Any]]:
-    """A customer's transactions strictly before ``before_ts`` within the window."""
+    """Rows for one key strictly before ``before_ts`` (unbounded when no lookback).
+
+    ``column`` is an internal literal (``customer_id`` / ``device_id``), never user
+    input. ``lookback_days=None`` drops the lower bound: the API needs the full
+    prior history to reproduce lifetime and cross-customer device features (Part 13).
+    """
+    window = "AND timestamp >= :window_start " if lookback_days is not None else ""
     sql = text(
         f"SELECT {_TX_COLUMNS} FROM raw.transactions "
-        "WHERE customer_id = :customer_id "
+        f"WHERE {column} = :value "
         "AND timestamp < :before_ts "
-        "AND timestamp >= :window_start "
+        f"{window}"
         "ORDER BY timestamp, transaction_id"
     )
-    params = {
-        "customer_id": customer_id,
-        "before_ts": before_ts,
-        "window_start": before_ts - timedelta(days=lookback_days),
-    }
+    params: dict[str, Any] = {"value": value, "before_ts": before_ts}
+    if lookback_days is not None:
+        params["window_start"] = before_ts - timedelta(days=lookback_days)
     eng = engine or get_engine()
     with eng.connect() as conn:
         return _rows(conn.execute(sql, params))
+
+
+def fetch_customer_history(
+    customer_id: str,
+    before_ts: datetime,
+    lookback_days: int | None = None,
+    *,
+    engine: Engine | None = None,
+) -> list[dict[str, Any]]:
+    """A customer's transactions strictly before ``before_ts``.
+
+    ``lookback_days`` bounds the window; ``None`` (default) fetches all prior rows.
+    """
+    return _history_rows("customer_id", customer_id, before_ts, lookback_days, engine)
 
 
 def fetch_device_history(
     device_id: str,
     before_ts: datetime,
-    lookback_days: int,
+    lookback_days: int | None = None,
     *,
     engine: Engine | None = None,
 ) -> list[dict[str, Any]]:
-    """A device's transactions strictly before ``before_ts`` within the window."""
-    sql = text(
-        f"SELECT {_TX_COLUMNS} FROM raw.transactions "
-        "WHERE device_id = :device_id "
-        "AND timestamp < :before_ts "
-        "AND timestamp >= :window_start "
-        "ORDER BY timestamp, transaction_id"
-    )
-    params = {
-        "device_id": device_id,
-        "before_ts": before_ts,
-        "window_start": before_ts - timedelta(days=lookback_days),
-    }
-    eng = engine or get_engine()
-    with eng.connect() as conn:
-        return _rows(conn.execute(sql, params))
+    """A device's transactions strictly before ``before_ts`` (any customer).
+
+    ``lookback_days=None`` (default) fetches all prior rows; the device's earlier
+    uses by other customers set ``account_seen_on_device`` and ``device_age_days``.
+    """
+    return _history_rows("device_id", device_id, before_ts, lookback_days, engine)

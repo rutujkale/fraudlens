@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain external
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain external api benchmark-latency
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -116,6 +116,13 @@ external:
 	$(PY) scripts/run_external_validation.py --profile $(PROFILE)
 # TODO(part 09): unseen-fraud    - Isolation Forest experiment
 # TODO(part 12): evaluate        - locked one-shot test evaluation
-# TODO(part 13): api             - FastAPI service + latency benchmark
+## api: run the FastAPI scoring service (Part 13). HISTORY_BACKEND=memory|postgres.
+HISTORY_BACKEND ?= memory
+api:
+	$(PY) scripts/run_api.py --profile $(PROFILE) --history-backend $(HISTORY_BACKEND)
+
+## benchmark-latency: per-component latency matrix -> results/latency.json + docs/latency.md.
+benchmark-latency:
+	$(PY) scripts/benchmark_latency.py --profile $(PROFILE)
 # TODO(part 14): streamlit       - analyst application
 # TODO(part 15): monitor         - drift monitoring + CI + docs

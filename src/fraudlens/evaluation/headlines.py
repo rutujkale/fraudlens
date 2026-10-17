@@ -41,6 +41,27 @@ def load_final_results(path: str | Path | None = None) -> dict:
     return results
 
 
+def load_latency_headline(path: str | Path | None = None) -> tuple[float | None, str]:
+    """Read the p95 end-to-end headline cell from ``results/latency.json`` (Part 13).
+
+    Returns ``(None, placeholder)`` when Part 13 has not been run yet, so the
+    Part 12 document stays honest until a real measured number exists.
+    """
+    p = Path(path) if path else results_dir() / "latency.json"
+    if not p.exists():
+        return None, "Filled in Part 13 (FastAPI deployment); placeholder until then."
+    headline = json.loads(p.read_text(encoding="utf-8")).get("headline", {})
+    p95 = headline.get("e2e_p95_ms")
+    if p95 is None:
+        return None, "results/latency.json has no headline cell; placeholder until then."
+    note = (
+        "p95 end-to-end from results/latency.json; conditions: backend "
+        f"{headline.get('backend')}, concurrency {headline.get('concurrency')}, "
+        f"explanation {'on' if headline.get('explanation') else 'off'}, n={headline.get('n')}."
+    )
+    return float(p95), note
+
+
 def _model(results: dict, name: str) -> dict:
     return next(r for r in results["model_comparison"] if r["model"] == name)
 
@@ -152,12 +173,13 @@ def build_headlines(results: dict) -> dict:
         ),
     }
 
+    latency_p95, latency_note = load_latency_headline()
     h4 = {
         "feature_count": meta["n_features"],
         "n_automated_tests": counts["n_tests"],
         "n_leakage_tests": counts["n_leakage_tests"],
-        "api_p95_latency_ms": None,
-        "latency_note": "Filled in Part 13 (FastAPI deployment); placeholder until then.",
+        "api_p95_latency_ms": latency_p95,
+        "latency_note": latency_note,
         "assumptions": "Counts produced by code (feature registry; pytest --collect-only).",
     }
 

@@ -19,7 +19,7 @@ made anywhere.
 ## Why fraud risk is a different problem
 
 - **Frauds are rare.** Test prevalence is {{composition.prevalence:.5f}}
-  ({{composition.frauds}} frauds in {{composition.rows}} rows). Accuracy is
+  ({{headline.test.n_frauds}} frauds in {{composition.rows}} rows). Accuracy is
   meaningless, so PR-AUC, recall@top-K and expected cost are the headline metrics.
 - **Legitimate behavior looks fraudulent.** Hard negatives (travel, payday,
   device sharing) are simulated explicitly and measured, not ignored.
@@ -72,7 +72,8 @@ Four pre-registered outcomes (`results/final_results.json`:
    result is {{headline.anomaly.note}}.
 4. **Engineering.** {{headline.n_features}}-feature registry,
    {{headline.n_leakage_tests}} leakage tests, {{headline.n_tests}} automated
-   tests collected. API p95 latency {{headline.engineering.latency}}.
+   tests collected. API p95 latency {{headline.engineering.latency}}
+   (postgres, concurrency 1, in-process, dev; see limitations).
 
 ## Demo
 

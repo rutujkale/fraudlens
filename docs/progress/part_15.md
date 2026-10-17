@@ -163,6 +163,27 @@ construction (and keeps the "no hand-typed result number" rule).
 7. `reproduce.md` runtime row relabelled to the **fairness audit**, and `trade_offs.md`
    "used once" → "used secondarily" (the IEEE window was evaluated twice). The
    synthetic test window's "evaluated once" statements are correct and unchanged.
+8. **README engineering line keeps its latency conditions**: `127.031 ms p95`
+   followed by "(postgres, concurrency 1, in-process, dev; see limitations)" in
+   `readme_template.md`, so the number is never quoted without its qualifiers.
+
+## Pre-publication history scan (clean)
+
+The repo was made public; the audit only inspects the working tree, so history was
+scanned separately:
+
+- `git log --all -S "POSTGRES_PASSWORD"` / `-S "fraudlens_dev_password"` /
+  `-S "ci_pw_not_local"` → only the intentional placeholders (`.env.example` local dev
+  password, `docker-compose.yml` `${POSTGRES_PASSWORD}`, CI's `ci_pw_not_local`).
+  No real credential ever committed; no `.env` file was ever added.
+- `git log --all -S` for `BEGIN PRIVATE KEY` / `BEGIN RSA` / `ghp_` / `AKIA` /
+  `OPENAI_API_KEY` / `api_key` → none. `sk-` matched only the substring "risk-".
+- `git log --all --diff-filter=A --name-only` → no `kaggle.json`, no `.env`, no
+  `train_transaction.csv` / `train_identity.csv`; the IEEE-CIS data was never
+  committed (only adapter code and small aggregate CSVs). `prompts/` contains no
+  secrets or personal data.
+
+Conclusion: nothing to rotate and no history rewrite needed.
 
 ## Deviations from the prompt (and why)
 

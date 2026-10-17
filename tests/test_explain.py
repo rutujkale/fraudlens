@@ -35,6 +35,10 @@ from fraudlens.utils import set_global_seed
 
 PROFILE = "dev"
 
+# Loads the frozen **dev** artifact and dev data (gitignored, built locally); not
+# run in CI, which is limited to the tiny-built suite and the invariants.
+pytestmark = pytest.mark.needs_dev
+
 
 @lru_cache(maxsize=1)
 def _dev_setup():

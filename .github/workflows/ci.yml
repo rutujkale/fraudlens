@@ -1,0 +1,66 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+# CI builds the `tiny` profile from scratch and runs the tests that do not need a
+# locally built `dev` bundle. Tests marked `needs_dev` (tests/test_api.py,
+# tests/test_explain.py) load the frozen dev artifact + dev data, which are
+# gitignored and built locally (see docs/reproduce.md); they are excluded here.
+# CI therefore covers tiny shape and invariants, not performance.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fraudlens_ci
+          POSTGRES_PASSWORD: ci_pw_not_local
+          POSTGRES_DB: fraudlens_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fraudlens_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # CI service credentials deliberately differ from the local .env values.
+      DATABASE_URL: postgresql+psycopg2://fraudlens_ci:ci_pw_not_local@localhost:5432/fraudlens_ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[dev]"
+
+      - name: Lint (ruff check; format is not enforced, see docs/limitations.md)
+        run: ruff check .
+
+      - name: Smoke pipeline (tiny)
+        run: |
+          python scripts/generate_data.py --profile tiny
+          python scripts/validate_data.py --profile tiny
+          python scripts/build_features.py --profile tiny
+          python scripts/train.py --profile tiny --model all
+          python scripts/load_db.py --profile tiny
+
+      - name: Tests
+        run: pytest -m "not slow and not needs_dev" --junitxml=pytest-report.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: pytest-report.xml

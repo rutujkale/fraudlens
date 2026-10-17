@@ -40,7 +40,7 @@ from fraudlens.explain.shap_explainer import Contribution, ShapExplainer
 from fraudlens.features.registry import FEATURE_COLUMNS
 from fraudlens.models import io as model_io
 from fraudlens.models.xgb import encode_features
-from fraudlens.monitoring.drift import psi, psi_flag
+from fraudlens.monitoring.metrics import psi_by_period
 from fraudlens.paths import artifacts_dir, raw_data_dir, results_dir
 from fraudlens.risk.policy import amount_aware_actions, enforce_capacity
 from fraudlens.risk.scoring import action_name, risk_level, risk_score
@@ -208,19 +208,20 @@ def _build_curves(profile: str, cfg, val_thr: pd.DataFrame, y_thr: np.ndarray) -
 
 
 def _build_psi_by_month(cfg, train: pd.DataFrame, val: pd.DataFrame) -> pd.DataFrame:
+    """Per-feature PSI of each validation month against the train window.
+
+    Delegates to :func:`fraudlens.monitoring.metrics.psi_by_period` so the app and
+    the Part 15 monitoring layer share one PSI implementation.
+    """
     features = [
         c for c in FEATURE_COLUMNS
         if c in train.columns and pd.api.types.is_numeric_dtype(train[c])
     ]
-    months = sorted(val["timestamp"].dt.to_period("M").unique())
-    rows = []
-    for month in months:
-        chunk = val[val["timestamp"].dt.to_period("M") == month]
-        for feature in features:
-            value = psi(train[feature].to_numpy(), chunk[feature].to_numpy())
-            rows.append({"month": str(month), "feature": feature, "psi": value,
-                         "flag": psi_flag(value), "n": int(len(chunk))})
-    return pd.DataFrame(rows)
+    current = val.copy()
+    current["month"] = current["timestamp"].dt.strftime("%Y-%m")
+    return psi_by_period(train, current, features, period_col="month").rename(
+        columns={"period": "month"}
+    )
 
 
 def _opt(value: Any) -> str | None:

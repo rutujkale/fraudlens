@@ -33,6 +33,11 @@ from fraudlens.risk.scoring import RISK_LEVELS
 
 VALIDATION_DAY = "2026-04-06"
 
+# These tests load the frozen **dev** bundle and dev data, which are gitignored and
+# built locally (see docs/reproduce.md). CI runs them only on a machine that has
+# built dev; CI covers the tiny-built suite and the invariants instead.
+pytestmark = pytest.mark.needs_dev
+
 
 @pytest.fixture(scope="module")
 def client() -> TestClient:

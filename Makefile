@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain external api benchmark-latency app-artifacts app
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain external api benchmark-latency app-artifacts app data features db policy freeze final experiments monitor render all-dev ci-local
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -131,4 +131,37 @@ app-artifacts:
 ## app: run the Streamlit analyst console (Part 14). Start `make api` first for scoring.
 app:
 	$(PY) -m streamlit run app/streamlit_app.py
-# TODO(part 15): monitor         - drift monitoring + CI + docs
+# Part 15 targets. Aliases named as the prompt lists them; each delegates to the
+# underlying script so business logic stays in src/fraudlens.
+## data: simulate raw data for $(PROFILE).
+data: simulate
+## features: point-in-time features for $(PROFILE).
+features: build-features
+## db: load raw data into PostgreSQL for $(PROFILE).
+db: db-load
+## policy: cost-based decision policy for $(PROFILE).
+policy: optimize-policy
+## freeze: freeze the $(PROFILE) artifacts + data hashes (Part 12A).
+freeze:
+	$(PY) scripts/freeze.py --profile $(PROFILE)
+## final: one-shot locked test evaluation (Part 12B); refuses if already done.
+final:
+	$(PY) scripts/final_evaluation.py --profile $(PROFILE)
+## experiments: ML-understanding experiments 8A-8D on $(PROFILE).
+experiments: experiment-8a experiment-8b experiment-8c experiment-8d
+## monitor: per-period drift monitoring over train + validation (Part 15A).
+monitor:
+	$(PY) scripts/run_monitoring.py --profile $(PROFILE)
+## render: regenerate README, model card and interview notes from results (Part 15D).
+render:
+	$(PY) scripts/render_readme.py
+## all-dev: the whole dev pipeline (no external data, no test-window access).
+all-dev: simulate validate-data db-load build-features train evaluate-val calibrate optimize-policy experiments shap fairness app-artifacts
+## ci-local: reproduce .github/workflows/ci.yml locally (needs `make db-up` first).
+ci-local: lint
+	$(PY) scripts/generate_data.py --profile tiny
+	$(PY) scripts/validate_data.py --profile tiny
+	$(PY) scripts/build_features.py --profile tiny
+	$(PY) scripts/train.py --profile tiny --model all
+	$(PY) scripts/load_db.py --profile tiny
+	$(PY) -m pytest -m "not slow and not needs_dev"

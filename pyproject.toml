@@ -33,4 +33,5 @@ testpaths = ["tests"]
 markers = [
     "db: database integration tests (require PostgreSQL)",
     "slow: slow tests excluded from test-fast",
+    "needs_dev: requires a locally built dev profile (data + artifacts); not run in CI",
 ]

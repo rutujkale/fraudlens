@@ -284,6 +284,80 @@ def test_history_provider_strictly_prior_postgres():
         assert all(r["timestamp"] < cutoff for r in device_rows)
 
 
+@pytest.mark.db
+def test_postgres_history_matches_memory_features():
+    """PostgreSQL and in-memory providers must produce the same feature row.
+
+    Feature-level equality is the right check because the ``tiny`` profile has no
+    calibrator/policy: identical strictly-prior history => identical features =>
+    identical calibrated probability. The 1e-6 calibrated-probability parity claim
+    stays scoped to the dev/memory path (``test_parity_matches_offline_pipeline``).
+    The ``tiny`` tables are reloaded (this test owns the DB state, like the rest of
+    the ``db``-marked suite).
+    """
+    from sqlalchemy import text
+
+    from fraudlens.api.deps import load_entities
+    from fraudlens.api.history import InMemoryHistoryProvider, PostgresHistoryProvider
+    from fraudlens.db.loader import load_all
+    from fraudlens.features.registry import FEATURE_COLUMNS
+
+    engine = get_engine()
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as exc:  # noqa: BLE001
+        pytest.skip(f"PostgreSQL not reachable: {exc}")
+
+    tiny_path = raw_data_dir("tiny") / "transactions.parquet"
+    if not tiny_path.exists():
+        pytest.skip("tiny parquet data missing; run scripts/generate_data.py --profile tiny")
+    load_all("tiny", reset=True, write_explain=False)
+
+    tx = pd.read_parquet(tiny_path).sort_values(
+        ["timestamp", "transaction_id"], kind="stable"
+    ).reset_index(drop=True)
+    postgres = PostgresHistoryProvider()
+    memory = InMemoryHistoryProvider("tiny")
+    cfg = load_config("tiny")
+    entities = load_entities("tiny")
+
+    pool = tx[tx["timestamp"] < tx["timestamp"].max()]
+    assert len(pool) > 20, "tiny window too small to sample prior history"
+    rng = np.random.default_rng(42)
+    sample = pool.iloc[np.sort(rng.choice(len(pool), size=25, replace=False))]
+
+    empty = 0
+    for _, row in sample.iterrows():
+        tx_row = row.to_dict()
+        before = tx_row["timestamp"]
+        pg_history = postgres.history(tx_row["customer_id"], tx_row.get("device_id"), before)
+        mem_history = memory.history(tx_row["customer_id"], tx_row.get("device_id"), before)
+        assert len(pg_history) == len(mem_history), (
+            f"provider history length mismatch for {tx_row['transaction_id']}: "
+            f"{len(pg_history)} != {len(mem_history)}"
+        )
+        if not len(pg_history):
+            empty += 1
+            continue
+        assert (pg_history["timestamp"] < before).all()
+        assert sorted(pg_history["transaction_id"]) == sorted(mem_history["transaction_id"]), (
+            f"provider history mismatch for {tx_row['transaction_id']}"
+        )
+
+        pg_features = compute_features_for_transaction(tx_row, pg_history, entities, cfg)
+        mem_features = compute_features_for_transaction(tx_row, mem_history, entities, cfg)
+        for column in FEATURE_COLUMNS:
+            left, right = pg_features[column], mem_features[column]
+            if pd.isna(left) and pd.isna(right):
+                continue
+            assert left == right, (
+                f"postgres/memory feature mismatch on {column} "
+                f"for {tx_row['transaction_id']}: {left!r} != {right!r}"
+            )
+    assert empty < len(sample), "no sampled row had prior history"
+
+
 # --- parity -------------------------------------------------------------------
 
 

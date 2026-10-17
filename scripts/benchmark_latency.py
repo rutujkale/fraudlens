@@ -41,6 +41,38 @@ BACKENDS = ("postgres", "memory")
 CONCURRENCIES = (1, 8)
 EXPLANATION_FLAGS = (False, True)
 
+# Rule fixing which cell is quoted as the headline. Declared explicitly (and recorded
+# in latency.json) because the cell was chosen after the matrix was measured.
+HEADLINE_RULE = (
+    "postgres (deployment backend) x concurrency 1 (single-request serving) x "
+    "explanation off (API default); chosen after the latency matrix was measured, "
+    "not pre-registered"
+)
+
+
+def db_provenance(expected_profile: str) -> dict[str, Any] | None:
+    """Row counts of the tables currently loaded in PostgreSQL (benchmark-time evidence).
+
+    The postgres cells are only meaningful if the profile they claim is actually
+    loaded; record the counts so the figure is self-describing.
+    """
+    try:
+        from sqlalchemy import text
+
+        from fraudlens.db.loader import get_engine
+
+        with get_engine().connect() as conn:
+            rows = int(conn.execute(text("SELECT count(*) FROM raw.transactions")).scalar())
+            customers = int(conn.execute(text("SELECT count(*) FROM raw.customers")).scalar())
+        return {
+            "expected_profile": expected_profile,
+            "transactions_rows": rows,
+            "customers": customers,
+        }
+    except Exception as exc:  # noqa: BLE001 - provenance must not break the benchmark
+        logger.warning("could not read PostgreSQL row counts: %s", exc)
+        return None
+
 
 def _total_ram_gb() -> float | None:
     """Physical RAM in GB via the Win32 ``GlobalMemoryStatusEx`` call."""
@@ -100,10 +132,13 @@ def _request_from_row(row: pd.Series) -> dict[str, Any]:
 def sample_requests(
     profile: str, n: int, seed: int
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
-    """Stratified (balanced fraud/legit) sample of the validation window.
+    """Sample the validation window: all frauds (up to ``n/2``) + a legit fill.
 
-    Balanced sampling keeps the class mix stable across reruns so the numbers are
-    reproducible; it only affects the mix of actions, not per-request latency.
+    Every validation-window fraud is taken (there are fewer than ``n/2`` on dev), then
+    legit rows fill the rest — so the sample is fraud-enriched (dev: 360 fraud / 1,640
+    legit = 18%, about 20x the ~0.9% validation prevalence), not balanced. A fixed seed
+    keeps the exact row set stable across reruns; the enrichment changes the mix of
+    actions, not per-request latency.
     """
     df, labels = load_feature_dataset(profile)
     split = make_temporal_split(df, load_config(profile))
@@ -206,7 +241,8 @@ def _write_markdown(data: dict[str, Any]) -> Path:
         "# Latency — scoring API",
         "",
         f"Profile `{data['profile']}` · model `{data['model_version']}` · "
-        f"n={data['n']} per cell ({data['n_fraud']} fraud / {data['n_legit']} legit, "
+        f"n={data['n']} per cell ({data['n_fraud']} fraud / {data['n_legit']} legit — all"
+        " validation-window frauds plus a legit fill, so **fraud-enriched, not balanced**; "
         f"seed {data['seed']}), {data['warmup']} warm-up excluded · "
         "replayed in-process via `httpx.ASGITransport` (sync endpoints on the AnyIO threadpool).",
         "",
@@ -216,6 +252,19 @@ def _write_markdown(data: dict[str, Any]) -> Path:
         "",
         f"Headline cell: **{data['headline']['cell']}** — end-to-end p95 "
         f"{data['headline']['e2e_p95_ms']} ms, p50 {data['headline']['e2e_p50_ms']} ms.",
+        "",
+        f"Headline rule: {data['headline_rule']}.",
+        "",
+        "Full conditions for the quoted figure: **profile `dev`**, PostgreSQL history backend, "
+        "concurrency 1, explanation off, dev **validation-window** sample (the test window is "
+        "never read), in-process ASGI replay (**a lower bound**: no network, TLS or uvicorn "
+        "overhead).",
+        "",
+        (f"Benchmark-time PostgreSQL provenance: `raw.transactions` = "
+         f"**{data['db']['transactions_rows']:,} rows**, `raw.customers` = "
+         f"{data['db']['customers']:,} (expected profile `{data['db']['expected_profile']}`)."
+         if data.get("db")
+         else "Benchmark-time PostgreSQL provenance: not recorded (postgres backend unavailable)."),
         "",
         "| cell | e2e p50 | e2e p95 | e2e p99 | mean | req/s | history | features | "
         "model | calib | policy | explain |",
@@ -257,9 +306,11 @@ def _write_markdown(data: dict[str, Any]) -> Path:
         "## Honest reading",
         "",
         f"- Best throughput is `{best_cell}` at {best['requests_per_second']} req/s. "
-        "Raising concurrency to 8 does **not** help: one Python",
-        "  process serialises the CPU-bound feature build on the GIL, so conc-8 p95 is ~15x "
-        "conc-1 p95. Horizontal scaling needs uvicorn workers.",
+        "Raising concurrency to 8 does **not** help here: the component timings show the "
+        "feature build is the bottleneck. The",
+        "  most likely explanation is the GIL serialising that CPU-bound work in this "
+        "single-process replay — a **hypothesis**, not evidence about a multi-worker "
+        "deployment. Horizontal scaling needs uvicorn workers/processes.",
         f"- Headline `history` is {hist_p50} ms p50 (the PostgreSQL round-trip); in-memory answers",
         "  history in ~1 ms, so the postgres numbers are the conservative, deployment-like choice.",
         "- Warm SHAP explanation adds ~6 ms (memory) to ~10 ms (postgres) at p50.",
@@ -288,6 +339,7 @@ def main(argv: list[str] | None = None) -> int:
     cells: list[dict[str, Any]] = []
     startup: dict[str, float] = {}
     unavailable: dict[str, str] = {}
+    db_counts: dict[str, Any] | None = None
     model_version: str | None = None
     model_size: int | None = None
 
@@ -300,6 +352,8 @@ def main(argv: list[str] | None = None) -> int:
             logger.error("backend %s unavailable: %s", backend, exc)
             unavailable[backend] = str(exc)
             continue
+        if backend == "postgres":
+            db_counts = db_provenance(args.profile)
         startup[backend] = round(float(getattr(scorer.provider, "load_seconds", 0.0)), 3)
         model_version = scorer.model_version
         model_size = scorer.model_size_bytes
@@ -355,6 +409,8 @@ def main(argv: list[str] | None = None) -> int:
         "concurrency_levels": list(CONCURRENCIES),
         "cells": cells,
         "headline": headline,
+        "headline_rule": HEADLINE_RULE,
+        "db": db_counts,
         "unavailable_backends": unavailable,
         "note": (
             "In-process replay (no network stack, no uvicorn worker); numbers are a "

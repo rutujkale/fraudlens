@@ -67,8 +67,7 @@ FraudLens final audit
 [PASS] no label columns in feature columns
 [PASS] leakage suite (incl. canary) present
 [PASS] training/serving parity test present
-[PASS] Definition-of-Done: 10 met, 2 not met
-    [NOT MET] Unit, data, leakage, API tests present; CI green — CI green not yet observed
+[PASS] Definition-of-Done: 11 met, 1 not met
     [NOT MET] README ...; screenshots/GIF ... — screenshots/GIF not captured (user TODO)
 
 AUDIT PASSED (15 checks)
@@ -123,8 +122,8 @@ using the API's postgres backend or re-running the benchmark (done here).
    `FALLBACK_XGB_PARAMS`. Root-cause fix: `best_xgb_params`/`best_logreg_params` now fall
    back when the artifact metadata is not present locally; a regression test
    (`test_best_xgb_params_falls_back_when_artifact_is_not_local`) covers it. No check was
-   loosened. `docs/progress/part_15.md` DoD item 11 stays **not met** until CI is observed
-   green.
+   loosened. Re-run `39033533336` on `60d4570` is **green** (2m19s); the only annotation is a
+   non-fatal Node-20 deprecation notice from the pinned action versions.
 
 ## Deviations from the prompt (and why)
 
@@ -165,14 +164,14 @@ using the API's postgres backend or re-running the benchmark (done here).
 - [x] ML-understanding experiments 8A–8E documented — `docs/experiments/`
 - [x] External validation and sim-to-real gap documented — `docs/external_validation.md`, `results/sim_to_real.json`
 - [x] FastAPI with parity test and latency benchmark; Streamlit three pages; batch scoring works — `docs/api.md`, `docs/app.md`, `results/latency.json`
-- [ ] Unit, data, leakage, API tests present; CI green — tests present and pass locally (`python scripts/final_audit.py` → `281 passed, 1 skipped, 11 deselected`; `pytest -m db` → 10 passed); **CI green not yet observed** (workflow committed, first remote run failed on a local-artifact dependency — see "Fixes after review" #4 — fixed, re-run pending)
+- [x] Unit, data, leakage, API tests present; CI green — `python scripts/final_audit.py` → `281 passed, 1 skipped, 11 deselected` locally, `pytest -m db` → 10 passed; **CI green observed**: GitHub Actions run `39033533336` on `60d4570` → `test` job success in 2m19s (Node-20 deprecation annotation only, non-fatal)
 - [ ] README with generated headline numbers; architecture diagram; screenshots/GIF; what-went-wrong — README/diagram/what-went-wrong done; **screenshots/GIF not captured** (user TODO)
 
 ## Remaining TODOs for you
 
 - Capture Streamlit screenshots + a short demo GIF into `docs/screenshots/` (see
   `docs/screenshots/README.md`, `docs/demo_script.md`).
-- Push and confirm the first CI run is green (badge in `README.md`).
+- CI is green on `60d4570` (run `39033533336`); the badge in `README.md` now resolves.
 - Optionally generate the `main` profile **before** any freeze and re-run the
   locked evaluation on your own copy.
 - Final read of resume wording against `docs/interview_notes.md` (source keys are

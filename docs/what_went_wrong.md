@@ -697,5 +697,25 @@ _What happened, one line._
   percent-reduction ratio CI can be computed later **without another test-window read**. Any future
   evaluation should save the resample vector for each cost policy.
 
+### Finding: concurrency does not scale in one Python process (Part 13C)
+- **What happened:** the Part 13C latency matrix was meant to show throughput improving with
+  concurrency. At concurrency 8 the end-to-end p95 **rose** (~15x: postgres 124 ms -> 1,935 ms) and
+  requests/second **fell** (10.3 -> 8.0 for postgres; 13.2 -> 11.7 for memory). No cell returned
+  errors, so this is slow, not broken.
+- **How detected:** the benchmark's own `requests_per_second` and p95 comparison across the
+  concurrency-1 and concurrency-8 cells.
+- **Effect:** the deployment cannot serve concurrent load by just raising the client concurrency.
+  Root cause: the endpoints are synchronous and their cost is dominated by the CPU-bound point-in-time
+  feature build, so a single Python process serialises them on the GIL while adding context-switch and
+  per-request pandas allocation churn. The isolated per-component timings (`features` p95 72 ms at
+  conc 1 -> 1,631 ms at conc 8) confirm the feature build is the bottleneck.
+- **Fix:** no code change to hide it — reported honestly. `docs/latency.md` keeps the conc-8 cells and
+  the honest-reading note, the headline quotes the conc-1 (single-request) number, and `docs/api.md`
+  states that horizontal scaling needs multiple uvicorn workers/processes. A future optimisation is to
+  move/harden the feature path (vectorised history features, or a keyset-cached feature store) so the
+  per-request cost drops.
+- **Test added:** none (measurement/performance finding, not a correctness bug).
+
+
 
 

@@ -31,8 +31,8 @@ Profile `dev` · test window · frozen evaluation (freeze commit `0953884369`, e
 ## 4. Engineering
 
 - features: 53
-- automated tests: 233; leakage tests: 12
-- API p95 latency: None (Filled in Part 13 (FastAPI deployment); placeholder until then.)
+- automated tests: 252; leakage tests: 12
+- API p95 latency: 123.969 (p95 end-to-end from results/latency.json; conditions: backend postgres, concurrency 1, explanation off, n=2000.)
 
 ## Pre-registered outcomes (verbatim)
 
@@ -46,4 +46,4 @@ Profile `dev` · test window · frozen evaluation (freeze commit `0953884369`, e
 - Built an end-to-end fraud-risk system; frozen XGBoost test PR-AUC 0.962 (CI 0.934-0.980) vs Rules 0.204 at 0.99% prevalence [results/final_results.json:model_comparison.xgb]
 - Amount-aware cost policy cut realized fraud cost 83.2% vs F1-optimal (CI 361,480-1,281,632 INR); capacity 23/day was non-binding on this window [final_results.json:decision.meta.reduction_ci]
 - Reported concept drift as a finding: 79% of test frauds fall after the drift switch, yet XGB val->test PR-AUC rose (0.929->0.962, no degradation observed) [final_results.json:drift]
-- 53-feature registry, 12 leakage tests, 233 automated tests [final_results.json:meta]
+- 53-feature registry, 12 leakage tests, 252 automated tests [final_results.json:meta]

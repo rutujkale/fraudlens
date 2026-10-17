@@ -10,6 +10,17 @@ from fraudlens.evaluation.experiments import (
     drop_experiment_rows,
     log_experiment,
 )
+from fraudlens.evaluation.experiments_lib import FALLBACK_XGB_PARAMS, best_xgb_params
+
+
+def test_best_xgb_params_falls_back_when_artifact_is_not_local(tmp_path, monkeypatch):
+    """A fresh clone has results/models_<p>.json but no (gitignored) artifacts/."""
+    from fraudlens.evaluation import experiments_lib as lib
+
+    (tmp_path / "models_ci.json").write_text('{"xgb": "xgb_ci_missing"}', encoding="utf-8")
+    monkeypatch.setattr(lib, "results_dir", lambda: tmp_path)
+    monkeypatch.setattr(lib, "artifacts_dir", lambda version: tmp_path / version)
+    assert best_xgb_params("ci") == FALLBACK_XGB_PARAMS
 
 
 def test_log_experiment_appends_and_injects_metadata(tmp_path):

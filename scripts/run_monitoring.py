@@ -40,10 +40,36 @@ def _psi_heatmap(psi_long: pd.DataFrame, profile: str, out: object) -> None:
     plt.close(fig)
 
 
+def _labels(periods: pd.DataFrame) -> list[str]:
+    return [f"{p}\n{s}" for p, s in zip(periods["period"], periods["sample"], strict=True)]
+
+
+def _boundary_index(periods: pd.DataFrame) -> int | None:
+    """First month that is not fully in-sample (where train_end falls)."""
+    for i, sample in enumerate(periods["sample"]):
+        if sample != "in_sample":
+            return i
+    return None
+
+
 def _score_dist(periods: pd.DataFrame, out: object) -> None:
     fig, ax = plt.subplots(figsize=(7, 4))
-    ax.bar(periods["period"], periods["mean_pred"], label="mean predicted")
-    ax.plot(periods["period"], periods["observed_rate"], "o-", color="black", label="observed")
+    ax.bar(range(len(periods)), periods["mean_pred"], label="mean predicted")
+    ax.plot(range(len(periods)), periods["observed_rate"], "o-", color="black", label="observed")
+    ax.set_xticks(range(len(periods)), _labels(periods), fontsize=8)
+    boundary = _boundary_index(periods)
+    if boundary is not None:
+        ax.axvline(boundary - 0.5, color="grey", ls=":", lw=1)
+        ax.text(
+            boundary - 0.5,
+            0.98,
+            " model trained on data left of this line (in-sample)",
+            transform=ax.get_xaxis_transform(),
+            ha="left",
+            va="top",
+            fontsize=8,
+            color="grey",
+        )
     ax.set_ylabel("rate")
     ax.set_title("Calibration drift: mean predicted vs observed (matured labels)")
     ax.legend()
@@ -54,11 +80,29 @@ def _score_dist(periods: pd.DataFrame, out: object) -> None:
 
 def _performance(periods: pd.DataFrame, profile: str, out: object) -> None:
     fig, ax = plt.subplots(figsize=(7, 4))
-    ax.plot(periods["period"], periods["pr_auc"], "o-", label="PR-AUC (frozen model)")
-    ax.plot(periods["period"], periods["recall_at_frozen"], "s--", label="recall @ frozen policy")
+    ax.plot(range(len(periods)), periods["pr_auc"], "o-", label="PR-AUC (frozen model)")
+    ax.plot(
+        range(len(periods)),
+        periods["recall_at_frozen"],
+        "s--",
+        label="recall @ frozen policy",
+    )
+    ax.set_xticks(range(len(periods)), _labels(periods), fontsize=8)
+    boundary = _boundary_index(periods)
+    if boundary is not None:
+        ax.axvline(boundary - 0.5, color="grey", ls=":", lw=1)
+        ax.text(
+            0.01,
+            0.98,
+            "left of the line = in-sample (model trained on it); right = held-out validation",
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=8,
+            color="grey",
+        )
     switch = DRIFT_DATES.get(profile)
     if switch:
-        ax.axvline(len(periods) - 0.5, color="grey", ls=":", lw=1)
         ax.text(
             0.99,
             0.02,

@@ -141,6 +141,21 @@ def _calibrated_scores(profile: str, df: pd.DataFrame, model_name: str) -> tuple
     return np.asarray(prob, dtype=float), version
 
 
+def _sample_label(chunk: pd.DataFrame, t_train_end: object) -> str:
+    """Whether a period's rows are all in-sample, all validation, or split.
+
+    The model is trained on ``timestamp < t_train_end``; months after that boundary
+    are out-of-sample (validation). Any month straddling the boundary is ``mixed``,
+    so a reader never mistakes an in-sample PR-AUC for held-out performance.
+    """
+    t_train_end = pd.Timestamp(t_train_end)
+    before = bool((chunk["timestamp"] < t_train_end).all())
+    after = bool((chunk["timestamp"] >= t_train_end).all())
+    if before:
+        return "in_sample"
+    return "validation" if after else "mixed"
+
+
 def _period_metrics(period_df: pd.DataFrame, labels: pd.DataFrame, threshold: float) -> dict:
     """One period's label-matured metrics (prevalence, calibration, ranking, operating point)."""
     merged = period_df[["transaction_id"]].merge(labels, on="transaction_id", how="left")
@@ -224,7 +239,11 @@ def build_dashboard_metrics(
 
     period_rows = []
     for period, chunk in window.groupby("period", sort=True):
-        row = {"period": str(period), **_period_metrics(chunk, labels, threshold)}
+        row = {
+            "period": str(period),
+            "sample": _sample_label(chunk, split.boundaries["t_train_end"]),
+            **_period_metrics(chunk, labels, threshold),
+        }
         row["score_psi"] = float(
             score_psi.loc[score_psi["period"] == str(period), "score_psi"].iloc[0]
         )
@@ -247,7 +266,9 @@ def build_dashboard_metrics(
         "bands": {"stable": PSI_MONITOR, "monitor": PSI_SHIFT},
         "note": (
             "train + validation timeline only; the published test-window PSI is quoted "
-            "from results/final_results.json, not recomputed here."
+            "from results/final_results.json, not recomputed here. The `sample` column "
+            "marks each month: in_sample (model trained on it), validation (held out), or "
+            "mixed (straddles train_end) — only validation rows are out-of-sample."
         ),
     }
 

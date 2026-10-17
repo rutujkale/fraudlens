@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain external api benchmark-latency app-artifacts app data features db policy freeze final experiments monitor render all-dev ci-local
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain external external-report sim-to-real api benchmark-latency app-artifacts app data features db policy freeze final experiments monitor render all-dev ci-local
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -114,6 +114,12 @@ explain: shap fairness
 ## external: IEEE-CIS external validation (Part 11); prints "skipped: data missing" if absent.
 external:
 	$(PY) scripts/run_external_validation.py --profile $(PROFILE)
+## sim-to-real: project the primary R1-R2 gap into results/sim_to_real.json (primary only).
+sim-to-real:
+	$(PY) scripts/build_sim_to_real.py
+## external-report: regenerate the external-validation tables in docs/ (primary gap only).
+external-report: sim-to-real
+	$(PY) scripts/external_validation_report.py
 # TODO(part 09): unseen-fraud    - Isolation Forest experiment
 # TODO(part 12): evaluate        - locked one-shot test evaluation
 ## api: run the FastAPI scoring service (Part 13). HISTORY_BACKEND=memory|postgres.
@@ -158,10 +164,5 @@ render:
 ## all-dev: the whole dev pipeline (no external data, no test-window access).
 all-dev: simulate validate-data db-load build-features train evaluate-val calibrate optimize-policy experiments shap fairness app-artifacts
 ## ci-local: reproduce .github/workflows/ci.yml locally (needs `make db-up` first).
-ci-local: lint
-	$(PY) scripts/generate_data.py --profile tiny
-	$(PY) scripts/validate_data.py --profile tiny
-	$(PY) scripts/build_features.py --profile tiny
-	$(PY) scripts/train.py --profile tiny --model all
-	$(PY) scripts/load_db.py --profile tiny
-	$(PY) -m pytest -m "not slow and not needs_dev"
+ci-local:
+	$(PY) scripts/ci_local.py

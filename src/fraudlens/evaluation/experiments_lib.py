@@ -25,9 +25,8 @@ from fraudlens.evaluation.dataset import load_feature_dataset
 from fraudlens.evaluation.metrics import brier, ece, evaluate_scores, pr_auc, recall_at_top_k
 from fraudlens.evaluation.splits import Split, make_temporal_split
 from fraudlens.models.calibration import fit_calibrators
-from fraudlens.models.io import load_metadata
 from fraudlens.models.xgb import encode_features
-from fraudlens.paths import results_dir
+from fraudlens.paths import artifacts_dir, results_dir
 
 LABEL_COLUMNS = ["transaction_id", "is_fraud", "fraud_scenario", "label_available_at"]
 
@@ -90,16 +89,33 @@ def load_supervised(profile: str) -> Supervised:
     return Supervised(profile=profile, cfg=cfg, df=df, x=x, y=y, split=split)
 
 
+def _tuned_metadata(profile: str, model: str) -> dict | None:
+    """Metadata for ``model`` on ``profile`` if the artifact is present locally.
+
+    ``results/models_<profile>.json`` is tracked but ``artifacts/`` is gitignored, so a
+    fresh clone (e.g. CI) has the pointer without the file; fall through to the search
+    log / default space rather than raising.
+    """
+    versions_path = results_dir() / f"models_{profile}.json"
+    if not versions_path.exists():
+        return None
+    versions = json.loads(versions_path.read_text(encoding="utf-8"))
+    if model not in versions:
+        return None
+    meta_path = artifacts_dir(versions[model]) / "metadata.json"
+    if not meta_path.exists():
+        return None
+    return json.loads(meta_path.read_text(encoding="utf-8"))
+
+
 def best_xgb_params(profile: str) -> dict[str, float | int]:
     """The Part 06 selected XGBoost config for ``profile`` (artifact, else search log).
 
     Falls back to :data:`FALLBACK_XGB_PARAMS` for profiles with no trained model.
     """
-    versions_path = results_dir() / f"models_{profile}.json"
-    if versions_path.exists():
-        versions = json.loads(versions_path.read_text(encoding="utf-8"))
-        if "xgb" in versions:
-            return dict(load_metadata(versions["xgb"])["hyperparameters"])
+    metadata = _tuned_metadata(profile, "xgb")
+    if metadata is not None:
+        return dict(metadata["hyperparameters"])
     search_path = results_dir() / f"xgb_search_{profile}.csv"
     if search_path.exists():
         row = pd.read_csv(search_path).sort_values("val_pr_auc", ascending=False).iloc[0]
@@ -121,11 +137,9 @@ def best_xgb_params(profile: str) -> dict[str, float | int]:
 
 def best_logreg_params(profile: str) -> dict:
     """The Part 06 selected logistic-regression config for ``profile``."""
-    versions_path = results_dir() / f"models_{profile}.json"
-    if versions_path.exists():
-        versions = json.loads(versions_path.read_text(encoding="utf-8"))
-        if "logreg" in versions:
-            return dict(load_metadata(versions["logreg"])["hyperparameters"])
+    metadata = _tuned_metadata(profile, "logreg")
+    if metadata is not None:
+        return dict(metadata["hyperparameters"])
     return {"C": 1.0, "class_weight": None}
 
 

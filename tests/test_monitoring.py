@@ -8,6 +8,7 @@ import pandas as pd
 from fraudlens.monitoring import metrics as M
 
 T_VAL_END = pd.Timestamp("2026-04-07 00:00:00")
+T_TRAIN_END = pd.Timestamp("2026-03-13 23:59:00")
 
 
 def _frame(times: list[str]) -> pd.DataFrame:
@@ -36,6 +37,15 @@ def test_monitoring_window_excludes_rows_at_or_after_val_end():
 
 def test_period_of():
     assert M.period_of("2026-03-15 10:00") == "2026-03"
+
+
+def test_sample_label_distinguishes_in_sample_from_validation():
+    in_sample = _frame(["2026-02-01 00:00:00", "2026-02-28 00:00:00"])
+    mixed = _frame(["2026-03-01 00:00:00", "2026-03-20 00:00:00"])
+    validation = _frame(["2026-04-01 00:00:00", "2026-04-06 00:00:00"])
+    assert M._sample_label(in_sample, T_TRAIN_END) == "in_sample"
+    assert M._sample_label(mixed, T_TRAIN_END) == "mixed"
+    assert M._sample_label(validation, T_TRAIN_END) == "validation"
 
 
 def test_psi_by_period_returns_rows_per_period_and_feature():

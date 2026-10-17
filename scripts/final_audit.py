@@ -21,6 +21,24 @@ from fraudlens.reporting.render import PLACEHOLDER, TEMPLATES
 
 RENDERED_DOCS = [out for _t, out in TEMPLATES.values()]
 
+# Documentation claims that must never appear (headline-honesty guardrails). The
+# scan covers README.md and every *.md under docs/, except docs/progress/ (dated
+# historical logs, not current result docs) — the exclusion is printed below.
+FORBIDDEN_PHRASES = [
+    (re.compile(r"parity verified on postgres", re.I), "parity verified on postgres"),
+    (
+        re.compile(r"(percent|percentage)\s+(CI|confidence interval)", re.I),
+        "percent CI wording",
+    ),
+    (re.compile(r"\bCI\s*[:(]?\s*\d+\.?\d*\s*%"), "percent value inside a CI"),
+    (re.compile(r"\d+\.?\d*\s*%\s*(?:to|[-–])\s*\d+\.?\d*\s*%"), "percent range as a CI"),
+    (
+        re.compile(r"\bsecondary\b[^\n]{0,30}(?:gap|dev[- ]val|PR-AUC|0\.819)", re.I),
+        "secondary IEEE gap",
+    ),
+    (re.compile(r"`main`[^\n]{0,60}\d|\d[^\n]{0,20}`main`"), "main quoted with numbers"),
+]
+
 # DoD items that are honestly not met on this build (never silently skipped).
 KNOWN_UNMET = ("main profile", "screenshots", "ci green")
 
@@ -162,6 +180,45 @@ def check_leakage_parity_tests(a: Audit) -> None:
     a.check("training/serving parity test present", has_parity)
 
 
+def _doc_files() -> list[Path]:
+    """README.md plus every docs/**/*.md, excluding dated progress logs."""
+    files = [REPO_ROOT / "README.md"]
+    files += sorted((REPO_ROOT / "docs").rglob("*.md"))
+    return [f for f in files if f.exists() and "progress" not in f.parts]
+
+
+def check_forbidden_phrases(a: Audit) -> None:
+    docs = _doc_files()
+    hits: list[str] = []
+    for path in docs:
+        for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            for pattern, label in FORBIDDEN_PHRASES:
+                if pattern.search(line):
+                    hits.append(f"{path.relative_to(REPO_ROOT).as_posix()}:{i} [{label}]")
+    detail = (
+        "; ".join(hits[:5]) if hits else f"{len(docs)} docs scanned (docs/progress/ logs excluded)"
+    )
+    a.check("no forbidden doc phrases", not hits, detail)
+
+
+def check_sim_to_real(a: Audit) -> None:
+    path = results_dir() / "sim_to_real.json"
+    if not path.exists():
+        a.check("sim_to_real.json is primary-gap-only", False, "results/sim_to_real.json missing")
+        return
+    data = json.loads(path.read_text(encoding="utf-8"))
+    primary = "primary_gap_pr_auc_r1_minus_r2_on_ieee_test"
+    bad_keys = [
+        k for k in data if re.search(r"secondary|dev_val|synthetic", k, re.I)
+    ]
+    ok = primary in data and not bad_keys
+    a.check(
+        "sim_to_real.json is primary-gap-only (no differenced lift, no cross-dataset raw PR-AUC)",
+        ok,
+        f"keys={sorted(data)}" if not ok else f"primary={data[primary]:.4f}",
+    )
+
+
 def check_dod(a: Audit) -> None:
     path = REPO_ROOT / "docs" / "progress" / "part_15.md"
     if not path.exists():
@@ -191,6 +248,8 @@ def main() -> int:
     check_test_logs(a)
     check_readme_placeholders(a)
     check_headlines_traceable(a)
+    check_sim_to_real(a)
+    check_forbidden_phrases(a)
     check_no_tracked_data(a)
     check_ci_credentials(a)
     check_feature_guard(a)

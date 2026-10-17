@@ -50,14 +50,22 @@ def load_latency_headline(path: str | Path | None = None) -> tuple[float | None,
     p = Path(path) if path else results_dir() / "latency.json"
     if not p.exists():
         return None, "Filled in Part 13 (FastAPI deployment); placeholder until then."
-    headline = json.loads(p.read_text(encoding="utf-8")).get("headline", {})
+    data = json.loads(p.read_text(encoding="utf-8"))
+    headline = data.get("headline", {})
     p95 = headline.get("e2e_p95_ms")
     if p95 is None:
         return None, "results/latency.json has no headline cell; placeholder until then."
+    db = data.get("db") or {}
+    profile = db.get("expected_profile", "?")
+    rows = db.get("transactions_rows")
+    rows_txt = f"{rows:,} rows" if isinstance(rows, int) else "? rows"
     note = (
         "p95 end-to-end from results/latency.json; conditions: backend "
         f"{headline.get('backend')}, concurrency {headline.get('concurrency')}, "
-        f"explanation {'on' if headline.get('explanation') else 'off'}, n={headline.get('n')}."
+        f"explanation {'on' if headline.get('explanation') else 'off'}, n={headline.get('n')} "
+        f"({data.get('n_fraud')} fraud / {data.get('n_legit')} legit, fraud-enriched); "
+        f"profile {profile} ({rows_txt}); in-process ASGI replay (a lower bound). "
+        f"headline_rule: {data.get('headline_rule')}"
     )
     return float(p95), note
 
@@ -196,7 +204,7 @@ def build_headlines(results: dict) -> dict:
         "test frauds fall after the drift switch, yet XGB val->test PR-AUC rose "
         "(0.929->0.962, no degradation observed) [final_results.json:drift]",
         f"{meta['n_features']}-feature registry, {counts['n_leakage_tests']} leakage tests, "
-        f"{counts['n_tests']} automated tests [final_results.json:meta]",
+        f"{counts['n_tests']} automated tests collected [final_results.json:meta]",
     ]
     return {
         "headline_1_model_performance": h1,
@@ -263,7 +271,8 @@ def headline_markdown(results: dict) -> str:
         "## 4. Engineering",
         "",
         f"- features: {h4['feature_count']}",
-        f"- automated tests: {h4['n_automated_tests']}; leakage tests: {h4['n_leakage_tests']}",
+        f"- automated tests: {h4['n_automated_tests']} collected; leakage tests: "
+        f"{h4['n_leakage_tests']}",
         f"- API p95 latency: {h4['api_p95_latency_ms']} ({h4['latency_note']})",
         "",
         "## Pre-registered outcomes (verbatim)",

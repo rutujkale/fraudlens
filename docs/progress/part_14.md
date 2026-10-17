@@ -43,9 +43,14 @@ python -c "build_app_artifacts('tiny', out_dir=<temp>/tiny, n_scored=2000, n_sha
   -> ... (243 sample rows)   # 2 of 4 presets; 0 frauds in tiny val
 pytest tests/test_app_artifacts.py -q           -> 11 passed
 pytest tests/test_app_smoke.py -q               -> 7 passed
-pytest -m db -q                                 -> 10 passed, 257 deselected
+pytest -m db -q                                 -> 10 passed, 265 deselected
 pytest -q -m "not db"                           -> 264 passed, 1 skipped, 10 deselected
 ```
+
+Frozen-state evidence for this part: `git diff be85581..HEAD -- results/ src/fraudlens/evaluation/locked.py`
+is empty (no result file or locked-evaluation code changed), and the freeze verifier passes the API
+start-up check (`locked.verify_artifact_hashes(load_freeze())` raises nothing; `GET /health ->
+status ok, model_version xgb_dev_20261015_v1`).
 
 Manifest sanity (dev): `model_version xgb_dev_20261015_v1`, `policy_version cost_policy_v1`,
 `calibrated true`, `capacity_per_day 23`, `n_scored_sample 20293`, `n_shap_explained 5000`, `seed 42`,
@@ -66,7 +71,11 @@ and the frozen `reports/figures/final_*.png`.
 The Page 2 sliders change cost/capacity inputs only; all math runs through
 `fraudlens.appdata.recompute`, which calls `evaluation.cost_model`, `evaluation.threshold_search` and
 `risk.policy`. `test_page2_recompute_uses_package_code` asserts `recompute.scan` equals
-`scan_global_thresholds` on the same `val_thr` slice and that the cost-optimal threshold is its argmin.
+`scan_global_thresholds` and that the cost-optimal threshold is its argmin, on a **synthetic sample
+that contains frauds** (the `tiny` validation slice has none, so an equality there would be trivially
+degenerate). The same equality was also checked once by hand on the real dev `val_thr` slice
+(20,293 rows, 183 frauds) and holds (`frames equal: True`). The labels-hidden-by-default behaviour is
+covered by `test_page2_hides_labels_by_default`.
 
 ## Deviations from the prompt (and why)
 

@@ -13,6 +13,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -183,24 +184,43 @@ def test_page2_hides_labels_by_default():
     assert any("Realized" in m.label for m in at.metric)
 
 
+def _sample_with_positives(n_legit: int = 280, n_fraud: int = 20, seed: int = 42) -> pd.DataFrame:
+    """A scored sample that contains frauds (the tiny validation slice has none)."""
+    rng = np.random.default_rng(seed)
+    n = n_legit + n_fraud
+    return pd.DataFrame(
+        {
+            "transaction_id": [f"t{i}" for i in range(n)],
+            "timestamp": pd.date_range("2026-03-20", periods=n, freq="30min"),
+            "amount": np.round(rng.uniform(100.0, 50_000.0, n), 2),
+            "fraud_probability": np.concatenate(
+                [rng.uniform(0.0, 0.05, n_legit), rng.uniform(0.30, 0.95, n_fraud)]
+            ),
+            "is_fraud": np.array([0] * n_legit + [1] * n_fraud),
+        }
+    )
+
+
 def test_page2_recompute_uses_package_code():
     from fraudlens.appdata import recompute
     from fraudlens.appdata.artifacts import load_app_artifacts
     from fraudlens.evaluation.cost_model import CostParams
     from fraudlens.evaluation.threshold_search import scan_global_thresholds
 
-    art = load_app_artifacts("tiny")
-    params = CostParams(**art.manifest["costs"])
-    capacity = int(art.manifest["capacity_per_day"])
-    y, prob, amount, dates = recompute.sample_arrays(art.scored_sample)
+    sample = _sample_with_positives()
+    assert sample["is_fraud"].sum() >= 1, "the equality must hold on data with positives"
+
+    params = CostParams(**load_app_artifacts("tiny").manifest["costs"])
+    capacity = int(load_app_artifacts("tiny").manifest["capacity_per_day"])
+    y, prob, amount, dates = recompute.sample_arrays(sample)
 
     expected = scan_global_thresholds(
         y, prob, amount, dates, params, recompute.threshold_grid(prob)
     )
-    got = recompute.scan(art.scored_sample, params)
+    got = recompute.scan(sample, params)
     pd.testing.assert_frame_equal(got.reset_index(drop=True), expected.reset_index(drop=True))
 
-    best = recompute.best_thresholds(art.scored_sample, params, capacity)
+    best = recompute.best_thresholds(sample, params, capacity)
     cheapest = float(expected.loc[expected["total_realized_cost"].idxmin(), "threshold"])
     assert best["cost_optimal_threshold"] == cheapest
 

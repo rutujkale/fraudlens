@@ -3,6 +3,48 @@
 Every bug, leakage incident, simulator shortcut or failed experiment goes here.
 That file is interview material: it shows how problems are found and fixed.
 
+## Consolidated narrative
+
+The detailed log below is the raw record. In short, the incidents that actually
+changed the system were:
+
+- **A target-derived leak in an exported table.** `customer_devices` included
+  devices that had been *added by fraud*, so a device-history feature could learn
+  the label. Found by an invariance check, not by a metric. Fix: export only
+  account-opening / pre-transaction device state; guarded by the leakage suite.
+- **Same-timestamp peer leakage.** `RANGE ... EXCLUDE CURRENT ROW` does not exclude
+  rows sharing the same timestamp, and recency/running-state features were reading
+  peers written later in the same instant. Effect would have been a small, hard-to-
+  see upward bias. Fix: per-customer **tie-group** processing and the single
+  `window_bounds` primitive (`docs/methodology.md`); guarded by truncation /
+  future-mutation invariance and the canary test.
+- **The simulator was too easy (separability gate FAIL).** Crude signals solved the
+  data, which would have made every downstream model look great for the wrong
+  reason. Fix: hard negatives and weakened device shortcuts; the gate now fails a
+  profile whose crude signals are too predictive.
+- **A `tiny` run silently overwrote the `dev` model's calibrator and policy.** Found
+  in review; the artifact file naming was not profile-safe. Fix: profile-suffixed
+  artifacts and a guard; the model_version now carries the profile.
+- **The `tiny` validation slice has zero frauds (Part 14).** The Streamlit "recompute
+  from package code" check was comparing on a slice with no positives, so it proved
+  nothing. Fix: the test now samples a slice with positives.
+- **An API idea that did not survive contact: the Isolation Forest.** The unseen-
+  fraud experiment came back **null** (bagged S1−S0 CIs include 0) and was not
+  adopted. Reported as null, not buried.
+- **The cold-start artifact.** Customers had transactions before their account
+  existed (`history_days < 0`). Fixing it regenerated the dataset
+  (`pre_coldstart_fix` tag, before/after table in `docs/progress/part_02b.md`), so
+  every pre-fix number is superseded. This is why the docs cite post-fix figures.
+- **Temporal-split drift metrics are dominated by the tenure clock.** A naively
+  dramatic adversarial AUC (`0.9821` all-features) collapses to a mild behavioural
+  `0.6995` once monotonic tenure features are removed — the honest number is quoted
+  (`docs/experiments/8E_drift.md`).
+- **A small `tiny` API detail.** The tiny model has no calibrator/policy, so the
+  scorer refuses to start; this shaped the CI smoke-test fallback
+  (`.github/workflows/ci.yml`, `docs/progress/part_15.md`).
+
+Each has a full entry (what happened → how detected → effect → fix → test) below.
+
 ## Template
 
 ### Incident

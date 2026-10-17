@@ -85,3 +85,109 @@ or < 1,000 rows) is reported *up front*, per-group calibration/Brier is excluded
 exploratory full-validation view (the calibrator saw half of it), and every interval is a
 **cluster** bootstrap over customers, because one customer's transactions are correlated.
 The audit is not a compliance claim.
+
+## Simulator assumptions (Part 02)
+
+`data_gen/` produces entities (customers, accounts, devices, merchants) and transactions
+from config (`config/config.yaml`), with archetype mixes, hard negatives and drift all
+seeded (`seed: 42`) so a run is exactly reproducible. The behavioural story is deliberately
+imperfect: a share of legitimate transactions share devices and a configured share of fraud
+reuses known devices, so "new device" is not a giveaway (`hard_negatives.py`). Fraud is
+generated as **episodes** (account takeover, structuring, amount/geo anomaly, burst) with a
+configured `label_delay_days`; hard negatives (travel, payday, shared device, near-threshold)
+are simulated as explicit episodes and measured, not ignored. Drift is a config-driven
+change in the scenario mix (`drift.start_fraction` / `strength`). The separability gate
+(`data_quality/validation.py`) fails a profile whose crude signals solve fraud too easily,
+so an accidental shortcut cannot ship as a result. Details and the cold-start fix are in
+`docs/progress/part_02.md`, `part_02b.md`.
+
+## Validation strategy (Parts 06, 12)
+
+Splits are **chronological with an embargo equal to the maximum label delay**; a random
+split is never the primary evaluation. `evaluation/splits.py` fixes `t0`, `t_train_end`,
+`t_val_end` (and the test window beyond it); the embargo gap drops rows whose labels could
+not have been known at the boundary. Hyperparameters, calibrators and thresholds are fit on
+train/validation only; the test window is evaluated **once**, in Part 12, through
+`evaluation/guard.py`, and every access is logged
+(`results/test_access_log.csv`). Confidence intervals are **cluster bootstraps over
+customers** (`evaluation/bootstrap.py`), because one customer's transactions are correlated.
+
+## Imbalance (Parts 06, 8A)
+
+The positive class is ~1% (`composition.prevalence`). The headline metric is **PR-AUC**,
+with recall@top-K, recall at a fixed precision, FPR, Brier, ECE and expected/realized cost
+reported alongside; accuracy is never a headline metric. **No SMOTE** or any synthetic
+oversampling is used. Experiment 8A (`docs/experiments/8A_imbalance.md`) shows that
+reweighting/calibration choices move the ranking little here, and that raw XGBoost
+probabilities were already close to calibrated — the experiment is the evidence, not an
+assumption.
+
+## Calibration (Part 07)
+
+Probabilities are calibrated (sigmoid on a held-out validation slice) because the decision
+rule needs a probability that means "frequency", not a margin. `models/calibration.py` fits
+the calibrator on `val_cal` (half of validation); Brier and ECE are reported before/after in
+`results/final_results.json`. A calibrated probability is the only thing converted to a risk
+score (`risk_score = 100 × p`); the threshold is derived from it.
+
+## Cost model and the closed-form threshold (Parts 07, 12)
+
+Per transaction with calibrated `p` and amount `A`, the four actions are priced
+(`results/freeze.json:cost_params`):
+
+```
+cost(APPROVE) = p·(α·A + fixed_fee)
+cost(STEP_UP) = S + (1-p)·F_step + p·(1-s)·(α·A + fixed_fee)
+cost(REVIEW)  = R + (1-p)·F + p·(1-c)·(α·A + fixed_fee)
+cost(BLOCK)   = (1-p)·F_block
+```
+
+With only APPROVE vs REVIEW and a perfect catch rate (`c = 1`), intervening is worth it
+exactly when
+
+```
+p > (R + F) / (α·A + fixed_fee + F)
+```
+
+— an **amount-dependent** threshold, valid only because `p` is calibrated. On `dev`,
+`α = 0.85`, `R = 75`, `F = 150`, `fixed_fee = 0` (`results/freeze.json:cost_params`), so the
+cutoff rises with `A`: small transactions need a higher probability before a review pays for
+itself.
+
+## Capacity allocation (Parts 07, 12)
+
+Analyst reviews are capped at `capacity_per_day = 23` (`results/freeze.json`). The policy
+ranks candidates by **largest expected saving** and **demotes** everything over capacity to
+the next-best action (STEP_UP or APPROVE). Risk **levels derive from actions**
+(APPROVE→LOW, STEP_UP→MEDIUM, REVIEW→HIGH, BLOCK→CRITICAL), not from fixed probability
+cutoffs. Honest caveat: on the test window the policy flagged `5.9/day` and `n_demoted = 0`,
+so the cap never bound — the capacity result is the unconstrained policy
+(`docs/limitations.md`).
+
+## Anomaly experiment design (Part 09)
+
+The Isolation Forest is evaluated as an **unseen-fraud** detector: train on the normal
+population, score fraud archetypes held out of supervised training, and compare bagged
+confidence intervals for the S1−S0 / S1s−S0 detection improvements over the supervised
+baseline. The result is **null / not adopted** — the bagged CIs include 0 after the
+cold-start fix — and is reported as such
+(`docs/experiments/09_unseen_fraud.md`, `results/final_results.json:drift`).
+
+## Drift and retraining (Parts 8E, 15A)
+
+Covariate drift (inputs move) and concept drift (input→label mapping moves) are separated.
+On the temporal split, naive adversarial validation is dominated by **monotonic tenure
+features by construction**; strip them and behavioural drift is moderate
+(adversarial AUC `0.6995` on the post-fix `drift_lab`). Feature/score PSI, prevalence /
+calibration drift and delayed-label performance are monitored per month over train +
+validation, with pre-stated retraining rules (`docs/retraining_plan.md`,
+`docs/experiments/8E_drift.md`). The published test-window drift is "no degradation observed
+(0.9291 val → 0.9619 test)".
+
+## External validation and the sim-to-real gap (Part 11)
+
+The IEEE-CIS benchmark is used as a **secondary** validation via `external/ieee_cis.py`:
+transferable FraudLens features are mapped onto the public schema (UID heuristic), a model
+is trained/validated temporally, and the gap between synthetic and real PR-AUC is recorded
+in `results/sim_to_real.json`. The benchmark shows the direction of transfer, not parity;
+the real dataset is not redistributed (`docs/external_validation.md`, `LICENSE`).

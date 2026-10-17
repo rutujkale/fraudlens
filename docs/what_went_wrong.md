@@ -705,16 +705,37 @@ _What happened, one line._
 - **How detected:** the benchmark's own `requests_per_second` and p95 comparison across the
   concurrency-1 and concurrency-8 cells.
 - **Effect:** the deployment cannot serve concurrent load by just raising the client concurrency.
-  Root cause: the endpoints are synchronous and their cost is dominated by the CPU-bound point-in-time
-  feature build, so a single Python process serialises them on the GIL while adding context-switch and
-  per-request pandas allocation churn. The isolated per-component timings (`features` p95 72 ms at
-  conc 1 -> 1,631 ms at conc 8) confirm the feature build is the bottleneck.
+  The endpoints are synchronous and their cost is dominated by the CPU-bound point-in-time feature
+  build. The isolated per-component timings (`features` p95 72 ms at conc 1 -> 1,631 ms at conc 8)
+  prove the feature build is the bottleneck; the **most likely** cause is serialisation of that work
+  in one process (the GIL, with context-switch and per-request pandas allocation churn) — this is a
+  **hypothesis**, and it says nothing about a multi-worker deployment.
 - **Fix:** no code change to hide it — reported honestly. `docs/latency.md` keeps the conc-8 cells and
   the honest-reading note, the headline quotes the conc-1 (single-request) number, and `docs/api.md`
   states that horizontal scaling needs multiple uvicorn workers/processes. A future optimisation is to
   move/harden the feature path (vectorised history features, or a keyset-cached feature store) so the
   per-request cost drops.
 - **Test added:** none (measurement/performance finding, not a correctness bug).
+
+### Finding: four Part 13 reporting/provenance gaps found in review
+- **What happened:** a review of the first Part 13 commit found four issues: (1) the postgres latency
+  cells were measured on `dev` but nothing in the output proved which profile was loaded; (2) the
+  calibrated 1e-6 parity test only ever ran on the memory backend, so postgres history equality was
+  never asserted; (3) the benchmark sample was described as "balanced 1:1" when it is fraud-enriched
+  (360 fraud / 1,640 legit, 18%); (4) the headline latency cell (`postgres|conc1|explain-off`) was
+  chosen **after** seeing the matrix, though the plan had named `memory|conc1|explain-off`.
+- **How detected:** external review of the committed diff and docs against the plan.
+- **Effect:** a quoted figure (postgres p95) that could not be tied to a known DB state; a parity claim
+  broader than what was tested; a factually wrong sample description; a headline that looked
+  pre-registered but was not.
+- **Fix:** `benchmark_latency.py` now records `db: {expected_profile, transactions_rows, customers}`
+  and an explicit `headline_rule` in `results/latency.json`; the sample description was corrected in
+  `part_13.md`, `docs/latency.md` and the script docstring; the post-hoc headline choice is disclosed
+  in `part_13.md`/`docs/api.md`; the concurrency cause is labelled a hypothesis. Re-measured on `dev`
+  after a fresh reload.
+- **Test added:** `tests/test_api.py::test_postgres_history_matches_memory_features` (`db`-marked) —
+  postgres and in-memory providers must return the **same** strictly-prior history and the **same**
+  feature row on a 25-row tiny sample.
 
 
 

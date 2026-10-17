@@ -95,11 +95,17 @@ batch endpoints never explain. When on, the explainer is built lazily (honouring
 
 Measured on this machine (16-core AMD, 15.3 GB RAM, Python 3.12, in-process ASGI replay):
 
-- **Headline (postgres, concurrency 1, explanation off): p50 90 ms, p95 124 ms** over 2,000
-  validation transactions. History (the DB round-trip) is 45.7 ms p50, feature build 40.6 ms p50.
-- Memory backend: p50 64 ms, p95 113 ms (history ~1 ms).
-- Raising concurrency to 8 does **not** help — one Python process serialises the CPU-bound feature
-  build on the GIL, so p95 rises ~15x. Horizontal scaling needs multiple uvicorn workers.
+- **Headline (postgres, concurrency 1, explanation off): p50 92 ms, p95 127 ms** over 2,000
+  validation transactions, on `dev` (277,607 rows) — profile `dev`, PostgreSQL history backend,
+  concurrency 1, explanation off. History (the DB round-trip) is 46.4 ms p50, feature build 41.4 ms
+  p50. This cell was **chosen after the matrix was measured** (see `headline_rule` in
+  `results/latency.json`), not pre-registered.
+- Sample is **fraud-enriched, not balanced**: all 360 validation frauds + 1,640 legit (18%, ~20x
+  validation prevalence).
+- Memory backend: p50 50 ms, p95 91 ms (history ~1 ms).
+- Raising concurrency to 8 does **not** help — the feature build is the bottleneck and the most likely
+  cause is the GIL serialising it in this single-process replay (**hypothesis**), so p95 rises ~15x.
+  Horizontal scaling needs multiple uvicorn workers.
 
 Full matrix, hardware and conditions: [`docs/latency.md`](latency.md) (from `results/latency.json`).
 

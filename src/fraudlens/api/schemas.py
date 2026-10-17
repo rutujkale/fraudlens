@@ -67,6 +67,15 @@ class TimingMs(BaseModel):
     explanation: float
 
 
+class ShapContribution(BaseModel):
+    """One feature's signed SHAP push on the raw margin (log-odds), not the risk score."""
+
+    feature: str
+    value: float | None = Field(None, description="Feature value (None when missing).")
+    shap_value: float = Field(..., description="Signed SHAP value in margin/log-odds space.")
+    direction: str = Field(..., description="'increases' or 'decreases'.")
+
+
 class PredictResponse(BaseModel):
     """Scoring result for one transaction."""
 
@@ -90,6 +99,10 @@ class PredictResponse(BaseModel):
     reasons: list[str] = Field(default_factory=list, description="Top risk-raising sentences.")
     mitigating_factors: list[str] = Field(
         default_factory=list, description="Top risk-lowering sentences."
+    )
+    contributions: list[ShapContribution] = Field(
+        default_factory=list,
+        description="Per-feature SHAP pushes on log-odds (empty unless include_explanation).",
     )
     model_version: str
     feature_version: str
@@ -153,6 +166,35 @@ class HealthResponse(BaseModel):
     model_version: str
     history_backend: str
     history_ok: bool
+
+
+class RecentTransaction(BaseModel):
+    """One of a customer's last few strictly-prior transactions."""
+
+    transaction_id: str
+    timestamp: datetime
+    amount: float
+    merchant_category: str | None = None
+    channel: str
+    transaction_type: str
+
+
+class CustomerSummaryResponse(BaseModel):
+    """Compact customer context for the analyst UI (strictly-prior history only)."""
+
+    customer_id: str
+    before: datetime | None = Field(
+        None, description="Cutoff used; only rows strictly earlier are summarised."
+    )
+    n_prior_tx: int
+    typical_amount: float | None = Field(
+        None, description="Median of the customer's prior amounts."
+    )
+    usual_hours: list[int] = Field(
+        default_factory=list, description="Most common transaction hours."
+    )
+    known_devices: list[str] = Field(default_factory=list)
+    recent: list[RecentTransaction] = Field(default_factory=list)
 
 
 class ModelInfoResponse(BaseModel):

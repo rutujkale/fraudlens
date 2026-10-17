@@ -4,7 +4,7 @@
 #   make setup PY="py -3.12"
 PY ?= .venv/Scripts/python
 
-.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain external api benchmark-latency
+.PHONY: setup db-up db-down lint format test test-fast simulate validate-data eda separability-gate db-load build-features train evaluate-val calibrate optimize-policy drift-data experiment-8a experiment-8b experiment-8c experiment-8d experiment-8e shap fairness explain external api benchmark-latency app-artifacts app
 
 ## setup: create venv (if missing) and install everything.
 setup:
@@ -124,5 +124,11 @@ api:
 ## benchmark-latency: per-component latency matrix -> results/latency.json + docs/latency.md.
 benchmark-latency:
 	$(PY) scripts/benchmark_latency.py --profile $(PROFILE)
-# TODO(part 14): streamlit       - analyst application
+## app-artifacts: precompute the files the Streamlit app reads (Part 14).
+app-artifacts:
+	$(PY) scripts/make_app_artifacts.py --profile $(PROFILE)
+
+## app: run the Streamlit analyst console (Part 14). Start `make api` first for scoring.
+app:
+	$(PY) -m streamlit run app/streamlit_app.py
 # TODO(part 15): monitor         - drift monitoring + CI + docs

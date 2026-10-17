@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Annotated
 from uuid import uuid4
 
@@ -20,6 +21,7 @@ from fraudlens.api.deps import Scorer, _jsonable, get_scorer
 from fraudlens.api.schemas import (
     BatchRequest,
     BatchResponse,
+    CustomerSummaryResponse,
     HealthResponse,
     ModelInfoResponse,
     PredictRequest,
@@ -141,6 +143,12 @@ def create_app(
     @app.post("/predict", response_model=PredictResponse)
     def predict(payload: PredictRequest, scorer: ScorerDep) -> PredictResponse:
         return PredictResponse(**scorer.score(payload))
+
+    @app.get("/customer/{customer_id}/summary", response_model=CustomerSummaryResponse)
+    def customer_summary(
+        customer_id: str, scorer: ScorerDep, before: datetime | None = None
+    ) -> CustomerSummaryResponse:
+        return CustomerSummaryResponse(**scorer.customer_summary(customer_id, before))
 
     @app.post("/predict/batch", response_model=BatchResponse)
     def predict_batch(payload: BatchRequest, scorer: ScorerDep) -> BatchResponse:

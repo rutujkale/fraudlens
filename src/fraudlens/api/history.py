@@ -127,3 +127,55 @@ def get_provider(profile: str, backend: str) -> HistoryProvider:
     if backend == "memory":
         return InMemoryHistoryProvider(profile)
     raise ValueError(f"unknown history backend {backend!r}")
+
+
+def summarize_history(
+    customer_id: str,
+    history: pd.DataFrame,
+    *,
+    before: Any = None,
+    recent_n: int = 5,
+    usual_hours: int = 3,
+) -> dict[str, Any]:
+    """Compact context for one customer from a strictly-prior ``history`` frame.
+
+    Only the customer's **own** rows are used (the provider may also return device
+    rows from other customers). Pure function, so it can be reused and tested
+    against either backend.
+    """
+    own = history[history["customer_id"] == customer_id] if len(history) else history
+    recent: list[dict[str, Any]] = []
+    typical_amount: float | None = None
+    usual: list[int] = []
+    devices: list[str] = []
+    if len(own):
+        own = own.copy()
+        own["timestamp"] = pd.to_datetime(own["timestamp"])
+        own = own.sort_values(["timestamp", "transaction_id"], kind="stable")
+        typical_amount = float(own["amount"].median())
+        usual = [int(h) for h in own["timestamp"].dt.hour.value_counts().head(usual_hours).index]
+        devices = sorted({str(d) for d in own["device_id"].dropna().unique()})
+        for _, row in own.tail(recent_n).iloc[::-1].iterrows():
+            recent.append(
+                {
+                    "transaction_id": str(row["transaction_id"]),
+                    "timestamp": row["timestamp"].to_pydatetime(),
+                    "amount": float(row["amount"]),
+                    "merchant_category": (
+                        None
+                        if pd.isna(row.get("merchant_category"))
+                        else str(row["merchant_category"])
+                    ),
+                    "channel": str(row["channel"]),
+                    "transaction_type": str(row["transaction_type"]),
+                }
+            )
+    return {
+        "customer_id": customer_id,
+        "before": before,
+        "n_prior_tx": int(len(own)),
+        "typical_amount": typical_amount,
+        "usual_hours": usual,
+        "known_devices": devices,
+        "recent": recent,
+    }

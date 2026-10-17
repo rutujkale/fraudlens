@@ -26,6 +26,7 @@ from fraudlens.api.history import (
     HistoryProvider,
     get_provider,
     history_backend_from_env,
+    summarize_history,
 )
 from fraudlens.config import load_config
 from fraudlens.evaluation import locked
@@ -199,10 +200,12 @@ class Scorer:
 
         reasons: list[str] = []
         mitigations: list[str] = []
+        shap_rows: list[dict[str, Any]] = []
         if req.include_explanation:
             contributions = self.explainer.explain_local(x)
             explanation = reasons_for(x.iloc[0], contributions, k=5)
             reasons, mitigations = explanation.raises_risk, explanation.lowers_risk
+            shap_rows = [_jsonable(c.to_dict()) for c in contributions]
         t6 = time.perf_counter()
 
         latency_ms = (t6 - start) * 1000.0
@@ -217,6 +220,7 @@ class Scorer:
             "recommended_action": str(action_name(np.array([action]))[0]),
             "reasons": reasons,
             "mitigating_factors": mitigations,
+            "contributions": shap_rows,
             "model_version": self.model_version,
             "feature_version": self.metadata["feature_version"],
             "policy_version": self.policy["policy_version"],
@@ -273,6 +277,16 @@ class Scorer:
             "capacity_note": _CAPACITY_NOTE,
         }
         return rows, summary
+
+    def customer_summary(self, customer_id: str, before: Any = None) -> dict[str, Any]:
+        """Strictly-prior customer context (typical amount, usual hours, devices, recent).
+
+        ``before`` defaults to now; on the synthetic data that returns the full
+        history. Only the customer's own rows are summarised.
+        """
+        cutoff = pd.Timestamp(before) if before is not None else pd.Timestamp(datetime.now())
+        history = self.provider.history(customer_id, None, cutoff)
+        return summarize_history(customer_id, history, before=before)
 
     def _maybe_persist(self, req, result: dict[str, Any], action: int) -> None:
         """Optionally write the score to ``model.predictions`` (off by default)."""

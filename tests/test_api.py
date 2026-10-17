@@ -358,6 +358,89 @@ def test_postgres_history_matches_memory_features():
     assert empty < len(sample), "no sampled row had prior history"
 
 
+def test_predict_contributions_present_only_with_explanation(client):
+    """SHAP rows travel with the response so the UI never reloads the model."""
+    from fraudlens.features.registry import FEATURE_COLUMNS
+
+    payload = json.loads(open("examples/sample_request.json", encoding="utf-8").read())
+    without = client.post("/predict", json={**payload, "include_explanation": False}).json()
+    assert without["contributions"] == []
+
+    body = client.post("/predict", json={**payload, "include_explanation": True}).json()
+    assert len(body["contributions"]) == len(FEATURE_COLUMNS)
+    assert {"feature", "value", "shap_value", "direction"} <= set(body["contributions"][0])
+
+
+# --- customer summary ---------------------------------------------------------
+
+
+def test_customer_summary_is_strictly_prior(client, raw_transactions):
+    day = pd.Timestamp(VALIDATION_DAY).date()
+    row = raw_transactions[raw_transactions["timestamp"].dt.date == day].iloc[0]
+    cutoff = row["timestamp"]
+
+    response = client.get(
+        f"/customer/{row['customer_id']}/summary", params={"before": cutoff.isoformat()}
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["customer_id"] == row["customer_id"]
+    assert body["n_prior_tx"] >= len(body["recent"])
+    assert all(pd.Timestamp(r["timestamp"]) < cutoff for r in body["recent"])
+    assert row["transaction_id"] not in {r["transaction_id"] for r in body["recent"]}
+    if body["recent"]:
+        assert body["typical_amount"] > 0
+
+
+def test_customer_summary_defaults_to_full_history(client, raw_transactions):
+    customer = raw_transactions["customer_id"].value_counts().idxmax()
+    response = client.get(f"/customer/{customer}/summary")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["n_prior_tx"] > 0
+    assert len(body["recent"]) <= 5
+    assert body["usual_hours"], "expected usual hours for an active customer"
+
+
+@pytest.mark.db
+def test_customer_summary_postgres_matches_memory():
+    """Both providers must summarise the same strictly-prior history (tiny)."""
+    from sqlalchemy import text
+
+    from fraudlens.api.history import (
+        InMemoryHistoryProvider,
+        PostgresHistoryProvider,
+        summarize_history,
+    )
+    from fraudlens.db.loader import load_all
+
+    engine = get_engine()
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as exc:  # noqa: BLE001
+        pytest.skip(f"PostgreSQL not reachable: {exc}")
+
+    tx_path = raw_data_dir("tiny") / "transactions.parquet"
+    if not tx_path.exists():
+        pytest.skip("tiny parquet data missing; run scripts/generate_data.py --profile tiny")
+    load_all("tiny", reset=True, write_explain=False)
+
+    tx = pd.read_parquet(tx_path)
+    customer = tx["customer_id"].value_counts().idxmax()
+    cutoff = tx["timestamp"].max()
+
+    memory = summarize_history(
+        customer, InMemoryHistoryProvider("tiny").history(customer, None, cutoff), before=cutoff
+    )
+    postgres = summarize_history(
+        customer, PostgresHistoryProvider().history(customer, None, cutoff), before=cutoff
+    )
+    assert postgres["n_prior_tx"] == memory["n_prior_tx"]
+    assert postgres["recent"] == memory["recent"]
+    assert postgres["known_devices"] == memory["known_devices"]
+
+
 # --- parity -------------------------------------------------------------------
 
 

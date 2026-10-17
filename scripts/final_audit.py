@@ -17,7 +17,7 @@ from fraudlens.evaluation.headlines import (
 )
 from fraudlens.features.registry import FEATURE_COLUMNS, FORBIDDEN_COLUMNS
 from fraudlens.paths import REPO_ROOT, results_dir
-from fraudlens.reporting.render import PLACEHOLDER, TEMPLATES
+from fraudlens.reporting.render import PLACEHOLDER, TEMPLATES, resume_bullet_problems
 
 RENDERED_DOCS = [out for _t, out in TEMPLATES.values()]
 
@@ -140,6 +140,19 @@ def check_headlines_traceable(a: Audit) -> None:
     )
 
 
+def check_resume_bullets(a: Audit) -> None:
+    path = REPO_ROOT / "docs" / "interview_notes.md"
+    if not path.exists():
+        a.check("resume bullets keep their qualifiers", False, "docs/interview_notes.md missing")
+        return
+    problems = resume_bullet_problems(path.read_text(encoding="utf-8"))
+    a.check(
+        "resume bullets keep their qualifiers",
+        not problems,
+        "; ".join(problems) or "all bullets carry dev (not main) + latency conditions",
+    )
+
+
 def check_no_tracked_data(a: Audit) -> None:
     tracked = _run(["git", "ls-files"]).stdout.splitlines()
     offenders = [f for f in tracked if f == ".env" or f.startswith("data/")]
@@ -247,6 +260,7 @@ def main() -> int:
     check_freeze(a)
     check_test_logs(a)
     check_readme_placeholders(a)
+    check_resume_bullets(a)
     check_headlines_traceable(a)
     check_sim_to_real(a)
     check_forbidden_phrases(a)

@@ -257,8 +257,8 @@ the same version string; a profile-guard test now blocks that. The IEEE R5
 amount-aware policy initially used the raw, uncalibrated score — fixed and re-run,
 both runs logged. A concurrency benchmark showed a single Python process does not
 scale (GIL + XGBoost), so the latency headline is a concurrency-1 in-process number
-with a lower-bound caveat. And the 83.23% cost reduction has **no CI for the ratio**
-— reported as a point estimate with an INR interval instead.
+with a lower-bound caveat. And the cost-reduction percentage has **no CI for the
+ratio** — reported as a point estimate with an INR interval instead.
 
 **Follow-up: which was the most damaging?** The same-version clobbering, because it
 silently corrupted a frozen artifact; the fix was a hard profile assertion plus a
@@ -338,14 +338,17 @@ and a Streamlit console for analysts, and the headline numbers are rendered from
 
 ## Resume bullet candidates (only from `reports/headline_numbers.md`)
 
-- End-to-end fraud-risk system; frozen XGBoost test PR-AUC
+- End-to-end fraud-risk system on dev (not main); frozen XGBoost test PR-AUC
   0.9619 (CI 0.9340-0.9798) vs Rules 0.2036 (CI 0.0873-0.3492) at
-  0.987% prevalence
-  `[results/final_results.json:model_comparison]`.
+  0.987% prevalence over 393
+  test frauds `[results/final_results.json:model_comparison]`.
 - Amount-aware cost policy cut realized fraud cost 773,067 INR (83.23%), CI 361,480 to 1,281,632
-  (CI 361,480-1,281,632 INR); capacity
-  23/day was non-binding on this window
+  — a point estimate, with the interval reported in INR
+  (CI 361,480-1,281,632 INR); on dev (not main), the
+  23/day capacity was non-binding
   `[final_results.json:decision.meta.reduction_ci]`.
-- Reported concept drift as a finding: 79% of test frauds fall after the drift switch, yet XGB
-  val→test PR-AUC rose (no degradation observed (0.9291 val -> 0.9619 test))
-  `[final_results.json:drift]`.
+- Serving latency 127.031 ms p95 on dev (not main), measured as
+  in-process ASGI replay (a lower bound); conditions: backend postgres, concurrency 1, explanation off, n=2000 (360 fraud / 1640 legit, fraud-enriched); profile dev (277,607 rows); chosen after the matrix was measured, not pre-registered `[results/latency.json]`.
+- Reported concept drift as a finding on dev (not main):
+  79% of test frauds fall after the drift switch, yet XGB val→test PR-AUC rose
+  (no degradation observed (0.9291 val -> 0.9619 test)) `[final_results.json:drift]`.

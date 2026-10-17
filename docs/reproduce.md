@@ -1,3 +1,4 @@
+<!-- generated from docs/reproduce_template.md by scripts/render_readme.py; do not edit docs/reproduce.md by hand -->
 # Reproducing FraudLens
 
 Every published result is reproducible from a seed and the committed
@@ -70,7 +71,7 @@ python scripts/final_audit.py
 | monitoring | `make monitor` | `results/monitoring_<profile>.csv`, `results/monitoring_psi_<profile>.csv`, figures |
 | sim-to-real | `make sim-to-real` | `results/sim_to_real.json` (primary R1−R2 gap only) |
 | external report | `make external-report` | the generated tables in `docs/external_validation.md` (primary gap only) |
-| render | `make render` | `README.md`, `docs/model_card.md`, `docs/interview_notes.md` |
+| render | `make render` | `README.md`, `docs/model_card.md`, `docs/interview_notes.md`, `docs/trade_offs.md`, `docs/reproduce.md` |
 
 The locked test evaluation is **not** part of `all-dev`: it is a one-shot run
 (`make final`) guarded by `evaluation/guard.py` and the access log. Reproducing the
@@ -88,22 +89,25 @@ Rough figures — hardware differs; treat them as order-of-magnitude.
 | train (all models) | ~10 s | ~1–2 min |
 | calibrate + policy | seconds | < 1 min |
 | experiment 8A (5 seeds) | — | ~35 min |
-| cluster bootstrap in `final_audit`/audit | — | ~70 s |
+| cluster bootstrap in `make fairness` (fairness audit) | — | ~70 s |
 | monitoring | — | ~1 min |
 | CI (`make ci-local`, tiny) | target < 10 min | — |
 
 ## Expected rough outputs
 
 - `results/final_results.json` — the four pre-registered outcomes and the decision
-  tables. XGBoost test PR-AUC `0.9619` (CI `0.9340–0.9798`); cost reduction
-  `773,067 INR (83.23%)`, CI `361,480–1,281,632`.
+  tables. XGBoost test PR-AUC 0.9619 (CI 0.9340-0.9798); cost reduction
+  773,067 INR (83.23%), CI 361,480 to 1,281,632. The percentage is a **point estimate**: the CI
+  (361,480-1,281,632) applies to the INR figure, not the ratio.
 - `results/monitoring_dev.csv` — one row per month with a `sample` column
   (`in_sample` / `validation` / `mixed`), prevalence, calibration, PR-AUC and recall at
   the frozen policy (train + validation only; only `validation` rows are out-of-sample).
 - `results/sim_to_real.json` — the primary R1−R2 gap only (no cross-dataset differenced
   lift; the raw record stays in `results/external_gap.csv`).
-- `README.md` — no hand-typed numbers: every figure is a `{{key}}` filled from
-  `results/final_results.json` and `results/latency.json` by `scripts/render_readme.py`.
+- `README.md` — no hand-typed numbers: every figure is a template slot filled from
+  `results/final_results.json` and `results/latency.json` by `scripts/render_readme.py`
+  (as are `docs/model_card.md`, `docs/interview_notes.md`, `docs/trade_offs.md` and
+  this file).
 
 ## Seeds
 

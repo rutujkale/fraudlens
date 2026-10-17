@@ -1,10 +1,11 @@
 """Part 15D — render Markdown docs from ``{{key}}`` placeholders (numbers from results).
 
-The README, model card and interview notes contain no hand-typed number: each is a
-template with ``{{key}}`` slots filled from ``results/final_results.json`` and
-``results/latency.json`` (plus a few *derived* keys under ``headline.*`` for the
-locked wording). :func:`render` raises :class:`UnresolvedPlaceholder` if any slot
-has no value, so a doc can never silently keep a stale or blank figure.
+The README, model card, interview notes, trade-offs and reproduce docs contain no
+hand-typed result number: each is a template with ``{{key}}`` slots filled from
+``results/final_results.json`` and ``results/latency.json`` (plus a few *derived*
+keys under ``headline.*`` for the locked wording). :func:`render` raises
+:class:`UnresolvedPlaceholder` if any slot has no value, so a doc can never silently
+keep a stale or blank figure.
 """
 
 from __future__ import annotations
@@ -28,7 +29,54 @@ TEMPLATES = {
         REPO_ROOT / "docs" / "interview_notes_template.md",
         REPO_ROOT / "docs" / "interview_notes.md",
     ),
+    "trade_offs": (
+        REPO_ROOT / "docs" / "trade_offs_template.md",
+        REPO_ROOT / "docs" / "trade_offs.md",
+    ),
+    "reproduce": (
+        REPO_ROOT / "docs" / "reproduce_template.md",
+        REPO_ROOT / "docs" / "reproduce.md",
+    ),
 }
+
+# Qualifiers every resume bullet must keep (checked on the *rendered* file by
+# scripts/final_audit.py). Kept stringly to mirror the interview-notes wording.
+RESUME_HEADING = "## Resume bullet candidates"
+
+
+def resume_bullet_problems(text: str) -> list[str]:
+    """Return the resume-bullet qualifiers missing from rendered interview notes.
+
+    A bullet that drops a locked qualifier must fail the audit, not merely read
+    wrong. Every bullet names the profile (``dev (not main)``); one bullet carries
+    the point-estimate + INR-interval caveat; one carries the latency conditions.
+    """
+    lines = text.splitlines()
+    start = next((i for i, ln in enumerate(lines) if ln.startswith(RESUME_HEADING)), None)
+    if start is None:
+        return [f"missing heading {RESUME_HEADING!r}"]
+    section = lines[start + 1 :]
+    bullets: list[str] = []
+    for line in section:
+        if line.startswith("- "):
+            bullets.append(line[2:].strip())
+        elif line.startswith("#"):
+            break
+        elif bullets and line.strip():
+            bullets[-1] += " " + line.strip()
+    if not bullets:
+        return ["no resume bullets found"]
+    problems = [
+        f"bullet {i} missing 'dev (not main)': {b[:60]}..."
+        for i, b in enumerate(bullets)
+        if "dev (not main)" not in b
+    ]
+    if not any("point estimate" in b and "INR" in b for b in bullets):
+        problems.append("no bullet states 'point estimate' with the INR interval")
+    needed = ("latency", "postgres", "concurrency 1", "fraud-enriched", "chosen after the matrix")
+    if not any(all(n.lower() in b.lower() for n in needed) for b in bullets):
+        problems.append("no bullet carries the latency conditions line")
+    return problems
 
 
 class UnresolvedPlaceholder(KeyError):
@@ -88,6 +136,10 @@ def _derived(results: dict, latency: dict, counts: dict) -> dict[str, object]:
         ),
         "headline.model.recall_at_1pct": f"{xgb['recall_at_top_0.01']:.4f}",
         "headline.model.recall_at_capacity": f"{aware['recall']:.4f}",
+        "headline.model.xgb_pr_auc": f"{xgb['pr_auc']:.4f}",
+        "headline.model.logreg_pr_auc": f"{logreg['pr_auc']:.4f}",
+        "headline.model.rules_pr_auc": f"{rules['pr_auc']:.4f}",
+        "headline.test.n_frauds": int(comp["frauds"]),
         "headline.model.test_prevalence_pct": f"{comp['prevalence'] * 100:.3f}%",
         "headline.decision.reduction": (
             f"{ci['point']:,.0f} INR ({dmeta['amount_aware_capacity_pct_reduction_vs_f1']:.2f}%), "
@@ -98,6 +150,7 @@ def _derived(results: dict, latency: dict, counts: dict) -> dict[str, object]:
             f"{aware['flagged_per_day']:.1f}/day vs {dmeta['capacity_per_day']}/day, "
             f"n_demoted {dmeta['n_demoted']}"
         ),
+        "headline.decision.flagged_per_day": f"{aware['flagged_per_day']:.1f}/day",
         "headline.decision.capacity_note": (
             "Capacity did not bind on test: the policy flags "
             f"{aware['flagged_per_day']:.1f}/day against a {dmeta['capacity_per_day']}/day cap "

@@ -71,7 +71,7 @@ Four pre-registered outcomes (`results/final_results.json`:
    2026-04-16, inside the test window). The Isolation Forest
    result is null — the Part 09 isolation forest was re-run post cold-start fix and not adopted (the S1-S0 / S1s-S0 bagged CIs include 0).
 4. **Engineering.** 53-feature registry,
-   13 leakage tests, 293 automated
+   13 leakage tests, 298 automated
    tests collected. API p95 latency 127.031 ms p95.
 
 ## Demo

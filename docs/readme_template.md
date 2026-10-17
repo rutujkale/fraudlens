@@ -57,7 +57,7 @@ Four pre-registered outcomes (`results/final_results.json`:
 1. **Model.** Frozen XGBoost test PR-AUC {{headline.model.xgb_ci}}, ahead of
    LogReg {{headline.model.logreg_ci}} and far ahead of the rules baseline
    {{headline.model.rules_ci}} at {{headline.model.test_prevalence_pct}}
-   prevalence. With {{composition.frauds}} test frauds the PR-AUC CI is wide, so
+   prevalence. With {{headline.test.n_frauds}} test frauds the PR-AUC CI is wide, so
    read the point estimate with that in mind. (`H1_model` holds:
    {{pre_registered_outcomes.H1_model.holds}}.)
 2. **Decision.** The amount-aware, capacity-aware policy cut realized fraud cost

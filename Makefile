@@ -158,7 +158,7 @@ experiments: experiment-8a experiment-8b experiment-8c experiment-8d
 ## monitor: per-period drift monitoring over train + validation (Part 15A).
 monitor:
 	$(PY) scripts/run_monitoring.py --profile $(PROFILE)
-## render: regenerate README, model card and interview notes from results (Part 15D).
+## render: regenerate README, model card, interview notes, trade-offs and reproduce from results (Part 15D).
 render:
 	$(PY) scripts/render_readme.py
 ## all-dev: the whole dev pipeline (no external data, no test-window access).

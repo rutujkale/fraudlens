@@ -1,4 +1,4 @@
-"""Thin CLI: render README, model card and interview notes from results (Part 15D).
+"""Thin CLI: render README, model card, interview notes, trade-offs and reproduce (Part 15D).
 
 Exits non-zero (and writes nothing) if any ``{{key}}`` in a template has no value.
 """

@@ -15,6 +15,7 @@ from fraudlens.reporting.render import (
     build_context,
     render,
     resolve,
+    resume_bullet_problems,
 )
 
 # Deterministic test counts keep the suite fast; the real counts are produced by
@@ -50,6 +51,32 @@ def test_real_template_fully_resolves(name):
     rendered, used = render(template.read_text(encoding="utf-8"), ctx)
     assert used, "template has no placeholders"
     assert not PLACEHOLDER.findall(rendered), "unresolved placeholder left in output"
+
+
+GOOD_BULLETS = """## Resume bullet candidates
+
+- Model on dev (not main); frozen XGBoost PR-AUC 0.9619 vs Rules 0.2036.
+- Decision on dev (not main); a point estimate with the interval in INR (CI 361,480 INR).
+- Serving latency 127.031 ms on dev (not main); backend postgres, concurrency 1,
+  n=2000 fraud-enriched, chosen after the matrix was measured.
+- Drift on dev (not main); 79% of test frauds post-switch.
+"""
+
+
+def test_resume_bullets_pass_when_qualifiers_present():
+    assert resume_bullet_problems(GOOD_BULLETS) == []
+
+
+def test_resume_bullets_fail_when_profile_qualifier_removed():
+    bad = GOOD_BULLETS.replace("Decision on dev (not main)", "Decision")
+    problems = resume_bullet_problems(bad)
+    assert any("dev (not main)" in p for p in problems)
+
+
+def test_resume_bullets_fail_when_latency_condition_removed():
+    bad = GOOD_BULLETS.replace("fraud-enriched, ", "")
+    problems = resume_bullet_problems(bad)
+    assert any("latency conditions" in p for p in problems)
 
 
 def test_cli_exits_nonzero_on_unresolved_placeholder(tmp_path):

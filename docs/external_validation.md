@@ -124,7 +124,7 @@ sim-to-real figure quoted.
 ## What this does and does **not** prove
 
 - **Does:** the point-in-time feature pipeline, temporal protocol, calibration step and cost-based
-  decision framework run on real data and produce meaningful lift.
+  decision framework run on real data and produce above-base-rate lift (R1 and R4 clearly; R2 weakly).
 - **Does not:** validate simulator realism, claim state-of-the-art, or treat `uid` as a true
   customer. IEEE-CIS is one dataset with one fraud taxonomy; the result is evidence, not proof.
 

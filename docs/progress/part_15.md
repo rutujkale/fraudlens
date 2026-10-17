@@ -54,14 +54,15 @@ column marks in-sample vs validation months — see "Fixes after review".)
 FraudLens final audit
 =====================
 [PASS] ruff clean — All checks passed!
-[PASS] tests pass (non-db, non-slow) — 281 passed, 1 skipped, 11 deselected in 65.7s
+[PASS] tests pass (non-db, non-slow) — 286 passed, 1 skipped, 11 deselected in 63.6s
 [PASS] freeze.json hash verification — 11 model files + 3 data files matched
 [PASS] synthetic test log: exactly one final eval + one composition row — final=1 composition=1
 [PASS] external log: two runs, both with reasons — rows=2
-[PASS] rendered docs have no unresolved placeholders — 3 docs clean
+[PASS] rendered docs have no unresolved placeholders — 5 docs clean
+[PASS] resume bullets keep their qualifiers — all bullets carry dev (not main) + latency conditions
 [PASS] headline_numbers.md matches results (test-count lines excluded)
 [PASS] sim_to_real.json is primary-gap-only (no differenced lift, no cross-dataset raw PR-AUC) — primary=0.0782
-[PASS] no forbidden doc phrases — 34 docs scanned (docs/progress/ logs excluded)
+[PASS] no forbidden doc phrases — 36 docs scanned (docs/progress/ logs excluded)
 [PASS] no .env or data/ files tracked by git
 [PASS] CI service password differs from local .env and is not the local password
 [PASS] no label columns in feature columns
@@ -70,7 +71,7 @@ FraudLens final audit
 [PASS] Definition-of-Done: 11 met, 1 not met
     [NOT MET] README ...; screenshots/GIF ... — screenshots/GIF not captured (user TODO)
 
-AUDIT PASSED (15 checks)
+AUDIT PASSED (16 checks)
 ```
 
 ### `make ci-local` output (tail)
@@ -125,6 +126,44 @@ using the API's postgres backend or re-running the benchmark (done here).
    loosened. Re-run `39033533336` on `60d4570` is **green** (2m19s); the only annotation is a
    non-fatal Node-20 deprecation notice from the pinned action versions.
 
+## Docs-only fixes before `v1.0`
+
+A pre-tag review found hand-typed figures in `docs/trade_offs.md` and
+`docs/reproduce.md` that no renderer or audit step protected, plus partial
+qualifiers. Chosen fix (stated here as required by the review): **render both files**
+via `scripts/render_readme.py` — a *numeric cross-check* in the audit was the
+alternative, rejected because the renderer already exists and kills the drift by
+construction (and keeps the "no hand-typed result number" rule).
+
+1. **`trade_offs.md` and `reproduce.md` are now generated.** Templates
+   `docs/trade_offs_template.md` and `docs/reproduce_template.md` were added to
+   `render.py:TEMPLATES`; the figures (XGB/LogReg/Rules PR-AUC, capacity, flagged/day,
+   latency, cost reduction) are `{{key}}` slots resolved from `results/`. The
+   rendered-docs placeholder check now covers **5 docs** (was 3). Runtimes and config
+   values that are *not* result figures stay literal.
+2. **`393` is a render key, not a hand-typed value.** Added
+   `headline.test.n_frauds` (plus `headline.model.{xgb,logreg,rules}_pr_auc` and
+   `headline.decision.flagged_per_day`), used in `readme_template.md`,
+   `trade_offs_template.md` and the resume bullets.
+3. **Latency qualifiers completed.** `trade_offs.md` now uses
+   `{{headline.engineering.latency}}` + `{{headline.engineering.latency_note}}`, which
+   carry postgres backend, concurrency 1, dev, fraud-enriched sample and the post-hoc
+   cell choice.
+4. **Capacity caveat reworded** to "not exercised by the test window; covered only by
+   unit tests (`tests/test_policy.py`, synthetic cap of 1)".
+5. **`external_validation.md`** "meaningful lift" → "above-base-rate lift (R1 and R4
+   clearly; R2 weakly)".
+6. **Resume bullets keep their qualifiers — now enforced.** New `final_audit.py` check
+   **"resume bullets keep their qualifiers"** (a 16th check) runs
+   `resume_bullet_problems` on the *rendered* `docs/interview_notes.md`: every bullet
+   must contain `dev (not main)`; a bullet must carry `point estimate` + the INR CI;
+   a bullet must carry the latency conditions (postgres, concurrency 1,
+   fraud-enriched, "chosen after the matrix"). Verified to fail on a doctored section
+   (`tests/test_render.py`).
+7. `reproduce.md` runtime row relabelled to the **fairness audit**, and `trade_offs.md`
+   "used once" → "used secondarily" (the IEEE window was evaluated twice). The
+   synthetic test window's "evaluated once" statements are correct and unchanged.
+
 ## Deviations from the prompt (and why)
 
 1. **Monitoring ran on `dev`, not `main`.** The prompt's acceptance command names
@@ -164,7 +203,7 @@ using the API's postgres backend or re-running the benchmark (done here).
 - [x] ML-understanding experiments 8A–8E documented — `docs/experiments/`
 - [x] External validation and sim-to-real gap documented — `docs/external_validation.md`, `results/sim_to_real.json`
 - [x] FastAPI with parity test and latency benchmark; Streamlit three pages; batch scoring works — `docs/api.md`, `docs/app.md`, `results/latency.json`
-- [x] Unit, data, leakage, API tests present; CI green — `python scripts/final_audit.py` → `281 passed, 1 skipped, 11 deselected` locally, `pytest -m db` → 10 passed; **CI green observed**: GitHub Actions run `39033533336` on `60d4570` → `test` job success in 2m19s (Node-20 deprecation annotation only, non-fatal)
+- [x] Unit, data, leakage, API tests present; CI green — `python scripts/final_audit.py` → `286 passed, 1 skipped, 11 deselected` locally, `pytest -m db` → 10 passed; **CI green observed**: GitHub Actions run `39033533336` on `60d4570` → `test` job success in 2m19s (Node-20 deprecation annotation only, non-fatal)
 - [ ] README with generated headline numbers; architecture diagram; screenshots/GIF; what-went-wrong — README/diagram/what-went-wrong done; **screenshots/GIF not captured** (user TODO)
 
 ## Remaining TODOs for you

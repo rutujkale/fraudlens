@@ -257,8 +257,8 @@ the same version string; a profile-guard test now blocks that. The IEEE R5
 amount-aware policy initially used the raw, uncalibrated score — fixed and re-run,
 both runs logged. A concurrency benchmark showed a single Python process does not
 scale (GIL + XGBoost), so the latency headline is a concurrency-1 in-process number
-with a lower-bound caveat. And the 83.23% cost reduction has **no CI for the ratio**
-— reported as a point estimate with an INR interval instead.
+with a lower-bound caveat. And the cost-reduction percentage has **no CI for the
+ratio** — reported as a point estimate with an INR interval instead.
 
 **Follow-up: which was the most damaging?** The same-version clobbering, because it
 silently corrupted a frozen artifact; the fix was a hard profile assertion plus a
@@ -338,14 +338,17 @@ and a Streamlit console for analysts, and the headline numbers are rendered from
 
 ## Resume bullet candidates (only from `reports/headline_numbers.md`)
 
-- End-to-end fraud-risk system; frozen XGBoost test PR-AUC
+- End-to-end fraud-risk system on dev (not main); frozen XGBoost test PR-AUC
   {{headline.model.xgb_ci}} vs Rules {{headline.model.rules_ci}} at
-  {{headline.model.test_prevalence_pct}} prevalence
-  `[results/final_results.json:model_comparison]`.
+  {{headline.model.test_prevalence_pct}} prevalence over {{headline.test.n_frauds}}
+  test frauds `[results/final_results.json:model_comparison]`.
 - Amount-aware cost policy cut realized fraud cost {{headline.decision.reduction}}
-  (CI {{headline.decision.reduction_ci_inr}} INR); capacity
-  {{freeze.capacity_per_day}}/day was non-binding on this window
+  — a point estimate, with the interval reported in INR
+  (CI {{headline.decision.reduction_ci_inr}} INR); on dev (not main), the
+  {{freeze.capacity_per_day}}/day capacity was non-binding
   `[final_results.json:decision.meta.reduction_ci]`.
-- Reported concept drift as a finding: {{headline.drift.post_switch}}, yet XGB
-  val→test PR-AUC rose ({{headline.drift.line}})
-  `[final_results.json:drift]`.
+- Serving latency {{headline.engineering.latency}} on dev (not main), measured as
+  {{headline.engineering.latency_note}} `[results/latency.json]`.
+- Reported concept drift as a finding on dev (not main):
+  {{headline.drift.post_switch}}, yet XGB val→test PR-AUC rose
+  ({{headline.drift.line}}) `[final_results.json:drift]`.

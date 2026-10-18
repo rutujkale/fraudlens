@@ -7,7 +7,7 @@ things to replace. Synthetic-data portfolio project; nothing here handles real P
 
 | Piece | Source | Runs on |
 |---|---|---|
-| Scoring API | `Dockerfile.api` → `ghcr.io/rutujkale/fraudlens-api:latest` | Render (free web service) |
+| Scoring API | `Dockerfile.api` → `ghcr.io/rutujkale/fraudlens-api:v1` | Render (free web service) |
 | Analyst console | repo, `app/streamlit_app.py` | Streamlit Community Cloud (free) |
 
 - The image build **fails** unless every file in `results/freeze.json` matches its sha256
@@ -45,8 +45,8 @@ The `gh` CLI token needs the packages scopes (a plain `gh auth login` does not i
 gh auth refresh -s write:packages,read:packages
 echo "$(gh auth token)" | docker login ghcr.io -u rutujkale --password-stdin
 
-docker tag fraudlens-api:local ghcr.io/rutujkale/fraudlens-api:latest
-docker push ghcr.io/rutujkale/fraudlens-api:latest
+docker tag fraudlens-api:local ghcr.io/rutujkale/fraudlens-api:v1
+docker push ghcr.io/rutujkale/fraudlens-api:v1
 ```
 
 Then make the package **public** — Render's free plan cannot pull private images:
@@ -65,7 +65,7 @@ The repo contains `render.yaml` (blueprint: `runtime: image`, `plan: free`, heal
 GitHub repo → Render picks up `render.yaml` → **Apply**.
 
 **Manual** — Render dashboard → **New +** → **Web Service** → **Deploy an existing image**
-→ image URL `ghcr.io/rutujkale/fraudlens-api:latest` → Instance Type **Free** →
+→ image URL `ghcr.io/rutujkale/fraudlens-api:v1` → Instance Type **Free** →
 Health Check Path `/health` → env vars:
 
 | Key | Value |
@@ -112,12 +112,13 @@ Then open the Streamlit URL → **Transaction Analyzer** → Run; it should scor
 
 ```bash
 docker build -f Dockerfile.api -t fraudlens-api:local .
-docker tag fraudlens-api:local ghcr.io/rutujkale/fraudlens-api:latest
-docker push ghcr.io/rutujkale/fraudlens-api:latest
+docker tag fraudlens-api:local ghcr.io/rutujkale/fraudlens-api:v1
+docker push ghcr.io/rutujkale/fraudlens-api:v1
 ```
 
 Render pins the digest it pulled: dashboard → service → **Manual Deploy** → **Deploy**
-(re-pulls `latest`).
+(re-pulls `v1`). For a new release, bump the tag (`v2`, …) in the commands above **and** in
+`render.yaml`.
 
 ## Limits of this setup (honest)
 

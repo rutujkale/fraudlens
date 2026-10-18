@@ -4,7 +4,7 @@ services:
     runtime: image
     plan: free
     image:
-      url: ghcr.io/rutujkale/fraudlens-api:latest
+      url: ghcr.io/rutujkale/fraudlens-api:v1
     healthCheckPath: /health
     envVars:
       - key: FRAUDLENS_PROFILE

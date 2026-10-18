@@ -81,11 +81,11 @@ Screenshots and a short GIF of the Streamlit console live in
 `docs/screenshots/` (see `docs/screenshots/README.md` for the capture script);
 the analyst walkthrough is in `docs/demo_script.md`.
 
-Hosted demo (deploy per [`docs/deploy.md`](docs/deploy.md), then replace the
-placeholders):
+Hosted demo — **not deployed yet**; deploy per [`docs/deploy.md`](docs/deploy.md),
+then replace the placeholders:
 
-- Analyst console: `https://<APP>.streamlit.app`
-- Scoring API: `https://<SERVICE>.onrender.com` (`/health` returns
+- Analyst console: `https://<APP>.streamlit.app` *(pending deploy)*
+- Scoring API: `https://<SERVICE>.onrender.com` *(pending deploy;* `/health` *returns*
   `{"status":"ok", ...}`)
 
 ## Quickstart

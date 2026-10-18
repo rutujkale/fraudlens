@@ -1,7 +1,22 @@
 # Deploy — Render API + Streamlit Cloud (free tier)
 
-End-to-end steps actually used for this repo. Placeholders (`<SERVICE>`, `<APP>`) are the only
-things to replace. Synthetic-data portfolio project; nothing here handles real PII.
+End-to-end steps actually used for this repo, with the live URLs filled in. Synthetic-data
+portfolio project; nothing here handles real PII.
+
+## Live deployment (verified)
+
+**Verified 2026-10-19** against the live deployment — **17/17 automated checks passed**
+(Streamlit console loads, both sidebar chips correct, a transaction scores end-to-end through
+the Render API, SHAP chart renders, zero app console/page/network errors, zero browser→Render
+requests). Screenshots from that run: `docs/progress/live_deploy_screenshots/`.
+
+| Piece | Live URL |
+|---|---|
+| Analyst console | <https://fraud-lens.streamlit.app/> |
+| Scoring API | <https://fraudlens-api-pld9.onrender.com> |
+
+Free instances sleep after ~15 min idle: the first console interaction after a quiet period
+can take 30–50 s (the app waits on the Render wake).
 
 ## What ships
 
@@ -77,7 +92,8 @@ Health Check Path `/health` → env vars:
 (`PORT` is injected by Render; the entrypoint honours it.)
 
 Deploy, wait for the first green **Live**, and note the URL, e.g.
-`https://fraudlens-api.onrender.com`.
+`https://fraudlens-api-pld9.onrender.com` (Render appends a random suffix, so the real URL
+differs from the service name).
 
 ## 4. Streamlit Community Cloud
 
@@ -87,7 +103,7 @@ Deploy, wait for the first green **Live**, and note the URL, e.g.
    `.streamlit/secrets.toml` is gitignored):
 
 ```toml
-FRAUDLENS_API_URL = "https://fraudlens-api.onrender.com"
+FRAUDLENS_API_URL = "https://fraudlens-api-pld9.onrender.com"
 ```
 
 3. **Deploy**. The app falls back to `http://127.0.0.1:8000` when the secret is absent
@@ -96,17 +112,17 @@ FRAUDLENS_API_URL = "https://fraudlens-api.onrender.com"
 ## 5. Post-deploy smoke test
 
 ```bash
-curl -s https://fraudlens-api.onrender.com/health
+curl -s https://fraudlens-api-pld9.onrender.com/health
 # {"status":"ok","model_version":"xgb_dev_20261015_v1",...}
 
-curl -s -X POST https://fraudlens-api.onrender.com/predict \
+curl -s -X POST https://fraudlens-api-pld9.onrender.com/predict \
   -H "Content-Type: application/json" \
   -d @examples/sample_request.json | head -c 400
 # HTTP 200, model_version xgb_dev_20261015_v1
 ```
 
-Then open the Streamlit URL → **Transaction Analyzer** → Run; it should score without an
-"API is down" banner.
+Then open <https://fraud-lens.streamlit.app/> → **Transaction Analyzer** → Run; it should score
+without an "API is down" banner.
 
 ## 6. Updating the image later
 

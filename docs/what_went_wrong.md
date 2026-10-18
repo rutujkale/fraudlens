@@ -833,6 +833,27 @@ _What happened, one line._
   `python scripts/load_db.py --profile dev` afterwards (done).
 - **Test added:** none (a Makefile/CLI wrapper; verified by inspecting `git status` after a run).
 
+### Finding: engineering-strip assertion missed metric-rendered text (UI polish)
+- **What happened:** `test_page3_engineering_strip_matches_render_context` failed on its first run:
+  the latency string is rendered as a `st.metric` *value*, but the test's `_body_text` helper only
+  concatenated titles/markdown/captions/info/error, so `"127.031 ms p95"` was absent from the
+  collected text. The product was correct; the test collector was incomplete.
+- **How detected:** `pytest tests/test_app_smoke.py -q` (`1 failed, 12 passed`).
+- **Effect:** one red test; no product impact.
+- **Fix:** `_body_text` now also includes `at.metric` label+value. No assertion was loosened.
+- **Test added:** `tests/test_app_smoke.py::test_page3_engineering_strip_matches_render_context`
+  (already the failing test; now passes).
+
+### Process note: `ruff format` is not enforced in this repo (UI polish)
+- **What happened:** `ruff format --check app tests` reported 18 files "would be reformatted",
+  almost all pre-existing (`tests/test_simulator.py`, `tests/test_policy.py`, …) with the long
+  argument lists the repo writes by hand. Running the formatter would have ballooned a UI-only diff
+  into unrelated test files.
+- **How detected:** `ruff format --check` before committing.
+- **Effect:** none — the formatter was not run; only `ruff check` (the enforced target) matters.
+- **Fix / guard:** keep the UI-polish diff to `app/`, `tests/test_app_smoke.py`, `.streamlit/`,
+  `docs/`, `design/`; use `ruff check`, not `ruff format`, for this pass.
+
 
 
 

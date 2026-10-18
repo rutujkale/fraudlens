@@ -2,6 +2,10 @@
 
 Every recompute on this page calls the Part 07 package code through
 ``fraudlens.appdata.recompute``; the sliders only change the numbers fed in.
+
+Layout follows ``design/stitch/review_queue_cost_optimization``: context strip,
+dense KPI row, the operational-invariant banner, the queue table with an inspector,
+the cost controls and the loss-vs-threshold chart.
 """
 
 import sys
@@ -11,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
-from components import api_client, charts, context  # noqa: E402
+from components import api_client, charts, context, theme  # noqa: E402
 
 from fraudlens.appdata import recompute  # noqa: E402
 from fraudlens.evaluation.cost_model import CostParams  # noqa: E402
@@ -86,6 +90,8 @@ show_labels = st.toggle(
     help="Off by default: the queue is what an analyst sees, without ground truth.",
 )
 
+st.info(context.CAPACITY_NOTE)
+
 metrics = recompute.policy_metrics(sample, params, int(capacity))
 best = recompute.best_thresholds(sample, params, int(capacity))
 
@@ -97,18 +103,21 @@ kpi[3].metric("Expected loss (INR)", f"{metrics['expected_loss']:,.0f}")
 kpi[4].metric("Expected loss avoided (INR)", f"{metrics['expected_loss_avoided']:,.0f}")
 if show_labels:
     st.metric("Realized loss avoided (INR, labelled)", f"{metrics['realized_loss_avoided']:,.0f}")
-st.caption(
-    f"{context.CAPACITY_NOTE} Demoted this sample: {metrics['n_demoted']}. "
-    f"Best global threshold: {best['cost_optimal_threshold']:.4f} "
-    f"(F1-optimal {best['f1_threshold']:.4f}, "
-    f"feasible {best['cost_optimal_feasible_threshold']:.4f})."
+theme.chips(
+    [
+        (f"cost-optimal τ {best['cost_optimal_threshold']:.4f}", "steel"),
+        (f"F1-optimal τ {best['f1_threshold']:.4f}", ""),
+        (f"feasible τ {best['cost_optimal_feasible_threshold']:.4f}", "gold"),
+        (f"demoted {metrics['n_demoted']}", "warn" if metrics["n_demoted"] else "ok"),
+    ]
 )
 
-st.plotly_chart(charts.loss_curve(recompute.scan(sample, params)), use_container_width=True)
-st.caption(
-    "Expected-loss curve from `scan_global_thresholds`; the policy chooses actions "
-    "per transaction, not one global threshold."
-)
+with st.container(border=True):
+    st.plotly_chart(charts.loss_curve(recompute.scan(sample, params)), use_container_width=True)
+    st.caption(
+        "Expected-loss curve from `scan_global_thresholds`; the policy chooses actions "
+        "per transaction, not one global threshold."
+    )
 
 st.subheader("Queue")
 queue = recompute.queue_table(sample, params, int(capacity))

@@ -3,6 +3,10 @@
 Everything here is read from ``results/`` and the precomputed artifacts; the test
 window is never recomputed. Wording of the headline numbers is fixed by Part 13/14
 review: 83.23% with an INR CI, and the exact drift sentence below.
+
+The engineering strip (latency, parity) is rendered **directly from**
+``fraudlens.reporting.render.build_context`` via ``components.context`` so the app
+and the rendered headline doc cannot drift.
 """
 
 import json
@@ -13,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
-from components import charts, context, limitations  # noqa: E402
+from components import charts, context, limitations, theme  # noqa: E402
 
 from fraudlens.paths import reports_dir, results_dir  # noqa: E402
 
@@ -28,6 +32,62 @@ final = json.loads((results / "final_results.json").read_text(encoding="utf-8"))
 val_csv = results / f"val_comparison_{art.manifest['profile']}.csv"
 val_cmp = pd.read_csv(val_csv) if val_csv.exists() else pd.DataFrame()
 
+theme.chips(
+    [
+        (f"profile {final['meta']['profile']}", "steel"),
+        (str(art.manifest["model_version"]), "gold"),
+        (str(art.manifest["policy_version"] or "no policy"), ""),
+        (f"seed {final['meta']['seed']}", ""),
+        (f"features {final['meta']['feature_version']}", ""),
+    ]
+)
+
+st.subheader("Pre-registered outcomes (Part 12, test window)")
+outcomes = final["pre_registered_outcomes"]
+h1 = outcomes["H1_model"]
+h2 = outcomes["H2_decision"]
+cards = st.columns(4)
+
+
+def _hold_tone(holds: bool) -> str:
+    return "ok" if holds else "warn"
+
+
+with cards[0], st.container(border=True):
+    st.markdown("**H1 · Model ordering**")
+    theme.chips([("holds" if h1["holds"] else "fails", _hold_tone(h1["holds"]))])
+    st.caption(h1["wording"])
+    st.markdown(
+        f"XGB PR-AUC CI `{h1['xgb_pr_auc'][0]:.4f}`–`{h1['xgb_pr_auc'][1]:.4f}` "
+        f"vs Rules `{h1['rules_pr_auc'][0]:.4f}`–`{h1['rules_pr_auc'][1]:.4f}`."
+    )
+with cards[1], st.container(border=True):
+    st.markdown("**H2 · Decision policy**")
+    theme.chips([("holds" if h2["holds"] else "fails", _hold_tone(h2["holds"]))])
+    st.caption(h2["wording"])
+    ci = h2["reduction_ci"]
+    st.markdown(
+        f"Reduction CI `{ci['lo']:,.0f}`–`{ci['hi']:,.0f}` INR "
+        f"(point `{ci['point']:,.0f}`) · excludes zero: `{ci['excludes_zero']}`."
+    )
+with cards[2], st.container(border=True):
+    st.markdown("**H3 · Unseen fraud**")
+    theme.chips([("holds" if outcomes["H3_unseen"]["holds"] else "fails",
+                  _hold_tone(outcomes["H3_unseen"]["holds"]))])
+    st.caption(outcomes["H3_unseen"]["detail"])
+with cards[3], st.container(border=True):
+    st.markdown("**H4 · Engineering**")
+    theme.chips([("holds" if outcomes["H4_engineering"]["holds"] else "fails",
+                  _hold_tone(outcomes["H4_engineering"]["holds"]))])
+    st.caption(outcomes["H4_engineering"]["detail"])
+
+st.subheader("Engineering — serving latency & parity")
+with st.container(border=True):
+    eng_lat, eng_text = st.columns([1, 3])
+    eng_lat.metric("API latency", context.engineering_latency())
+    eng_text.caption(context.engineering_latency_note())
+    st.caption(context.engineering_parity())
+
 per_model = final["drift"]["per_model_pr_auc"]
 xgb = per_model["xgb"]
 test_pr_auc = xgb["test_pr_auc"]
@@ -35,6 +95,7 @@ val_pr_auc = xgb["val_pr_auc"]
 reduction = final["decision"]["meta"]["amount_aware_capacity_pct_reduction_vs_f1"]
 ci = final["decision"]["meta"]["reduction_ci"]
 
+st.subheader("Frozen test-window headline")
 st.metric("XGB PR-AUC (test)", f"{test_pr_auc:.4f}", f"val {val_pr_auc:.4f}")
 st.markdown(
     f"- **Cost reduction** (amount-aware capacity policy vs F1-optimal, test window): "

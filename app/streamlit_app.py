@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import streamlit as st  # noqa: E402
-from components import api_client, context  # noqa: E402
+from components import api_client, context, theme  # noqa: E402
 
 st.set_page_config(page_title="FraudLens", layout="wide")
 context.sidebar()
@@ -20,6 +20,13 @@ context.sidebar()
 art = context.artifacts()
 st.title("FraudLens analyst console")
 st.caption(context.BANNER)
+theme.chips(
+    [
+        (f"profile {art.manifest['profile']}", "steel"),
+        (str(art.manifest["model_version"]), "gold"),
+        (str(art.manifest["policy_version"] or "no policy"), ""),
+    ]
+)
 
 windows = art.manifest["windows"]
 cols = st.columns(4)

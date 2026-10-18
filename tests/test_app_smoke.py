@@ -8,7 +8,9 @@ schema drift breaks the test rather than the page.
 
 from __future__ import annotations
 
+import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -25,11 +27,13 @@ _TMP = Path(tempfile.mkdtemp(prefix="fl_app_smoke_"))
 os.environ["FRAUDLENS_PROFILE"] = "tiny"
 os.environ["FRAUDLENS_APP_ARTIFACTS_DIR"] = str(_TMP)
 
-from components import api_client  # noqa: E402
+from components import api_client, context  # noqa: E402
 from components.artifacts import _load as _artifacts_load  # noqa: E402
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 from fraudlens.api import schemas  # noqa: E402
+from fraudlens.evaluation.cost_model import CostParams  # noqa: E402
+from fraudlens.paths import results_dir  # noqa: E402
 
 ENTRY = ROOT / "app" / "streamlit_app.py"
 PAGE1 = APP / "pages" / "1_Transaction_Analyzer.py"
@@ -236,3 +240,128 @@ def test_missing_artifacts_names_build_script(monkeypatch):
     finally:
         monkeypatch.undo()
         _artifacts_load.clear()
+
+
+# --- locked wording ---------------------------------------------------------
+
+
+def _body_text(at: AppTest) -> str:
+    """All narrative text on the page (titles, markdown, captions, info, metrics)."""
+    parts = []
+    for group in (at.title, at.subheader, at.markdown, at.caption, at.info, at.error):
+        parts += [str(e.value) for e in group]
+    parts += [f"{m.label} {m.value}" for m in at.metric]
+    return " ".join(parts)
+
+
+def test_locked_wording_verbatim():
+    assert context.BANNER == "Synthetic data demo — not a production fraud system."
+    assert context.CAPACITY_NOTE.startswith("Capacity caps REVIEW only")
+
+    for script in (ENTRY, PAGE2):
+        at = _run(script)
+        assert not at.exception, [str(e.value) for e in at.exception]
+        text = _body_text(at)
+        assert context.BANNER in text, script.name
+        if script is PAGE2:
+            assert context.CAPACITY_NOTE in text
+
+
+def test_page1_shap_caption_verbatim():
+    api_client.set_client(FakeClient())
+    at = _run(PAGE1)
+    at.button[0].click().run()
+    assert not at.exception, [str(e.value) for e in at.exception]
+    assert "Contribution to the model's log-odds (not points on the risk score)" in _body_text(at)
+
+
+def test_page3_engineering_strip_matches_render_context():
+    at = _run(PAGE3)
+    assert not at.exception, [str(e.value) for e in at.exception]
+    text = _body_text(at)
+    assert context.engineering_latency() in text
+    assert context.engineering_latency_note() in text
+    assert context.engineering_parity() in text
+
+
+def test_page3_drift_line_verbatim():
+    per_model = json.loads(
+        (results_dir() / "final_results.json").read_text(encoding="utf-8")
+    )["drift"]["per_model_pr_auc"]["xgb"]
+    expected = (
+        f"Drift: no degradation observed "
+        f"({per_model['val_pr_auc']:.4f} val → {per_model['test_pr_auc']:.4f} test)"
+    )
+    at = _run(PAGE3)
+    assert not at.exception, [str(e.value) for e in at.exception]
+    assert expected in _body_text(at)
+
+
+# --- money sweep ------------------------------------------------------------
+
+_MONEY_RE = re.compile(r"₹\s?([\d,]+(?:\.\d+)?)")
+_INR_ADJ_RE = re.compile(
+    r"(?:INR\s*([\d,]+(?:\.\d+)?)|([\d,]+(?:\.\d+)?)\s*INR)"
+)
+
+
+def _known_money() -> set[float]:
+    """Every money-ish number that legitimately feeds the console, from real sources."""
+    from fraudlens.appdata import recompute
+    from fraudlens.appdata.artifacts import load_app_artifacts
+
+    art = load_app_artifacts("tiny")
+    params = CostParams(**art.manifest["costs"])
+    capacity = int(art.manifest["capacity_per_day"])
+
+    values: set[float] = set()
+    for val in art.manifest["costs"].values():
+        values.add(round(float(val)))
+        values.add(round(float(val), 2))
+    values.add(float(capacity))
+
+    for row in recompute.policy_metrics(art.scored_sample, params, capacity).values():
+        if isinstance(row, (int, float)):
+            values.add(round(float(row)))
+            values.add(round(float(row), 2))
+
+    final = json.loads((results_dir() / "final_results.json").read_text(encoding="utf-8"))
+    for ci in (
+        final["decision"]["meta"]["reduction_ci"],
+        final["pre_registered_outcomes"]["H2_decision"]["reduction_ci"],
+    ):
+        for key in ("point", "lo", "hi"):
+            values.add(round(float(ci[key])))
+            values.add(round(float(ci[key]), 2))
+    return values
+
+
+def _sweep(text: str, allowed: set[float]) -> list[str]:
+    tokens = [m.group(1) for m in _MONEY_RE.finditer(text)]
+    for m in _INR_ADJ_RE.finditer(text):
+        tokens.append(m.group(1) or m.group(2))
+    unknown = []
+    for tok in tokens:
+        value = float(tok.replace(",", ""))
+        if round(value) not in allowed and round(value, 2) not in allowed:
+            unknown.append(tok)
+    return unknown
+
+
+def test_no_unaccounted_money_on_rendered_pages():
+    allowed = _known_money()
+    for script in (PAGE2, PAGE3):
+        at = _run(script)
+        assert not at.exception, [str(e.value) for e in at.exception]
+        assert _sweep(_body_text(at), allowed) == [], script.name
+
+
+def test_money_sweep_fails_on_injected_amount():
+    allowed = _known_money()
+    at = _run(PAGE3)
+    clean = _body_text(at)
+    assert _sweep(clean, allowed) == []
+
+    canary = clean + " Unaccounted demo figure ₹500."
+    unknown = _sweep(canary, allowed)
+    assert unknown == ["500"], "the sweep must flag a fabricated ₹ amount"

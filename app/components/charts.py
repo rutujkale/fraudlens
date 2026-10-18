@@ -7,15 +7,17 @@ from typing import Any
 import pandas as pd
 import plotly.graph_objects as go
 
+# DESIGN.md tokens: success green, golden brown, error red, deep red; SHAP diverges
+# error(+) -> success(-); models are steel blue / golden brown / success green.
 ACTION_COLORS = {
-    "APPROVE": "#2ca02c",
-    "STEP_UP": "#ff7f0e",
-    "REVIEW": "#d62728",
-    "BLOCK": "#7f0000",
-    "increase": "#d62728",
-    "decrease": "#1f77b4",
+    "APPROVE": "#1B6A4C",
+    "STEP_UP": "#B08D57",
+    "REVIEW": "#BA1A1A",
+    "BLOCK": "#7F0000",
+    "increase": "#BA1A1A",
+    "decrease": "#1B6A4C",
 }
-MODEL_COLORS = {"xgb": "#1f77b4", "logreg": "#ff7f0e", "rules": "#2ca02c"}
+MODEL_COLORS = {"xgb": "#4A6FA5", "logreg": "#B08D57", "rules": "#1B6A4C"}
 
 
 def _empty(message: str) -> go.Figure:
@@ -75,7 +77,7 @@ def calibration_curve(bins: list[dict[str, float]], name: str) -> go.Figure:
             y=y,
             mode="markers+lines",
             name=name,
-            marker={"size": 8, "color": "#1f77b4"},
+            marker={"size": 8, "color": "#4A6FA5"},
             text=[f"n={c}" for c in counts],
         )
     )

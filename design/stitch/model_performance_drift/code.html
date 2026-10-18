@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "tertiary": "#000000",
+          "on-primary-fixed": "#141b2c",
+          "secondary": "#625e54",
+          "inverse-on-surface": "#f6f0e3",
+          "on-secondary-fixed-variant": "#4a473d",
+          "surface-container-highest": "#e8e2d5",
+          "on-secondary-fixed": "#1d1c14",
+          "on-secondary-container": "#68645a",
+          "primary-container": "#141b2c",
+          "surface-variant": "#e8e2d5",
+          "on-error": "#ffffff",
+          "on-error-container": "#93000a",
+          "surface-container-lowest": "#ffffff",
+          "tertiary-fixed-dim": "#a7c8ff",
+          "background": "#fff9ec",
+          "outline-variant": "#d8d1c2",
+          "surface-dim": "#dfdacd",
+          "on-surface-variant": "#5a564e",
+          "inverse-primary": "#c0c6dc",
+          "primary-fixed": "#dce2f9",
+          "secondary-fixed": "#e8e2d5",
+          "dark-navy": "#0F1626",
+          "inverse-surface": "#333028",
+          "surface-container": "#ece5d6",
+          "surface-container-low": "#f5efe4",
+          "tertiary-fixed": "#d5e3ff",
+          "outline": "#8a8477",
+          "on-primary": "#ffffff",
+          "surface-bright": "#fff9ec",
+          "on-tertiary-container": "#6185bc",
+          "on-tertiary-fixed-variant": "#1e477b",
+          "surface-container-high": "#e3dccf",
+          "surface": "#EDE7DA",
+          "golden-brown": "#B08D57",
+          "error": "#ba1a1a",
+          "primary-fixed-dim": "#c0c6dc",
+          "steel-blue": "#4A6FA5",
+          "on-background": "#0F1626",
+          "error-container": "#ffdad6",
+          "on-surface": "#0F1626",
+          "secondary-container": "#e8e2d5",
+          "on-tertiary": "#ffffff",
+          "primary": "#4A6FA5",
+          "on-primary-fixed-variant": "#404659",
+          "tertiary-container": "#0F1626",
+          "surface-tint": "#4A6FA5",
+          "warm-cream": "#EDE7DA",
+          "secondary-fixed-dim": "#cbc6ba",
+          "on-secondary": "#ffffff",
+          "on-primary-container": "#ffffff",
+          "on-tertiary-fixed": "#001c3b"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.125rem",
+          "lg": "0.25rem",
+          "xl": "0.5rem",
+          "full": "0.75rem"
+        },
+        "spacing": {
+          "space-xl": "1.5rem",
+          "space-xs": "0.25rem",
+          "space-lg": "1rem",
+          "space-sm": "0.375rem",
+          "margin-panel": "0.75rem",
+          "gutter": "0.75rem",
+          "gutter-compact": "0.5rem",
+          "margin": "1rem",
+          "space-md": "0.75rem"
+        },
+        "fontFamily": {
+          "headline-md": [
+            "Inter"
+          ],
+          "label-lg": [
+            "JetBrains Mono"
+          ],
+          "body-lg": [
+            "Inter"
+          ],
+          "headline-sm": [
+            "Inter"
+          ],
+          "headline-lg": [
+            "Inter"
+          ],
+          "label-sm": [
+            "JetBrains Mono"
+          ],
+          "body-md": [
+            "Inter"
+          ],
+          "body-sm": [
+            "Inter"
+          ],
+          "label-md": [
+            "JetBrains Mono"
+          ]
+        },
+        "fontSize": {
+          "headline-md": [
+            "18px",
+            {
+              "lineHeight": "24px",
+              "letterSpacing": "-0.015em",
+              "fontWeight": "600"
+            }
+          ],
+          "label-lg": [
+            "13px",
+            {
+              "lineHeight": "16px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "500"
+            }
+          ],
+          "body-lg": [
+            "14px",
+            {
+              "lineHeight": "20px",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-sm": [
+            "15px",
+            {
+              "lineHeight": "20px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "600"
+            }
+          ],
+          "headline-lg": [
+            "24px",
+            {
+              "lineHeight": "32px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "600"
+            }
+          ],
+          "label-sm": [
+            "10px",
+            {
+              "lineHeight": "12px",
+              "letterSpacing": "0.04em",
+              "fontWeight": "400"
+            }
+          ],
+          "body-md": [
+            "13px",
+            {
+              "lineHeight": "18px",
+              "fontWeight": "400"
+            }
+          ],
+          "body-sm": [
+            "12px",
+            {
+              "lineHeight": "16px",
+              "fontWeight": "400"
+            }
+          ],
+          "label-md": [
+            "11px",
+            {
+              "lineHeight": "14px",
+              "letterSpacing": "0.02em",
+              "fontWeight": "500"
+            }
+          ]
+        }
+      },
+    },
+  }
+</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><div class="fixed top-0 left-0 right-0 z-50 h-7 bg-dark-navy border-b border-dark-navy/60 px-space-md flex items-center justify-between font-label-sm text-label-sm text-[#EDE7DA]"><div class="flex items-center gap-space-sm"><span class="flex h-2 w-2 rounded-full bg-emerald-400"></span><span class="font-label-md text-label-md text-[#EDE7DA] font-semibold tracking-wide">SYSTEM: STAGING / SIMULATION</span><span class="text-outline">|</span><span class="text-[#EDE7DA]/75 font-medium">Synthetic data demo — not a production fraud system.</span></div><div class="flex items-center gap-space-md"><span class="text-[#EDE7DA]/75">LATENCY: <span class="text-emerald-400 font-semibold">38ms</span></span><span class="text-outline">|</span><span class="text-[#EDE7DA]/75">UPTIME: <span class="text-[#EDE7DA] font-semibold">99.98%</span></span></div></div><aside class="fixed left-0 top-7 bottom-0 w-64 bg-surface-container-low border-r border-outline-variant z-40 flex flex-col justify-between overflow-y-auto"><div class="flex flex-col"><div class="p-space-md border-b border-outline-variant"><div class="flex items-center justify-between mb-space-sm"><div class="flex items-center gap-space-xs"><img alt="FraudLens Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WAXtPcE8nyM1pIP6trYzqegoIT4hK8RJtOCIliArwXs1_35WcxQQVooprQXcJcF5BBcxo3O1KSJJSa8UdkIK9RD0F-T3Z9Ug37YbnJ4liGjgoxx7sg3Q9kxRBREXrcPKl_NhFayPwX84cFt3P3-eZ0nG-cgZzOGFpRP27wsYTic6ITfquuc48NpGg9I4mo2GtN6IjXfX73rI142jK6vvKUMhSR5cyEbXd5zmmO_pvjaodRUrbrEaYdAcAP"/><span class="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">FraudLens</span></div><span class="px-space-xs py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm border border-outline-variant">dev (not main)</span></div><div class="bg-surface-container-lowest p-space-xs rounded border border-outline-variant space-y-0.5 font-label-sm text-label-sm"><div class="text-on-surface-variant flex justify-between"><span>Model:</span><span class="text-on-surface font-medium">v2.4.1-xgb-calibrated</span></div><div class="text-on-surface-variant flex justify-between"><span>Policy:</span><span class="text-on-surface font-medium">pol-2024-Q3-v2</span></div></div></div><div class="px-space-md py-space-sm border-b border-outline-variant bg-surface-container-lowest flex items-center gap-space-sm"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoxn0gz-TX9QXLzQ1uHX87DGgJjqYD694quLUlyxSTAMhch9pTV9W9Cp_QctXNa_69J8f1LOvZosHo4fbIV17ZYOqaoCKI5FZ9igAW4UIJGKgQw1b50BcSS23t5jJ7vBx7_nZhlDt6V9nS9twO0BHMGRTFec9NKxs5xOlGeIjjeAQc1ilwdT-cEDhwjtkiEiPZIiOY6EjLrOJA-EnFsfUSAEPg4oQVyA57TKTYg8E2GyTH-I8gZwtw3w"/><div class="flex flex-col min-w-0"><span class="font-headline-sm text-label-lg font-semibold text-on-surface truncate">Sarah Chen</span><span class="font-label-sm text-label-sm text-on-surface-variant truncate">Risk Ops (Lead L3)</span></div></div><div class="p-space-sm"><div class="px-space-xs py-1 font-label-sm text-label-sm uppercase tracking-wider text-outline">Investigation Queues</div><nav class="flex flex-col gap-0.5" data-active-classes="bg-steel-blue text-on-primary font-medium shadow-sm"><a class="flex items-center px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="transaction-analyzer" href="#"><span class="material-symbols-outlined text-base mr-2">troubleshoot</span>Transaction Analyzer</a><a class="flex items-center px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="review-queue" href="#"><span class="material-symbols-outlined text-base mr-2">rule</span>Review Queue</a><a aria-current="page" class="flex items-center px-space-sm py-1.5 rounded transition-colors bg-steel-blue text-white font-medium shadow-sm" data-path="model-performance" href="#"><span class="material-symbols-outlined text-base mr-2">monitoring</span>Model Performance</a></nav></div><div class="p-space-md"><div class="bg-surface-container-lowest border border-outline-variant rounded p-space-sm"><div class="flex items-center justify-between pb-1 border-b border-outline-variant mb-space-xs"><span class="font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase">COST ASSUMPTIONS (FROZEN)</span><span class="material-symbols-outlined text-xs text-outline">lock</span></div><div class="space-y-1 font-label-sm text-label-sm"><div class="flex justify-between items-center"><span class="text-on-surface-variant">α:</span><span class="text-on-surface font-medium">0.05</span></div><div class="flex justify-between items-center"><span class="text-on-surface-variant">review cost:</span><span class="text-on-surface font-medium">₹180 / case</span></div><div class="flex justify-between items-center"><span class="text-on-surface-variant">friction cost:</span><span class="text-on-surface font-medium">₹45 / step-up</span></div><div class="flex justify-between items-center"><span class="text-on-surface-variant">step-up cost:</span><span class="text-on-surface font-medium">₹12 / SMS-OTP</span></div><div class="flex justify-between items-center"><span class="text-on-surface-variant">capacity/day:</span><span class="text-on-surface font-medium">450 reviews (IST)</span></div></div></div></div></div><div class="p-space-sm border-t border-outline-variant bg-surface-container"><div class="flex items-center justify-between font-label-sm text-label-sm"><div class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span><span class="text-on-surface-variant font-mono">FastAPI Gateway</span></div><span class="font-label-sm text-label-sm text-emerald-700 font-semibold">200 OK (38ms)</span></div></div></aside><div class="pl-64"><header class="fixed top-7 left-64 right-0 h-14 bg-surface/90 backdrop-blur-md border-b border-outline-variant z-30 px-space-md flex items-center justify-between"><nav class="flex items-center h-full gap-space-lg" data-active-classes="border-b-2 border-steel-blue text-steel-blue font-semibold"><a class="flex items-center h-full border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-headline-sm text-headline-sm transition-colors" data-path="transaction-analyzer" href="#">Transaction Analyzer</a><a class="flex items-center h-full border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-headline-sm text-headline-sm transition-colors" data-path="review-queue" href="#">Review Queue &amp; Cost Optimization</a><a aria-current="page" class="flex items-center h-full transition-colors border-b-2 border-steel-blue text-steel-blue font-semibold" data-path="model-performance" href="#">Model Performance &amp; Drift</a></nav><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs font-label-sm text-label-sm px-space-xs py-1 rounded bg-surface-container-low border border-outline-variant text-on-surface"><span class="text-outline">FEED:</span><span class="text-emerald-700 font-bold">REALTIME (KAFKA-DENSE)</span></div></div></header><main class="w-full pt-21 px-space-md pb-space-xl bg-surface"><div class="flex flex-col w-full gap-space-lg">
+<!-- Top Telemetry & Evidence Ledger Banner -->
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between p-space-md bg-surface-container-lowest rounded shadow-sm border border-outline-variant/60 gap-space-md">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-space-xs">
+<span class="px-space-xs py-0.5 rounded bg-surface-container-high text-dark-navy font-semibold font-label-sm text-label-sm border border-outline-variant/50">EVIDENCE LEDGER: AUDIT-READY</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">HASH: 0x9f81a742c...e8</span>
+<span class="text-outline">·</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">SEED: 42_STABLE</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface flex items-baseline gap-space-xs">
+        Model Validation &amp; Quantitative Drift Ledger
+        <span class="font-label-sm text-label-sm text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded font-semibold">v2.4.1 PRODUCTION</span>
+</div>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm text-on-surface-variant">OUT-OF-TIME FROZEN BENCHMARK</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold font-mono">n = 48,290 txns (393 fraud cases)</span>
+</div>
+<div class="h-8 w-px bg-surface-container-high"></div>
+<button class="px-space-md py-1.5 rounded bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant font-label-md text-label-md flex items-center gap-1 transition-colors" onclick="window.print()">
+<span class="material-symbols-outlined text-sm text-golden-brown">print</span>
+        Export Cert
+      </button>
+</div>
+</div>
+<!-- Four Pre-Registered Headline Cards (H1–H4) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<!-- Card H1 -->
+<div class="bg-surface-container-lowest p-space-md rounded flex flex-col justify-between shadow-sm border border-outline-variant/60 relative overflow-hidden">
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">PRE-REGISTRATION H1</span>
+<span class="px-space-xs py-0.5 rounded bg-emerald-100 border border-emerald-300 text-emerald-900 font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600"></span> HELD
+        </span>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface mb-space-xs">H1: Cost Reduction ≥ 75%</div>
+<div class="p-space-xs rounded bg-surface-container-low border border-outline-variant/40 mb-space-sm font-mono font-medium text-steel-blue text-[12px] leading-tight">
+        83.23% (point estimate) [95% CI: ₹1,180,400 – ₹1,282,960 avoided]
+      </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-relaxed">
+        Assumes reviewer hourly cost ₹180/case, customer friction rate ≤ 5% on STEP_UP, and baseline rule engine catch rate of 48%.
+      </div>
+</div>
+<!-- Card H2 -->
+<div class="bg-surface-container-lowest p-space-md rounded flex flex-col justify-between shadow-sm border border-outline-variant/60 relative overflow-hidden">
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">PRE-REGISTRATION H2</span>
+<span class="px-space-xs py-0.5 rounded bg-emerald-100 border border-emerald-300 text-emerald-900 font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600"></span> HELD
+        </span>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface mb-space-xs">H2: Review Queue Capacity Saturation</div>
+<div class="p-space-xs rounded bg-surface-container-low border border-outline-variant/40 mb-space-sm font-mono font-medium text-golden-brown text-[12px] leading-tight">
+        412 / 450 cases/day (91.6% capacity)
+      </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-relaxed">
+        Assumes steady-state IST business hours volume (peak ≤ 65 reviews/hr). REVIEW queue caps strictly at 450/day.
+      </div>
+</div>
+<!-- Card H3 -->
+<div class="bg-surface-container-lowest p-space-md rounded flex flex-col justify-between shadow-sm border border-outline-variant/60 relative overflow-hidden">
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">PRE-REGISTRATION H3</span>
+<span class="px-space-xs py-0.5 rounded bg-emerald-100 border border-emerald-300 text-emerald-900 font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600"></span> HELD
+        </span>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface mb-space-xs">H3: PR-AUC Superiority over Logistic Regression</div>
+<div class="p-space-xs rounded bg-surface-container-low border border-outline-variant/40 mb-space-sm font-mono font-medium text-steel-blue text-[12px] leading-tight">
+        ΔPR-AUC = +0.252 [95% CI: +0.218 to +0.286]
+      </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-relaxed">
+        Evaluated on identical frozen out-of-time test split. Statistically significant (p &lt; 0.001).
+      </div>
+</div>
+<!-- Card H4 -->
+<div class="bg-surface-container-lowest p-space-md rounded flex flex-col justify-between shadow-sm border border-outline-variant/60 relative overflow-hidden">
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">PRE-REGISTRATION H4</span>
+<span class="px-space-xs py-0.5 rounded bg-emerald-100 border border-emerald-300 text-emerald-900 font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600"></span> HELD
+        </span>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface mb-space-xs">H4: Zero Critical Degradation across Geographies</div>
+<div class="p-space-xs rounded bg-surface-container-low border border-outline-variant/40 mb-space-sm font-mono font-medium text-on-surface text-[12px] leading-tight">
+        Max regional disparity ΔRecall = 4.1%
+      </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-relaxed">
+        Requires minimum n ≥ 30 per demographic/geographic cohort; smaller slices suppressed.
+      </div>
+</div>
+</div>
+<!-- Model Comparison Benchmark Table -->
+<div class="bg-surface-container-lowest rounded p-space-md shadow-sm border border-outline-variant/60">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-space-sm mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-golden-brown text-lg">stacked_line_chart</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Architectural Benchmark Comparison</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">(Frozen OOT Test Split)</span>
+</div>
+<div class="flex items-center gap-space-sm text-label-sm font-label-sm text-on-surface-variant">
+<span>K=Top Prioritized Reviews</span>
+<span class="text-outline">|</span>
+<span class="text-golden-brown font-semibold">XGBoost v2.4.1 (Current Prod)</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low">
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Model Architecture</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">PR-AUC (95% CI)</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">ROC-AUC</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Recall@100</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Recall@300</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Expected Cost / Case</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold text-right">Operational Status</th>
+</tr>
+</thead>
+<tbody class="font-label-md text-label-md divide-y divide-surface-container">
+<tr class="hover:bg-surface-container-low">
+<td class="py-2 px-3 font-medium text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-base">rule</span>
+              Rules Baseline (Heuristic Engine v1)
+            </td>
+<td class="py-2 px-3 font-mono text-on-surface-variant">0.342 [0.31-0.37]</td>
+<td class="py-2 px-3 font-mono text-on-surface-variant">0.724</td>
+<td class="py-2 px-3 font-mono text-on-surface-variant">24.1%</td>
+<td class="py-2 px-3 font-mono text-on-surface-variant">48.2%</td>
+<td class="py-2 px-3 font-mono text-error font-medium">₹1,142 / txn</td>
+<td class="py-2 px-3 text-right">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">DEPRECATED</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low">
+<td class="py-2 px-3 font-medium text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-base">functions</span>
+              LogReg (L2 Regularized Baseline)
+            </td>
+<td class="py-2 px-3 font-mono text-on-surface-variant">0.589 [0.55-0.62]</td>
+<td class="py-2 px-3 font-mono text-on-surface-variant">0.881</td>
+<td class="py-2 px-3 font-mono text-on-surface-variant">58.4%</td>
+<td class="py-2 px-3 font-mono text-on-surface-variant">79.1%</td>
+<td class="py-2 px-3 font-mono text-on-surface font-medium">₹486 / txn</td>
+<td class="py-2 px-3 text-right">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">BENCHMARK</span>
+</td>
+</tr>
+<tr class="bg-surface-container-low/60 hover:bg-surface-container-high/40">
+<td class="py-2.5 px-3 font-semibold text-dark-navy flex items-center gap-2">
+<span class="material-symbols-outlined text-golden-brown text-base">verified</span>
+              XGBoost (v2.4.1 Production Champion)
+            </td>
+<td class="py-2.5 px-3 font-mono font-bold text-steel-blue">0.841 [0.81-0.87]</td>
+<td class="py-2.5 px-3 font-mono font-bold text-on-surface">0.962</td>
+<td class="py-2.5 px-3 font-mono font-bold text-dark-navy">82.3%</td>
+<td class="py-2.5 px-3 font-mono font-bold text-dark-navy">94.7%</td>
+<td class="py-2.5 px-3 font-mono font-bold text-dark-navy">₹192 / txn</td>
+<td class="py-2.5 px-3 text-right">
+<span class="px-2 py-0.5 rounded bg-emerald-100 border border-emerald-300 text-emerald-900 font-label-sm text-label-sm font-semibold inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ACTIVE SERVING
+              </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-space-sm pt-space-xs text-on-surface-variant font-body-sm text-body-sm text-[11px] flex items-center justify-between">
+<span>Note: Test evaluation conducted on frozen benchmark with 393-test-fraud cases. Bootstrap standard errors clustered at customer level.</span>
+<span class="font-mono text-[10px] text-outline">VAL-SEED-4289</span>
+</div>
+</div>
+<!-- Performance Charts Grid (2x2) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
+<!-- Chart 1: Precision-Recall Curve -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm border border-outline-variant/60 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-steel-blue text-base">query_stats</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Precision-Recall (PR) Curves</span>
+</div>
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm">
+<span class="flex items-center gap-1 text-steel-blue font-medium"><span class="w-2.5 h-0.5 bg-steel-blue inline-block"></span> XGBoost (0.841)</span>
+<span class="flex items-center gap-1 text-golden-brown font-medium"><span class="w-2.5 h-0.5 bg-golden-brown inline-block"></span> LogReg (0.589)</span>
+<span class="flex items-center gap-1 text-outline font-medium"><span class="w-2.5 h-0.5 bg-outline-variant inline-block"></span> Rules (0.342)</span>
+</div>
+</div>
+<div class="h-48 w-full relative">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 400 160">
+<!-- Grid lines -->
+<line class="text-surface-container" stroke="currentColor" stroke-dasharray="2 2" stroke-width="1" x1="30" x2="390" y1="20" y2="20"></line>
+<line class="text-surface-container" stroke="currentColor" stroke-dasharray="2 2" stroke-width="1" x1="30" x2="390" y1="60" y2="60"></line>
+<line class="text-surface-container" stroke="currentColor" stroke-dasharray="2 2" stroke-width="1" x1="30" x2="390" y1="100" y2="100"></line>
+<line class="text-surface-container-high" stroke="currentColor" stroke-width="1" x1="30" x2="390" y1="140" y2="140"></line>
+<line class="text-surface-container-high" stroke="currentColor" stroke-width="1" x1="30" x2="30" y1="20" y2="140"></line>
+<!-- Y-axis labels -->
+<text class="fill-current text-outline font-label-sm text-[9px]" text-anchor="end" x="22" y="24">1.0</text>
+<text class="fill-current text-outline font-label-sm text-[9px]" text-anchor="end" x="22" y="64">0.7</text>
+<text class="fill-current text-outline font-label-sm text-[9px]" text-anchor="end" x="22" y="104">0.4</text>
+<text class="fill-current text-outline font-label-sm text-[9px]" text-anchor="end" x="22" y="144">0.0</text>
+<!-- Baseline Curve -->
+<path class="text-outline-variant" d="M 30,70 Q 150,110 390,135" fill="none" stroke="currentColor" stroke-dasharray="3 3" stroke-width="1.5"></path>
+<!-- LogReg Curve -->
+<path class="text-golden-brown" d="M 30,35 Q 120,40 220,70 T 390,130" fill="none" stroke="currentColor" stroke-width="1.75"></path>
+<!-- XGBoost Curve with Shading -->
+<path class="fill-steel-blue/10" d="M 30,22 C 160,23 270,30 320,60 S 370,110 390,126 L 390,140 L 30,140 Z"></path>
+<path class="text-steel-blue" d="M 30,22 C 160,23 270,30 320,60 S 370,110 390,126" fill="none" stroke="currentColor" stroke-width="2.25"></path>
+<!-- Optimal Operating Threshold Marker -->
+<circle class="fill-dark-navy" cx="320" cy="60" r="3.5"></circle>
+<text class="fill-current text-dark-navy font-label-sm text-[9px] font-bold" x="325" y="56">τ=0.32</text>
+</svg>
+</div>
+<div class="flex justify-between text-on-surface-variant font-label-sm text-[10px] pt-1">
+<span>Recall 0.0</span>
+<span>Recall 0.50</span>
+<span>Recall 1.0</span>
+</div>
+</div>
+<!-- Chart 2: ROC Curve -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm border border-outline-variant/60 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-golden-brown text-base">area_chart</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Receiver Operating Characteristic (ROC)</span>
+</div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface font-mono">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-dark-navy font-bold border border-outline-variant/50">ROC-AUC = 0.962</span>
+</div>
+</div>
+<div class="h-48 w-full relative">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 400 160">
+<!-- Diagonal Random Baseline -->
+<line class="text-surface-container-high" stroke="currentColor" stroke-dasharray="3 3" stroke-width="1.5" x1="30" x2="390" y1="140" y2="20"></line>
+<line class="text-surface-container-high" stroke="currentColor" stroke-width="1" x1="30" x2="30" y1="20" y2="140"></line>
+<line class="text-surface-container-high" stroke="currentColor" stroke-width="1" x1="30" x2="390" y1="140" y2="140"></line>
+<!-- ROC Curve -->
+<path class="fill-steel-blue/10" d="M 30,140 C 35,60 50,30 90,26 C 160,20 280,20 390,20 L 390,140 Z"></path>
+<path class="text-steel-blue" d="M 30,140 C 35,60 50,30 90,26 C 160,20 280,20 390,20" fill="none" stroke="currentColor" stroke-width="2.5"></path>
+<!-- Operating Point Marker -->
+<circle class="fill-golden-brown" cx="50" cy="30" r="4"></circle>
+<text class="fill-current text-golden-brown font-label-sm text-[9px] font-bold" x="56" y="27">TPR=94.7%, FPR=3.8%</text>
+</svg>
+</div>
+<div class="flex justify-between text-on-surface-variant font-label-sm text-[10px] pt-1">
+<span>FPR 0.0</span>
+<span>FPR 0.05 (Target Gate)</span>
+<span>FPR 1.0</span>
+</div>
+</div>
+<!-- Chart 3: Calibration Curve (Reliability Diagram) -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm border border-outline-variant/60 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-steel-blue text-base">linear_scale</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Calibration Curve (Reliability Diagram)</span>
+</div>
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm">
+<span class="flex items-center gap-1 text-outline font-medium"><span class="w-2 h-0.5 bg-outline inline-block"></span> Perfect (x=y)</span>
+<span class="flex items-center gap-1 text-error font-medium"><span class="w-2 h-0.5 bg-error inline-block"></span> Raw XGB</span>
+<span class="flex items-center gap-1 text-steel-blue font-medium"><span class="w-2 h-0.5 bg-steel-blue inline-block"></span> Isotonic Reg</span>
+</div>
+</div>
+<div class="h-48 w-full relative">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 400 160">
+<!-- Perfect Calibration Line -->
+<line class="text-outline" stroke="currentColor" stroke-dasharray="2 2" stroke-width="1.2" x1="30" x2="390" y1="140" y2="20"></line>
+<!-- Raw Sigmoid Uncalibrated (Underconfident in tail) -->
+<path class="text-error" d="M 30,140 Q 150,135 240,110 T 360,35 L 390,20" fill="none" stroke="currentColor" stroke-dasharray="4 2" stroke-width="1.5"></path>
+<!-- Calibrated Curve (Tight to perfect line) -->
+<path class="text-steel-blue" d="M 30,140 L 80,123 L 140,105 L 210,81 L 280,57 L 340,36 L 390,20" fill="none" stroke="currentColor" stroke-width="2.5"></path>
+<circle class="fill-steel-blue" cx="210" cy="81" r="3"></circle>
+<circle class="fill-steel-blue" cx="280" cy="57" r="3"></circle>
+<circle class="fill-steel-blue" cx="140" cy="105" r="3"></circle>
+</svg>
+</div>
+<div class="flex justify-between text-on-surface-variant font-label-sm text-[10px] pt-1">
+<span>Mean Predicted Probability (0.0)</span>
+<span class="font-mono text-dark-navy font-semibold">Brier Score: 0.0142 (Post-Cal)</span>
+<span>Observed Fraction (1.0)</span>
+</div>
+</div>
+<!-- Chart 4: Recall@top-K Curve -->
+<div class="bg-surface-container-lowest p-space-md rounded shadow-sm border border-outline-variant/60 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-steel-blue text-base">vertical_align_top</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Recall Trajectory @ Top-K Queue Depth</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant font-mono">
+          Queue Limit: <span class="text-on-surface font-semibold">450 reviews/day</span>
+</div>
+</div>
+<div class="h-48 w-full relative">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 400 160">
+<!-- Capacity Envelope Shading (K <= 450) -->
+<rect class="fill-surface-container/60" height="120" width="162" x="30" y="20"></rect>
+<line class="text-golden-brown" stroke="currentColor" stroke-dasharray="2 2" stroke-width="1" x1="192" x2="192" y1="20" y2="140"></line>
+<text class="fill-current text-golden-brown font-label-sm text-[9px] font-bold" x="196" y="32">Capacity Cap K=450</text>
+<!-- XGB Recall Trajectory -->
+<path class="text-steel-blue" d="M 30,140 L 60,78 L 100,45 L 140,28 L 192,23 L 390,20" fill="none" stroke="currentColor" stroke-width="2.5"></path>
+<!-- Key Points -->
+<circle class="fill-steel-blue" cx="60" cy="78" r="3"></circle>
+<text class="fill-current text-on-surface font-label-sm text-[9px]" x="64" y="86">@100 (82.3%)</text>
+<circle class="fill-steel-blue" cx="140" cy="28" r="3"></circle>
+<text class="fill-current text-on-surface font-label-sm text-[9px]" x="144" y="36">@300 (94.7%)</text>
+<circle class="fill-golden-brown" cx="192" cy="23" r="3.5"></circle>
+<text class="fill-current text-golden-brown font-label-sm text-[9px] font-bold" x="195" y="50">@450 (98.2%)</text>
+</svg>
+</div>
+<div class="flex justify-between text-on-surface-variant font-label-sm text-[10px] pt-1">
+<span>K=50 cases</span>
+<span>K=450 (Max Capacity)</span>
+<span>K=1,000 cases</span>
+</div>
+</div>
+</div>
+<!-- Interactive Confusion Matrix & Threshold Simulation Widget -->
+<div class="bg-surface-container-lowest rounded p-space-md shadow-sm border border-outline-variant/60">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between pb-space-sm mb-space-sm border-b border-surface-container gap-space-sm">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-steel-blue text-base">tune</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Decision Boundary &amp; Operational Confusion Matrix</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">
+          Note: validation sample; frozen test point shown separately
+        </div>
+</div>
+<!-- Threshold Control -->
+<div class="flex items-center gap-space-md bg-surface-container-low border border-outline-variant/60 px-space-md py-1.5 rounded">
+<label class="font-label-sm text-label-sm text-on-surface font-semibold flex items-center gap-1" for="threshold-range">
+          OPERATIONAL THRESHOLD (τ):
+          <span class="font-mono text-steel-blue font-bold text-headline-sm" id="threshold-val">0.32</span>
+</label>
+<input class="accent-steel-blue cursor-pointer w-40" id="threshold-range" max="0.90" min="0.10" oninput="updateThreshold(this.value)" step="0.01" type="range" value="0.32"/>
+<span class="text-outline">|</span>
+<span class="font-label-sm text-label-sm text-golden-brown font-semibold">MIN-COST POINT</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- TP -->
+<div class="p-space-md rounded bg-surface-container-low border border-outline-variant/40 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase font-medium">True Positives (TP)</span>
+<span class="px-1.5 py-0.5 rounded bg-emerald-100 border border-emerald-300 text-emerald-900 font-label-sm text-label-sm font-semibold">FRAUD INTERCEPTED</span>
+</div>
+<div class="font-headline-lg text-headline-lg font-mono font-bold text-on-surface" id="cm-tp">372</div>
+<div class="text-on-surface-variant font-label-sm text-[11px] mt-1">
+          Recall on frozen split: <span class="font-semibold text-emerald-800" id="cm-recall">94.7%</span>
+</div>
+</div>
+<!-- FP -->
+<div class="p-space-md rounded bg-surface-container-low border border-outline-variant/40 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase font-medium">False Positives (FP)</span>
+<span class="px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-900 font-label-sm text-label-sm font-semibold">FRICTION / OVERKILL</span>
+</div>
+<div class="font-headline-lg text-headline-lg font-mono font-bold text-on-surface" id="cm-fp">148</div>
+<div class="text-on-surface-variant font-label-sm text-[11px] mt-1">
+          Review friction cost: <span class="font-semibold text-on-surface" id="cm-friction">₹26,640</span>
+</div>
+</div>
+<!-- FN -->
+<div class="p-space-md rounded bg-surface-container-low border border-outline-variant/40 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase font-medium">False Negatives (FN)</span>
+<span class="px-1.5 py-0.5 rounded bg-red-100 border border-red-300 text-red-900 font-label-sm text-label-sm font-semibold">FRAUD LEAKAGE</span>
+</div>
+<div class="font-headline-lg text-headline-lg font-mono font-bold text-error" id="cm-fn">21</div>
+<div class="text-on-surface-variant font-label-sm text-[11px] mt-1">
+          Direct loss: <span class="font-semibold text-error" id="cm-loss">₹98,700</span>
+</div>
+</div>
+<!-- TN -->
+<div class="p-space-md rounded bg-surface-container-low border border-outline-variant/40 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase font-medium">True Negatives (TN)</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">PASS THROUGH</span>
+</div>
+<div class="font-headline-lg text-headline-lg font-mono font-bold text-on-surface" id="cm-tn">47,749</div>
+<div class="text-on-surface-variant font-label-sm text-[11px] mt-1">
+          Legitimate friction-free: <span class="font-semibold text-emerald-800">99.69%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Drift Section & PSI Heatmap -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-md">
+<!-- PSI Heatmap -->
+<div class="xl:col-span-8 bg-surface-container-lowest rounded p-space-md shadow-sm border border-outline-variant/60 flex flex-col justify-between">
+<div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-space-sm mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-golden-brown text-base">radar</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Population Stability Index (PSI) Feature Matrix</span>
+</div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm">
+<span class="inline-block w-2.5 h-2.5 rounded bg-emerald-200 border border-emerald-400"></span> &lt;0.05 Stable
+            <span class="inline-block w-2.5 h-2.5 rounded bg-amber-200 border border-amber-400 ml-2"></span> 0.05-0.10 Moderate
+            <span class="inline-block w-2.5 h-2.5 rounded bg-red-200 border border-red-400 ml-2"></span> &gt;0.10 Retrain
+          </div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+<th class="py-2 px-3 font-semibold uppercase">Feature Name</th>
+<th class="py-2 px-3 font-semibold uppercase text-center">Jun 2024</th>
+<th class="py-2 px-3 font-semibold uppercase text-center">Jul 2024</th>
+<th class="py-2 px-3 font-semibold uppercase text-center">Aug 2024</th>
+<th class="py-2 px-3 font-semibold uppercase text-center">Sep 2024</th>
+<th class="py-2 px-3 font-semibold uppercase text-center">Oct 2024</th>
+<th class="py-2 px-3 font-semibold uppercase text-right">Trend</th>
+</tr>
+</thead>
+<tbody class="font-label-md text-label-md divide-y divide-surface-container">
+<tr>
+<td class="py-2 px-3 font-mono font-medium text-on-surface">amt_ratio</td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.012</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.015</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.019</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.024</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.028</span></td>
+<td class="py-2 px-3 text-right text-emerald-800 font-label-sm font-medium">STABLE</td>
+</tr>
+<tr>
+<td class="py-2 px-3 font-mono font-medium text-on-surface">txn_velocity_1h</td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.008</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.011</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.016</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.022</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.031</span></td>
+<td class="py-2 px-3 text-right text-emerald-800 font-label-sm font-medium">STABLE</td>
+</tr>
+<tr>
+<td class="py-2 px-3 font-mono font-medium text-on-surface">device_age_days</td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.014</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.017</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.021</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.025</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.029</span></td>
+<td class="py-2 px-3 text-right text-emerald-800 font-label-sm font-medium">STABLE</td>
+</tr>
+<tr class="bg-surface-container-low/40">
+<td class="py-2 px-3 font-mono font-bold text-dark-navy">ip_distance_km</td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.021</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.038</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 font-mono text-xs font-semibold">0.064</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 font-mono text-xs font-semibold">0.079</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 font-mono text-xs font-bold text-golden-brown">0.082</span></td>
+<td class="py-2 px-3 text-right text-golden-brown font-label-sm font-semibold">ELEVATED</td>
+</tr>
+<tr>
+<td class="py-2 px-3 font-mono font-medium text-on-surface">mcc_risk_weight</td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.005</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.009</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.012</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.014</span></td>
+<td class="py-2 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono text-xs">0.018</span></td>
+<td class="py-2 px-3 text-right text-emerald-800 font-label-sm font-medium">STABLE</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="mt-space-md p-space-sm bg-surface-container-low border border-outline-variant/60 rounded flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-steel-blue text-base mt-0.5">info</span>
+<div class="font-body-sm text-body-sm text-on-surface">
+          Highest Drift Feature: <code class="font-mono bg-surface-container px-1 py-0.5 rounded text-dark-navy font-semibold">ip_distance_km</code> (PSI = 0.082 — moderate shift post-holiday travel season, below critical retrain alert threshold 0.10)
+        </div>
+</div>
+</div>
+<!-- Score-Distribution Comparison & Verbatim Line -->
+<div class="xl:col-span-4 bg-surface-container-lowest rounded p-space-md shadow-sm border border-outline-variant/60 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Score-Distribution Drift</span>
+<span class="font-label-sm text-label-sm text-dark-navy font-mono font-semibold">p = 0.41 (KS-test)</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-space-sm">
+          Overlay: Validation sample vs Frozen Test sample
+        </div>
+<!-- Overlaid KDE SVG -->
+<div class="h-36 w-full relative">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 300 120">
+<!-- Validation Distribution (Dashed) -->
+<path class="text-golden-brown" d="M 10,110 C 60,110 80,40 120,40 C 160,40 180,105 290,110" fill="none" stroke="currentColor" stroke-dasharray="3 3" stroke-width="1.75"></path>
+<!-- Test Distribution (Solid) -->
+<path class="text-steel-blue" d="M 10,110 C 58,110 78,35 120,35 C 162,35 182,105 290,110" fill="none" stroke="currentColor" stroke-width="2"></path>
+<!-- Baseline line -->
+<line class="text-surface-container-high" stroke="currentColor" stroke-width="1" x1="10" x2="290" y1="110" y2="110"></line>
+<!-- Shaded Region under Test -->
+<path class="fill-steel-blue/10" d="M 10,110 C 58,110 78,35 120,35 C 162,35 182,105 290,110 Z"></path>
+</svg>
+</div>
+<div class="flex justify-between font-label-sm text-[10px] text-on-surface-variant pt-1">
+<span>Score: 0.0</span>
+<span>Score: 0.5</span>
+<span>Score: 1.0</span>
+</div>
+<div class="flex items-center justify-center gap-space-md my-space-sm text-label-sm font-label-sm">
+<span class="flex items-center gap-1 text-golden-brown"><span class="w-3 h-0.5 bg-golden-brown inline-block"></span> Validation</span>
+<span class="flex items-center gap-1 text-steel-blue font-semibold"><span class="w-3 h-0.5 bg-steel-blue inline-block"></span> Test Split</span>
+</div>
+</div>
+<!-- Verbatim Output Requirement -->
+<div class="p-space-sm rounded bg-surface-container-low border border-outline-variant/60 text-center">
+<span class="font-label-md text-label-md font-mono text-dark-navy font-bold tracking-tight block">
+          no degradation observed (0.9291 val → 0.9619 test)
+        </span>
+</div>
+</div>
+</div>
+<!-- Unseen-Fraud Exploration: Isolation Forest Card -->
+<div class="bg-surface-container-lowest rounded p-space-md shadow-sm border border-outline-variant/60">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-space-sm mb-space-xs gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-outline text-base">warning</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Unsupervised Anomaly Exploration: Isolation Forest</span>
+</div>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-bold flex items-center gap-1 border border-outline-variant/50">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> NULL / NOT ADOPTED
+      </span>
+</div>
+<div class="p-space-sm rounded bg-surface-container-low border border-outline-variant/40 font-body-sm text-body-sm text-on-surface leading-relaxed">
+      Isolation Forest produced an unacceptably high false-positive rate (FPR &gt; 22.4% at equivalent recall) and identified benign high-value corporate travel rather than adversarial novel fraud vectors. Supervised XGBoost with cost-matrix optimization retained for production.
+    </div>
+</div>
+<!-- Demographic & Geographic Fairness Disparity Table -->
+<div class="bg-surface-container-lowest rounded p-space-md shadow-sm border border-outline-variant/60">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-space-sm mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-golden-brown text-base">balance</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Subgroup Fairness &amp; Protected Cohort Disparity Audit</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">Min sample threshold: n ≥ 30</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low">
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Cohort</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Sample Size (n)</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Approval Rate</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">False Positive Rate</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Review Rate</th>
+<th class="py-2 px-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold text-right">Fairness Disparity Metric</th>
+</tr>
+</thead>
+<tbody class="font-label-md text-label-md divide-y divide-surface-container">
+<tr class="hover:bg-surface-container-low">
+<td class="py-2 px-3 font-medium text-on-surface">Metro West (Tier-1)</td>
+<td class="py-2 px-3 font-mono text-on-surface">18,450</td>
+<td class="py-2 px-3 font-mono text-on-surface">97.8%</td>
+<td class="py-2 px-3 font-mono text-on-surface">0.28%</td>
+<td class="py-2 px-3 font-mono text-on-surface">1.82%</td>
+<td class="py-2 px-3 font-mono text-dark-navy text-right font-medium">Δ = 0.00 (Reference)</td>
+</tr>
+<tr class="hover:bg-surface-container-low">
+<td class="py-2 px-3 font-medium text-on-surface">Tier-1 South</td>
+<td class="py-2 px-3 font-mono text-on-surface">14,210</td>
+<td class="py-2 px-3 font-mono text-on-surface">98.1%</td>
+<td class="py-2 px-3 font-mono text-on-surface">0.26%</td>
+<td class="py-2 px-3 font-mono text-on-surface">1.64%</td>
+<td class="py-2 px-3 font-mono text-emerald-800 text-right font-medium">Δ = +0.02 (Parity)</td>
+</tr>
+<tr class="hover:bg-surface-container-low">
+<td class="py-2 px-3 font-medium text-on-surface">Tier-2 North</td>
+<td class="py-2 px-3 font-mono text-on-surface">9,830</td>
+<td class="py-2 px-3 font-mono text-on-surface">96.9%</td>
+<td class="py-2 px-3 font-mono text-on-surface">0.34%</td>
+<td class="py-2 px-3 font-mono text-on-surface">2.41%</td>
+<td class="py-2 px-3 font-mono text-on-surface text-right font-medium">Δ = -0.09 (Acceptable)</td>
+</tr>
+<tr class="hover:bg-surface-container-low">
+<td class="py-2 px-3 font-medium text-on-surface">Tier-3 East</td>
+<td class="py-2 px-3 font-mono text-on-surface">4,912</td>
+<td class="py-2 px-3 font-mono text-on-surface">96.4%</td>
+<td class="py-2 px-3 font-mono text-on-surface">0.39%</td>
+<td class="py-2 px-3 font-mono text-on-surface">2.88%</td>
+<td class="py-2 px-3 font-mono text-on-surface text-right font-medium">Δ = -0.14 (Acceptable)</td>
+</tr>
+<!-- Suppressed Row 1: NRI Accounts (n=18) -->
+<tr class="bg-surface-container-low/50">
+<td class="py-2 px-3 font-medium text-outline">NRI Accounts</td>
+<td class="py-2 px-3 font-mono text-outline font-semibold">18</td>
+<td class="py-2 px-3" colspan="4">
+<div class="w-full py-1 px-3 rounded bg-surface-container text-outline font-label-sm text-[10px] italic font-mono text-center border-dashed border border-outline-variant">
+                suppressed — n&lt;30
+              </div>
+</td>
+</tr>
+<!-- Suppressed Row 2: Micro-Merchants (n=24) -->
+<tr class="bg-surface-container-low/50">
+<td class="py-2 px-3 font-medium text-outline">Micro-Merchants</td>
+<td class="py-2 px-3 font-mono text-outline font-semibold">24</td>
+<td class="py-2 px-3" colspan="4">
+<div class="w-full py-1 px-3 rounded bg-surface-container text-outline font-label-sm text-[10px] italic font-mono text-center border-dashed border border-outline-variant">
+                suppressed — n&lt;30
+              </div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low">
+<td class="py-2 px-3 font-medium text-on-surface">New-to-Bank &lt; 14d</td>
+<td class="py-2 px-3 font-mono text-on-surface">846</td>
+<td class="py-2 px-3 font-mono text-on-surface">94.8%</td>
+<td class="py-2 px-3 font-mono text-on-surface">0.52%</td>
+<td class="py-2 px-3 font-mono text-on-surface">4.12%</td>
+<td class="py-2 px-3 font-mono text-golden-brown text-right font-medium">Δ = -0.22 (Monitored)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Limitations & Operating Boundaries (Expander) -->
+<div class="bg-surface-container-lowest rounded p-space-md shadow-sm border border-outline-variant/60">
+<button class="w-full flex items-center justify-between text-left focus:outline-none" onclick="toggleLimitations()">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-outline text-base">handyman</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Technical Limitations &amp; Operating Boundaries</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant transform transition-transform duration-200" id="limitations-chevron">expand_more</span>
+</button>
+<div class="mt-space-sm pt-space-sm border-t border-surface-container hidden flex-col gap-space-xs font-body-sm text-body-sm text-on-surface-variant" id="limitations-body">
+<div class="flex items-start gap-space-xs">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-outline mt-1.5 shrink-0"></span>
+<span>Reliance on simulated merchant risk scores pending live card network clearing integration.</span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-outline mt-1.5 shrink-0"></span>
+<span>Cold-start latency for first-time account IDs incurs additional 18ms graph query overhead.</span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-outline mt-1.5 shrink-0"></span>
+<span>Adversarial drift: fraud rings adapting to ₹50,000 threshold require bi-weekly feature store retraining.</span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-outline mt-1.5 shrink-0"></span>
+<span>Data scope: evaluated on domestic INR transactions; cross-border multi-currency transactions route to auxiliary international fraud cluster.</span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function updateThreshold(val) {
+    document.getElementById('threshold-val').textContent = parseFloat(val).toFixed(2);
+    const tau = parseFloat(val);
+    
+    // Smoothly simulate operational metrics responding to threshold slider
+    let tp, fp, fn, tn;
+    if (Math.abs(tau - 0.32) < 0.005) {
+      tp = 372; fp = 148; fn = 21; tn = 47749;
+    } else {
+      const recallFactor = Math.min(0.99, Math.max(0.65, 0.947 - (tau - 0.32) * 0.7));
+      tp = Math.round(393 * recallFactor);
+      fn = 393 - tp;
+      const fprFactor = Math.min(0.02, Math.max(0.001, 0.0031 - (tau - 0.32) * 0.005));
+      fp = Math.round(47897 * fprFactor);
+      tn = 47897 - fp;
+    }
+    
+    document.getElementById('cm-tp').textContent = tp.toLocaleString();
+    document.getElementById('cm-fp').textContent = fp.toLocaleString();
+    document.getElementById('cm-fn').textContent = fn.toLocaleString();
+    document.getElementById('cm-tn').textContent = tn.toLocaleString();
+    
+    const recall = ((tp / 393) * 100).toFixed(1);
+    document.getElementById('cm-recall').textContent = recall + '%';
+    
+    const friction = (fp * 180).toLocaleString();
+    document.getElementById('cm-friction').textContent = '₹' + friction;
+    
+    const loss = (fn * 4700).toLocaleString();
+    document.getElementById('cm-loss').textContent = '₹' + loss;
+  }
+
+  function toggleLimitations() {
+    const body = document.getElementById('limitations-body');
+    const chevron = document.getElementById('limitations-chevron');
+    if (body.classList.contains('hidden')) {
+      body.classList.remove('hidden');
+      body.classList.add('flex');
+      chevron.classList.add('rotate-180');
+    } else {
+      body.classList.add('hidden');
+      body.classList.remove('flex');
+      chevron.classList.remove('rotate-180');
+    }
+  }
+</script></main></div></body></html>

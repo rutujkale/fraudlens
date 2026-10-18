@@ -1,0 +1,42 @@
+# FraudLens Streamlit theme — translated from design/stitch/technical_precision_slate/DESIGN.md
+# ("Technical Precision Slate": navy / warm cream / golden brown / steel blue).
+# Colors, radii and type only. No CDN, no remote fonts: family names are set and the
+# browser falls back if Inter / JetBrains Mono are not installed (see docs/progress/ui_polish.md).
+
+[theme]
+base = "light"
+primaryColor = "#4A6FA5"          # steel-blue: the functional interactive driver
+backgroundColor = "#EDE7DA"       # warm cream: base canvas
+secondaryBackgroundColor = "#FFFFFF"  # surface-container-lowest: work panels
+textColor = "#0F1626"             # dark navy: primary text on cream
+linkColor = "#4A6FA5"
+borderColor = "#D5CDBD"           # outline-variant
+
+# Crisp structural geometry: never exceed 8px on any structural element.
+baseRadius = "0.25rem"
+buttonRadius = "0.25rem"
+showWidgetBorder = true
+
+# Two-family type system: Inter for narrative/UI, JetBrains Mono for machine data.
+font = "Inter"
+headingFont = "Inter"
+codeFont = "JetBrains Mono"
+baseFontSize = 14
+codeFontSize = "13px"
+metricValueFontSize = "1.6rem"
+
+# Tables: explicit header surface + grid rules (DESIGN.md "Data Tables").
+dataframeHeaderBackgroundColor = "#EDE7DA"
+dataframeHeaderTextColor = "#0F1626"
+dataframeBorderColor = "#D5CDBD"
+
+# Chart palettes: steel-blue / golden-brown / success / error / outline; SHAP diverges
+# error(+) -> neutral -> steel-blue(-).
+chartCategoricalColors = ["#4A6FA5", "#B08D57", "#1B6A4C", "#BA1A1A", "#76777D"]
+chartDivergingColors = ["#BA1A1A", "#C6C6CD", "#4A6FA5"]
+chartSequentialColors = ["#EDE7DA", "#4A6FA5"]
+
+[theme.sidebar]
+backgroundColor = "#FFFFFF"
+borderColor = "#D5CDBD"
+primaryColor = "#4A6FA5"

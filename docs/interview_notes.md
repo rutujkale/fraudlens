@@ -142,7 +142,7 @@ full four-action cost model and chooses the action with least expected cost; the
 frozen global capacity threshold is
 0.188227173204461
 `[freeze.json:frozen_thresholds; risk/policy.py]`. Cost-optimal beat F1-optimal on
-realized cost by 773,067 INR (83.23%), CI 361,480 to 1,281,632.
+realized cost by 773,067 INR (83.23% point estimate), CI 361,480 to 1,281,632.
 
 **Follow-up: should the percentage carry a confidence interval?** No — I report the
 percentage as a point estimate and give the interval in INR, because the ratio's
@@ -310,7 +310,7 @@ simulator feeds point-in-time features into Rules, LogReg and XGBoost, all valid
 temporally with an embargo timed to the label delay. The frozen XGBoost test PR-AUC
 is 0.9619 (CI 0.9340-0.9798) at 0.987% prevalence,
 and an amount-aware, capacity-aware cost policy cut realized fraud cost
-773,067 INR (83.23%), CI 361,480 to 1,281,632 versus the F1-optimal threshold
+773,067 INR (83.23% point estimate), CI 361,480 to 1,281,632 versus the F1-optimal threshold
 `[final_results.json]`. Drift is reported honestly — no degradation observed (0.9291 val -> 0.9619 test) — and
 the isolation-forest experiment is a documented null. It ships with a FastAPI
 service, a Streamlit analyst console, leakage and parity tests, and figures
@@ -327,7 +327,7 @@ LogReg 0.8873 (CI 0.8383-0.9233) and Rules 0.2036 (CI 0.0873-0.3492))
 `[final_results.json:model_comparison]`. Calibration is fit on the validation
 window, then an amount-dependent cost policy with an analyst-capacity cap decides
 APPROVE/STEP_UP/REVIEW/BLOCK; it reduced realized cost by
-773,067 INR (83.23%), CI 361,480 to 1,281,632 `[final_results.json:decision]`. On the test window
+773,067 INR (83.23% point estimate), CI 361,480 to 1,281,632 `[final_results.json:decision]`. On the test window
 5.9/day vs 23/day, n_demoted 0 — the cap never bound, which I state plainly rather
 than claiming capacity works. Drift is a first-class finding:
 no degradation observed (0.9291 val -> 0.9619 test), with the drift switch (2026-04-16) and
@@ -342,7 +342,7 @@ and a Streamlit console for analysts, and the headline numbers are rendered from
   0.9619 (CI 0.9340-0.9798) vs Rules 0.2036 (CI 0.0873-0.3492) at
   0.987% prevalence over 393
   test frauds `[results/final_results.json:model_comparison]`.
-- Amount-aware cost policy cut realized fraud cost 773,067 INR (83.23%), CI 361,480 to 1,281,632
+- Amount-aware cost policy cut realized fraud cost 773,067 INR (83.23% point estimate), CI 361,480 to 1,281,632
   — a point estimate, with the interval reported in INR
   (CI 361,480-1,281,632 INR); on dev (not main), the
   23/day capacity was non-binding

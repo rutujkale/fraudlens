@@ -61,7 +61,7 @@ Four pre-registered outcomes (`results/final_results.json`:
    read the point estimate with that in mind. (`H1_model` holds:
    True.)
 2. **Decision.** The amount-aware, capacity-aware policy cut realized fraud cost
-   by **773,067 INR (83.23%), CI 361,480 to 1,281,632** versus the F1-optimal threshold — the
+   by **773,067 INR (83.23% point estimate), CI 361,480 to 1,281,632** versus the F1-optimal threshold — the
    percentage is a **point estimate** and the interval is reported **in INR**
    (361,480-1,281,632), because the ratio's denominator is
    itself resampled. (`H2_decision` holds:
@@ -71,7 +71,7 @@ Four pre-registered outcomes (`results/final_results.json`:
    2026-04-16, inside the test window). The Isolation Forest
    result is null — the Part 09 isolation forest was re-run post cold-start fix and not adopted (the S1-S0 / S1s-S0 bagged CIs include 0).
 4. **Engineering.** 53-feature registry,
-   13 leakage tests, 298 automated
+   13 leakage tests, 306 automated
    tests collected. API p95 latency 127.031 ms p95
    (postgres, concurrency 1, in-process, dev; see limitations).
 

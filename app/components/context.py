@@ -43,7 +43,8 @@ def _render_context() -> dict:
     """The Part 15 render context (numbers from ``results/``), read only.
 
     ``test_counts`` is stubbed so :func:`collect_test_counts` (which scans the
-    test suite) is skipped — only the engineering strings are consumed here.
+    test suite) is skipped — only the engineering and decision headline strings
+    are consumed here.
     """
     return _build_render_context(test_counts={"n_tests": None, "n_leakage_tests": None})
 
@@ -61,6 +62,11 @@ def engineering_latency_note() -> str:
 def engineering_parity() -> str:
     """Training/serving parity sentence, exactly as ``reporting.render`` renders it."""
     return str(_render_context()["headline.engineering.parity"])
+
+
+def decision_reduction_pct() -> str:
+    """Cost-reduction headline percentage, exactly as ``reporting.render`` labels it."""
+    return str(_render_context()["headline.decision.reduction_pct"])
 
 
 def sidebar() -> None:

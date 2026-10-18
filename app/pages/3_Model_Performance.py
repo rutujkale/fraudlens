@@ -42,7 +42,7 @@ theme.chips(
     ]
 )
 
-st.subheader("Pre-registered outcomes (Part 12, test window)")
+st.header("Pre-registered outcomes (Part 12, test window)")
 outcomes = final["pre_registered_outcomes"]
 h1 = outcomes["H1_model"]
 h2 = outcomes["H2_decision"]
@@ -81,7 +81,7 @@ with cards[3], st.container(border=True):
                   _hold_tone(outcomes["H4_engineering"]["holds"]))])
     st.caption(outcomes["H4_engineering"]["detail"])
 
-st.subheader("Engineering — serving latency & parity")
+st.header("Engineering — serving latency & parity")
 with st.container(border=True):
     eng_lat, eng_text = st.columns([1, 3])
     eng_lat.metric("API latency", context.engineering_latency())
@@ -92,19 +92,18 @@ per_model = final["drift"]["per_model_pr_auc"]
 xgb = per_model["xgb"]
 test_pr_auc = xgb["test_pr_auc"]
 val_pr_auc = xgb["val_pr_auc"]
-reduction = final["decision"]["meta"]["amount_aware_capacity_pct_reduction_vs_f1"]
 ci = final["decision"]["meta"]["reduction_ci"]
 
-st.subheader("Frozen test-window headline")
+st.header("Frozen test-window headline")
 st.metric("XGB PR-AUC (test)", f"{test_pr_auc:.4f}", f"val {val_pr_auc:.4f}")
 st.markdown(
     f"- **Cost reduction** (amount-aware capacity policy vs F1-optimal, test window): "
-    f"**{reduction:.2f}%**, with a customer-cluster-bootstrap INR CI of "
+    f"**{context.decision_reduction_pct()}**, with a customer-cluster-bootstrap INR CI of "
     f"{ci['lo']:,.0f}–{ci['hi']:,.0f} (point {ci['point']:,.0f} INR)."
 )
 st.info(f"Drift: no degradation observed ({val_pr_auc:.4f} val → {test_pr_auc:.4f} test)")
 
-st.subheader("Model comparison (test window)")
+st.header("Model comparison (test window)")
 comparison = pd.DataFrame(final["model_comparison"])
 comparison["val_pr_auc"] = comparison["model"].map(
     {row["model"]: row["pr_auc"] for _, row in val_cmp.iterrows()}
@@ -158,7 +157,7 @@ with tab_k:
             rows.append({"model": model, "top_k": k, "val_recall_at_k": value})
     st.dataframe(pd.DataFrame(rows).pivot(index="top_k", columns="model", values="val_recall_at_k"))
 
-st.subheader("Confusion matrix")
+st.header("Confusion matrix")
 frozen_thr = float(final["decision"]["meta"]["cost_optimal_threshold_capacity"])
 threshold = st.slider(
     "Review threshold (calibrated probability, validation sample)",
@@ -198,7 +197,7 @@ c2.dataframe(
 )
 c2.caption("Frozen point from `results/final_results.json`; the test window is never recomputed.")
 
-st.subheader("Drift")
+st.header("Drift")
 drift = final["drift"]
 top = drift["psi_excl_tenure_top"][0]
 st.markdown(
@@ -234,7 +233,7 @@ st.caption(
     f"({post['post_share_of_frauds']:.2%} of all frauds)."
 )
 
-st.subheader("Unseen-fraud experiment (Part 09) and customer holdout")
+st.header("Unseen-fraud experiment (Part 09) and customer holdout")
 decision = json.loads(
     (results / "exp_09_unseen_decision_unseen_lab_structuring.json").read_text(encoding="utf-8")
 )
@@ -247,7 +246,7 @@ if holdout_csv.exists():
     st.dataframe(pd.read_csv(holdout_csv), use_container_width=True)
     st.caption("Setting A = seen customers, B = unseen customers (customer holdout).")
 
-st.subheader("Fairness (Part 10)")
+st.header("Fairness (Part 10)")
 fairness_csv = results / f"fairness_groups_primary_{art.manifest['profile']}.csv"
 if fairness_csv.exists():
     fairness = pd.read_csv(fairness_csv)
@@ -266,9 +265,17 @@ st.caption(
 )
 
 with st.expander("Frozen test-window figures (from Part 12)"):
+    _FIGURE_ALTS = {
+        "final_pr_curves": "Precision-recall curves for every model, PR-AUC in the legend",
+        "final_roc": "ROC curves for every model on the test window",
+        "final_calibration": "Calibration reliability curves for every model",
+        "final_cost_bars": "Realized cost breakdown by policy",
+    }
     for name in ["final_pr_curves", "final_roc", "final_calibration", "final_cost_bars"]:
         path = figures / f"{name}.png"
         if path.exists():
-            st.image(str(path), caption=name, use_container_width=True)
+            st.image(
+                str(path), caption=name, alt=_FIGURE_ALTS[name], use_container_width=True
+            )
 
 limitations.render()

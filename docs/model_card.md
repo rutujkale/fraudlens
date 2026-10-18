@@ -85,7 +85,7 @@
 - Analyst capacity 23/day (avg daily volume
   2254.8). On the test window
   5.9/day vs 23/day, n_demoted 0.
-- Result: realized-cost reduction versus F1-optimal **773,067 INR (83.23%), CI 361,480 to 1,281,632**
+- Result: realized-cost reduction versus F1-optimal **773,067 INR (83.23% point estimate), CI 361,480 to 1,281,632**
   — a point estimate; the interval is reported in INR.
 
 ## Subgroup analysis (synthetic)

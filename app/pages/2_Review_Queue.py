@@ -119,7 +119,7 @@ with st.container(border=True):
         "per transaction, not one global threshold."
     )
 
-st.subheader("Queue")
+st.header("Queue")
 queue = recompute.queue_table(sample, params, int(capacity))
 queue = queue.sort_values("expected_saving", ascending=False, kind="stable")
 action_filter = st.multiselect(

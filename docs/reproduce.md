@@ -97,7 +97,7 @@ Rough figures — hardware differs; treat them as order-of-magnitude.
 
 - `results/final_results.json` — the four pre-registered outcomes and the decision
   tables. XGBoost test PR-AUC 0.9619 (CI 0.9340-0.9798); cost reduction
-  773,067 INR (83.23%), CI 361,480 to 1,281,632. The percentage is a **point estimate**: the CI
+  773,067 INR (83.23% point estimate), CI 361,480 to 1,281,632. The percentage is a **point estimate**: the CI
   (361,480-1,281,632) applies to the INR figure, not the ratio.
 - `results/monitoring_dev.csv` — one row per month with a `sample` column
   (`in_sample` / `validation` / `mixed`), prevalence, calibration, PR-AUC and recall at

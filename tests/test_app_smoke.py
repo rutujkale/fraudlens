@@ -163,7 +163,7 @@ def test_page1_scores_and_shows_contributions():
     at.button[0].click().run()
     assert not at.exception, [str(e.value) for e in at.exception]
     assert "Recommended action" in [m.label for m in at.metric]
-    assert "Customer context" in [s.value for s in at.subheader]
+    assert "Customer context" in [s.value for s in at.header]
     assert "log-odds (not points on the risk score)" in _text(at.caption)
 
 
@@ -248,7 +248,7 @@ def test_missing_artifacts_names_build_script(monkeypatch):
 def _body_text(at: AppTest) -> str:
     """All narrative text on the page (titles, markdown, captions, info, metrics)."""
     parts = []
-    for group in (at.title, at.subheader, at.markdown, at.caption, at.info, at.error):
+    for group in (at.title, at.header, at.subheader, at.markdown, at.caption, at.info, at.error):
         parts += [str(e.value) for e in group]
     parts += [f"{m.label} {m.value}" for m in at.metric]
     return " ".join(parts)
@@ -295,6 +295,27 @@ def test_page3_drift_line_verbatim():
     at = _run(PAGE3)
     assert not at.exception, [str(e.value) for e in at.exception]
     assert expected in _body_text(at)
+
+
+def test_page3_reduction_line_labels_point_estimate():
+    """The 83.23% headline never renders as a bare percentage (Playwright audit gap)."""
+    final = json.loads((results_dir() / "final_results.json").read_text(encoding="utf-8"))
+    pct = final["decision"]["meta"]["amount_aware_capacity_pct_reduction_vs_f1"]
+    at = _run(PAGE3)
+    assert not at.exception, [str(e.value) for e in at.exception]
+    assert f"{pct:.2f}% point estimate" in _body_text(at)
+
+
+def test_reduction_headline_keys_label_point_estimate():
+    """Docs templates inherit the caveat from the render keys, not prose."""
+    from fraudlens.reporting.render import build_context
+
+    final = json.loads((results_dir() / "final_results.json").read_text(encoding="utf-8"))
+    pct = final["decision"]["meta"]["amount_aware_capacity_pct_reduction_vs_f1"]
+    ctx = build_context(test_counts={"n_tests": None, "n_leakage_tests": None})
+    expected = f"{pct:.2f}% point estimate"
+    assert expected in str(ctx["headline.decision.reduction_pct"])
+    assert expected in str(ctx["headline.decision.reduction"])
 
 
 # --- money sweep ------------------------------------------------------------

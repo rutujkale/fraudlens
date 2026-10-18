@@ -6,7 +6,8 @@ tiny HTML helpers. This module holds **no** data, numbers or business logic.
 
 Palette (from ``design/stitch/technical_precision_slate/DESIGN.md``):
 navy ``#0F1626`` · warm cream ``#EDE7DA`` · golden brown ``#B08D57`` ·
-steel blue ``#4A6FA5`` · success green ``#1B6A4C`` · error ``#BA1A1A``.
+steel blue ``#4A6FA5`` (charts; darkened to ``#3D5A88`` for *text* uses so
+chips/links clear WCAG AA 4.5:1) · success green ``#1B6A4C`` · error ``#BA1A1A``.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ _CSS = """
   --fl-navy: #0F1626;
   --fl-cream: #EDE7DA;
   --fl-gold: #B08D57;
-  --fl-steel: #4A6FA5;
+  --fl-steel: #3D5A88;
   --fl-outline: #D5CDBD;
   --fl-green: #1B6A4C;
   --fl-error: #BA1A1A;
@@ -63,6 +64,15 @@ _CSS = """
   background: rgba(186,26,26,0.10); border-color: rgba(186,26,26,0.40);
   color: var(--fl-error);
 }
+/* WCAG AA text fixes (app-owned): Streamlit dims captions with opacity 0.6
+   (4.40:1 on cream as #686a6e) and metric-delta green is 3.70:1 on its own
+   pill; both are framework defaults with no theme knob, so pin compliant,
+   fully opaque colors here. `!important` because emotion injects after us. */
+[data-testid="stCaptionContainer"] { color: #5F6165 !important; opacity: 1 !important; }
+[data-testid="stCaptionContainer"] > p { color: #5F6165 !important; }
+/* ponytail: styles every metric delta; only positive deltas exist today —
+   split by sign if a negative delta is ever rendered. */
+[data-testid="stMetricDelta"] { color: #0E6B31 !important; }
 </style>
 """
 

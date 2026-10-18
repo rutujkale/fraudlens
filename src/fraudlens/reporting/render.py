@@ -113,6 +113,11 @@ def _derived(results: dict, latency: dict, counts: dict) -> dict[str, object]:
     rules = next(m for m in results["model_comparison"] if m["model"] == "rules")
     logreg = next(m for m in results["model_comparison"] if m["model"] == "logreg")
     ci = dmeta["reduction_ci"]
+    # The percentage must never render as a bare number: every consumer (docs
+    # templates, Page 3) reads these keys, so the caveat lives here, once.
+    reduction_pct = (
+        f"{dmeta['amount_aware_capacity_pct_reduction_vs_f1']:.2f}% point estimate"
+    )
     headline = latency.get("headline", {})
     db = latency.get("db", {})
     note = (
@@ -141,8 +146,9 @@ def _derived(results: dict, latency: dict, counts: dict) -> dict[str, object]:
         "headline.model.rules_pr_auc": f"{rules['pr_auc']:.4f}",
         "headline.test.n_frauds": int(comp["frauds"]),
         "headline.model.test_prevalence_pct": f"{comp['prevalence'] * 100:.3f}%",
+        "headline.decision.reduction_pct": reduction_pct,
         "headline.decision.reduction": (
-            f"{ci['point']:,.0f} INR ({dmeta['amount_aware_capacity_pct_reduction_vs_f1']:.2f}%), "
+            f"{ci['point']:,.0f} INR ({reduction_pct}), "
             f"CI {ci['lo']:,.0f} to {ci['hi']:,.0f}"
         ),
         "headline.decision.reduction_ci_inr": f"{ci['lo']:,.0f}-{ci['hi']:,.0f}",

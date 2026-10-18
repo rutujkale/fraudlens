@@ -105,7 +105,7 @@ with right:
             st.info(f"Start it first: `{api_client.API_COMMAND}`")
             st.stop()
 
-        st.subheader("Decision")
+        st.header("Decision")
         kpi = st.columns(4)
         kpi[0].metric("Risk score (0-100)", f"{result['risk_score']:.1f}")
         kpi[1].metric("Calibrated probability", f"{result['fraud_probability']:.4f}")
@@ -139,7 +139,7 @@ with right:
             + ", ".join(f"{k} {v:.0f} ms" for k, v in result["timing_ms"].items())
         )
 
-        st.subheader("Customer context")
+        st.header("Customer context")
         try:
             summary = client.customer_summary(customer_id, before=timestamp)
         except api_client.ApiError as exc:

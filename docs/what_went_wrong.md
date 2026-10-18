@@ -854,6 +854,11 @@ _What happened, one line._
 - **Fix / guard:** keep the UI-polish diff to `app/`, `tests/test_app_smoke.py`, `.streamlit/`,
   `docs/`, `design/`; use `ruff check`, not `ruff format`, for this pass.
 
+### Finding: committed README test count was stale when the point-estimate fix re-rendered (UI polish)
+- **What happened / fix:** `make render` (run for the `render.py` point-estimate fix) also moved README's
+  "298 automated tests collected" to the true 306 — the count had not been re-rendered since the ui-polish
+  test additions; detected in the render diff, regenerated README committed in `0876004`, `results/` untouched.
+
 
 
 

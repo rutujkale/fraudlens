@@ -888,3 +888,38 @@ _What happened, one line._
   (294 passed), including `test_api.py::test_parity_matches_offline_pipeline` (max abs diff
   <= 1e-6) and the postgres/memory backend parity tests; `examples/sample_request.json`
   scores bit-identically before and after (`fraud_probability` 0.07827121877627734).
+
+### Finding: `httpx` was a dev-only dependency of shipped app code (deploy prep)
+- **What happened:** `app/components/api_client.py:14` imports `httpx` at module level, and
+  every page imports that module through `components.api_client`, so the import failure takes
+  the whole app down. `httpx` was declared only in `pyproject.toml`'s `dev` optional extra and
+  was **absent from `requirements.txt`**.
+- **How detected:** the first cold deploy to a clean environment (Streamlit Community Cloud),
+  which installs `requirements.txt` + `-e .` and therefore never installs the `dev` extra:
+  `ModuleNotFoundError: No module named 'httpx'` on the first page import. Reproduced
+  deterministically by the new guard test.
+- **Why local development could not catch it:** the local `.venv` was built from `.[dev]`, so
+  `httpx` was always present. `Dockerfile.api` also installs it only `pip install
+  --no-deps -e .`-style (`--no-deps`), so the API image never installs `[project].dependencies`
+  either — and the API server itself never imports `httpx`, so the container build stayed green.
+  The dependency was promoted to runtime use in Part 14 (the app's HTTP client) and never moved
+  out of the dev-only list.
+- **Effect:** the deployed app failed at import — every page, not one path. The API and all
+  model/artefact behaviour were unaffected.
+- **Fix:** `requirements.txt` gained a top-level `httpx>=0.27`; `httpx>=0.27` moved from the
+  `dev` extra into `[project].dependencies` (dev installs still receive it, since main
+  dependencies are always installed). No model, evaluation, `freeze.json` or artefact change.
+- **Repo-wide audit (no second occurrence):** every third-party top-level import in `app/`,
+  `src/fraudlens/` and `scripts/` was scanned — `httpx` appeared in exactly two files
+  (`app/components/api_client.py`, `scripts/benchmark_latency.py`) and **nothing else was
+  dev-only** (`pytest`, `pytest-cov`, `ruff` appear in no shipped module), so all three roots are
+  covered by the guard with no allowlist.
+- **Verification:** the API image was rebuilt to confirm `requirements.txt` still resolves in a
+  clean environment and that the build-time frozen-bundle assertion still passes (14 files
+  sha256-match `results/freeze.json`, `xgb_dev_20261015_v1`); `git status` stayed clean for
+  `artifacts/` and `results/freeze.json`. The pushed `ghcr.io/rutujkale/fraudlens-api:v1`
+  digest was left untouched — the API does not import `httpx`.
+- **Test added:** `tests/test_deploy_deps.py` — AST-scans the shipped surfaces and asserts every
+  third-party top-level import is declared in `requirements.txt` or `[project].dependencies`.
+  Written red-first: before the fix it failed naming
+  `httpx (imported by app\components\api_client.py, scripts\benchmark_latency.py)`; green after.

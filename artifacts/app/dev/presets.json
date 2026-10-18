@@ -1,0 +1,78 @@
+[
+  {
+    "label": "Normal purchase",
+    "story": "A routine, low-risk transaction the system approves.",
+    "transaction_id": "T0201749",
+    "expected_action": "APPROVE",
+    "transaction": {
+      "customer_id": "C0003361",
+      "amount": 972.09,
+      "timestamp": "2026-03-30 11:24:00",
+      "merchant_category": "fashion",
+      "merchant_id": "M0000512",
+      "device_id": "D0005112",
+      "location_id": "LOC_0039",
+      "transaction_type": "PURCHASE",
+      "channel": "APP",
+      "recipient_id": null,
+      "include_explanation": true
+    }
+  },
+  {
+    "label": "Suspicious burst",
+    "story": "A fraud burst: several transactions in a short window.",
+    "transaction_id": "T0212883",
+    "expected_action": "BLOCK",
+    "transaction": {
+      "customer_id": "C0003949",
+      "amount": 23471.08,
+      "timestamp": "2026-04-04 05:20:00",
+      "merchant_category": "transfers",
+      "merchant_id": "M0000011",
+      "device_id": "D0007943",
+      "location_id": "LOC_0025",
+      "transaction_type": "P2P_TRANSFER",
+      "channel": "POS",
+      "recipient_id": "C0004633",
+      "include_explanation": true
+    }
+  },
+  {
+    "label": "Hard negative: travel",
+    "story": "A legitimate trip overseas that looks unusual for the card.",
+    "transaction_id": "T0210287",
+    "expected_action": "BLOCK",
+    "transaction": {
+      "customer_id": "C0004475",
+      "amount": 2246.89,
+      "timestamp": "2026-04-02 19:10:00",
+      "merchant_category": "fuel",
+      "merchant_id": "M0000436",
+      "device_id": "D0006753",
+      "location_id": "LOC_0025",
+      "transaction_type": "PURCHASE",
+      "channel": "APP",
+      "recipient_id": null,
+      "include_explanation": true
+    }
+  },
+  {
+    "label": "Structuring-like",
+    "story": "Amounts just below the reporting threshold, repeatedly.",
+    "transaction_id": "T0212830",
+    "expected_action": "BLOCK",
+    "transaction": {
+      "customer_id": "C0004862",
+      "amount": 27500.0,
+      "timestamp": "2026-04-04 00:58:00",
+      "merchant_category": null,
+      "merchant_id": null,
+      "device_id": null,
+      "location_id": "LOC_0025",
+      "transaction_type": "CASH_WITHDRAWAL",
+      "channel": "ATM",
+      "recipient_id": null,
+      "include_explanation": true
+    }
+  }
+]

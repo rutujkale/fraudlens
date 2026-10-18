@@ -16,3 +16,4 @@ uvicorn>=0.30
 streamlit>=1.40
 joblib>=1.4
 python-dotenv>=1.0
+-e .

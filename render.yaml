@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: fraudlens-api
+    runtime: image
+    plan: free
+    image:
+      url: ghcr.io/rutujkale/fraudlens-api:latest
+    healthCheckPath: /health
+    envVars:
+      - key: FRAUDLENS_PROFILE
+        value: dev
+      - key: HISTORY_BACKEND
+        value: memory
+      - key: WRITE_PREDICTIONS
+        value: "0"

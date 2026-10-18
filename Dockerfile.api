@@ -1,0 +1,34 @@
+FROM python:3.12-slim AS deps
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DEFAULT_TIMEOUT=180 \
+    PIP_RETRIES=10 \
+    PYTHONDONTWRITEBYTECODE=1
+WORKDIR /app
+COPY requirements.txt pyproject.toml ./
+COPY src ./src
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install -r requirements.txt \
+    && /opt/venv/bin/pip install --no-deps -e .
+
+FROM python:3.12-slim AS runtime
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    FRAUDLENS_PROFILE=dev \
+    HISTORY_BACKEND=memory \
+    WRITE_PREDICTIONS=0
+WORKDIR /app
+COPY --from=deps /opt/venv /opt/venv
+COPY pyproject.toml ./
+COPY src ./src
+COPY config ./config
+COPY results ./results
+COPY artifacts/xgb_dev_20261015_v1 ./artifacts/xgb_dev_20261015_v1
+COPY artifacts/logreg_dev_20261015_v1 ./artifacts/logreg_dev_20261015_v1
+COPY data/raw/dev/transactions.parquet data/raw/dev/labels.parquet data/raw/dev/customers.parquet data/raw/dev/locations.parquet data/raw/dev/simulation_report.json ./data/raw/dev/
+COPY data/features/dev/features_v1.parquet ./data/features/dev/
+RUN python -c "import json; from pathlib import Path; from fraudlens.evaluation.locked import verify_artifact_hashes; fz = json.loads(Path('results/freeze.json').read_text(encoding='utf-8')); versions = json.loads(Path('results/models_dev.json').read_text(encoding='utf-8')); assert versions['xgb'] == fz['models']['xgb']['model_version'], 'models_dev.json xgb version differs from freeze'; n = sum(len(m['files']) for m in fz['models'].values()) + len(fz['data_files']); verify_artifact_hashes(fz); print('BUILD-TIME FROZEN-BUNDLE ASSERTION PASSED: %d files sha256-match results/freeze.json; serving %s' % (n, fz['models']['xgb']['model_version']))"
+EXPOSE 8000
+ENTRYPOINT ["sh", "-c", "exec uvicorn fraudlens.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

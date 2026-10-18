@@ -109,6 +109,23 @@ Measured on this machine (16-core AMD, 15.3 GB RAM, Python 3.12, in-process ASGI
 
 Full matrix, hardware and conditions: [`docs/latency.md`](latency.md) (from `results/latency.json`).
 
+## Deployment footprint (Render free tier)
+
+Measured inside the Linux container built from `Dockerfile.api` (image `fraudlens-api:local`,
+profile `dev`, `HISTORY_BACKEND=memory`, process RSS from `/proc/1/status`, 2026-10-18):
+
+- boot, `/health` answering: **441,756 kB**
+- after the first `include_explanation: true` request: **472,812 kB** (+30.3 MB — the lazy
+  SHAP explainer)
+
+Both fit Render's free plan (512 MB, 0.1 CPU) with ~10% headroom; before these trims the same
+container booted at 645,136 kB and peaked at 681,404 kB on the first explanation, i.e. **over
+the limit**. What changed (serving layer only, parity tests untouched): pyarrow-backed history
+dtypes + categorical null columns + no defensive re-sort at load (`api/history.py`), and a
+`TYPE_CHECKING`-gated `Contribution` import so `shap` costs 42 MB only when an explanation is
+actually requested (`explain/reasons.py`). Free instances sleep after ~15 min idle; cold start
+on 0.1 CPU takes ~1 minute and Render retries health checks for up to 15 min.
+
 ## Guarantees and limitations
 
 - **Frozen system, no retraining.** The service loads the frozen bundle; it never trains, calibrates

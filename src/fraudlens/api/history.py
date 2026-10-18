@@ -85,17 +85,48 @@ class PostgresHistoryProvider:
 
 
 class InMemoryHistoryProvider:
-    """Loads the whole raw transactions table once (dev: ~2 s) and slices in memory."""
+    """Loads the whole raw transactions table once (dev: ~2 s) and slices in memory.
+
+    Rows are read with pyarrow-backed dtypes and are **not** pre-sorted:
+    both consumers (``build_features`` and ``summarize_history``) sort their
+    inputs themselves, and skipping the defensive sort halves the peak RSS of
+    the load (matters on the 512 MB free-tier plan). Three columns no consumer
+    reads (``account_id``, ``currency``, ``created_at``) are skipped, and
+    columns containing nulls become categoricals so downstream numpy loops see
+    ``np.nan`` (never ``pd.NA``).
+    """
 
     backend = "memory"
 
+    _COLUMNS = [
+        "transaction_id",
+        "customer_id",
+        "timestamp",
+        "amount",
+        "merchant_id",
+        "merchant_category",
+        "device_id",
+        "location_id",
+        "recipient_id",
+        "transaction_type",
+        "channel",
+    ]
+
     def __init__(self, profile: str) -> None:
         start = time.perf_counter()
-        tx = pd.read_parquet(raw_data_dir(profile) / "transactions.parquet")
-        tx = tx.sort_values(["timestamp", "transaction_id"], kind="stable").reset_index(drop=True)
+        tx = pd.read_parquet(
+            raw_data_dir(profile) / "transactions.parquet",
+            columns=InMemoryHistoryProvider._COLUMNS,
+            dtype_backend="pyarrow",
+        )
+        for col in tx.columns:
+            if isinstance(tx[col].dtype, pd.ArrowDtype) and tx[col].isna().any():
+                tx[col] = (
+                    tx[col].astype(object).where(tx[col].notna(), np.nan).astype("category")
+                )
         self._tx = tx
-        self._by_customer = tx.groupby("customer_id", sort=False).indices
-        self._by_device = tx.groupby("device_id", sort=False).indices
+        self._by_customer = tx.groupby("customer_id", sort=False, observed=True).indices
+        self._by_device = tx.groupby("device_id", sort=False, observed=True).indices
         self.load_seconds = time.perf_counter() - start
 
     def history(

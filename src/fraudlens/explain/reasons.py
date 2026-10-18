@@ -9,12 +9,15 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
-from fraudlens.explain.shap_explainer import Contribution
 from fraudlens.features.registry import CATEGORICAL_COLUMNS
+
+if TYPE_CHECKING:  # annotation-only; keeps shap (and matplotlib) out of API boot RSS
+    from fraudlens.explain.shap_explainer import Contribution
 
 _MISSING = "no prior history"
 

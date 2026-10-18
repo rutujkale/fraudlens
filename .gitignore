@@ -3,7 +3,7 @@ data/
 # `data/` already covers this; kept explicit so the rule is obvious in review.
 data/external/
 data/external/ieee_cis/
-artifacts/
+artifacts/*
 .env
 __pycache__/
 *.py[cod]
@@ -25,3 +25,17 @@ htmlcov/
 # this guards new files). The Playwright audit screenshots are dev artifacts.
 design/stitch/**/*.png
 docs/progress/ui_polish_playwright_screenshots/
+# Streamlit Community Cloud secrets stay local (config.toml above stays tracked).
+.streamlit/secrets.toml
+# Carve-out: the small pre-rendered app snapshot the console loads on entry and
+# page 1 (artifacts/app/dev/*, ~859 KB). Everything else under artifacts/ stays
+# ignored, including model artifacts and any new file under app/dev/.
+!artifacts/app
+artifacts/app/*
+!artifacts/app/dev
+artifacts/app/dev/*
+!artifacts/app/dev/manifest.json
+!artifacts/app/dev/presets.json
+!artifacts/app/dev/curves.json
+!artifacts/app/dev/psi_by_month.csv
+!artifacts/app/dev/scored_sample.parquet

@@ -8,11 +8,33 @@ live server in CI.
 from __future__ import annotations
 
 import os
+import sys
 from typing import Any, Protocol
 
 import httpx
 
-DEFAULT_URL = os.environ.get("FRAUDLENS_API_URL", "http://127.0.0.1:8000")
+
+def _resolve_api_url() -> str:
+    """The API base URL: ``FRAUDLENS_API_URL`` env var, then Streamlit Cloud secrets.
+
+    Community Cloud exposes secrets through ``st.secrets`` (``.streamlit/secrets.toml``),
+    not the process environment, and reads this at import time — so the secret is copied
+    into ``os.environ`` here. The local default is unchanged.
+    """
+    url = os.environ.get("FRAUDLENS_API_URL")
+    if url:
+        return url
+    if "streamlit" in sys.modules:
+        try:
+            import streamlit as st
+
+            url = st.secrets.get("FRAUDLENS_API_URL")
+        except Exception:
+            url = None
+    return url or "http://127.0.0.1:8000"
+
+
+DEFAULT_URL = _resolve_api_url()
 API_COMMAND = "python scripts/run_api.py --profile dev"
 
 

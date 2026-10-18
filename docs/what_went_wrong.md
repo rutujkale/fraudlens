@@ -863,3 +863,28 @@ _What happened, one line._
 
 
 
+
+### Finding: free-tier plan assumed the API fits 512 MB - measured boot was 645 MB (deploy prep)
+- **What happened:** `render.yaml` targets Render's free plan (512 MB / 0.1 CPU), but the
+  measured container boot RSS was 645,136 kB and the first SHAP explanation peaked at
+  681,404 kB - the deploy would have OOM-looped before passing health checks.
+- **How detected:** `docker stats` plus `/proc/1/status` (VmRSS/VmHWM) and
+  `/proc/1/smaps_rollup` on a running `fraudlens-api:local` container right after the smoke
+  test, before anything was deployed.
+- **Effect:** none live (nothing deployed); the planned deploy would have failed on day one.
+- **Fix (serving layer only, no model/evaluation logic):** `api/history.py` reads parquet with
+  `dtype_backend="pyarrow"`, skips three columns no consumer reads (`account_id`, `currency`,
+  `created_at`), converts null columns through object -> `category` so numpy loops never see
+  `pd.NA`, and drops the defensive re-sort (both `build_features` and `summarize_history`
+  sort their own input). `explain/reasons.py` imports `Contribution` under `TYPE_CHECKING`,
+  so `shap` (42 MB in the API's import context) loads only on the first explanation.
+  Measured after: boot **441,756 kB**, first explanation **472,812 kB** (both in
+  `docs/api.md` / `docs/deploy.md`).
+- **Bug hit along the way:** the first conversion attempt (`astype("category")` directly on
+  arrow dtypes) produced arrow-backed *categories*, so nulls still surfaced as `pd.NA` and
+  `build_features` crashed with `TypeError: boolean value of NA is ambiguous`; caught
+  immediately by the API test suite, fixed by routing through object+np.nan first.
+- **Guard:** existing parity suites re-run after every change - `pytest -m "not db and not slow"`
+  (294 passed), including `test_api.py::test_parity_matches_offline_pipeline` (max abs diff
+  <= 1e-6) and the postgres/memory backend parity tests; `examples/sample_request.json`
+  scores bit-identically before and after (`fraud_probability` 0.07827121877627734).

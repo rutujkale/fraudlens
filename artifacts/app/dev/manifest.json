@@ -1,0 +1,27 @@
+{
+  "profile": "dev",
+  "model_version": "xgb_dev_20261015_v1",
+  "policy_version": "cost_policy_v1",
+  "calibrated": true,
+  "capacity_per_day": 23,
+  "costs": {
+    "alpha": 0.85,
+    "fixed_fee": 0.0,
+    "review_cost": 75.0,
+    "friction_cost": 150.0,
+    "catch_rate": 0.9,
+    "stepup_cost": 5.0,
+    "stepup_friction": 40.0,
+    "stop_rate": 0.6,
+    "block_friction": 450.0
+  },
+  "windows": {
+    "t_train_end": "2026-03-13 23:59:00",
+    "t_val_end": "2026-04-06 23:53:00"
+  },
+  "n_scored_sample": 20293,
+  "n_shap_explained": 5000,
+  "n_val_thr": 20293,
+  "seed": 42,
+  "generated_at": "2026-10-17T13:13:44"
+}

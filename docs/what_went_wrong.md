@@ -923,3 +923,8 @@ _What happened, one line._
   third-party top-level import is declared in `requirements.txt` or `[project].dependencies`.
   Written red-first: before the fix it failed naming
   `httpx (imported by app\components\api_client.py, scripts\benchmark_latency.py)`; green after.
+
+### Finding: hard-coded counts in a generated doc (`docs/fairness_audit.md`)
+- **What happened:** `src/fraudlens/explain/report.py:118,180,222` printed the pre-fix slice sizes ("122 frauds / 20,657 rows", "342 frauds / 41,313 rows", "122 primary frauds") as literals, so after the Part 02b re-run the doc contradicted its own tables (20,293 rows / 183 frauds).
+- **Fix:** the renderer now derives every count from the frames it already receives (`_partition_totals`, which raises if the four attribute partitions disagree). `docs/fairness_audit.md` was re-rendered from the committed CSVs, not by a script run; the next `make fairness` will reproduce the same sentences through the patched `report.py`.
+- **Test added:** `tests/test_explain.py::test_fairness_doc_counts_come_from_the_frame` renders a synthetic frame, asserts the doc counts equal the partition totals, and asserts `ValueError` on mismatched partitions.

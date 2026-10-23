@@ -277,6 +277,74 @@ def test_proxy_check_flags_strong_association():
     assert not noise_row["strong"]
 
 
+def _partition_frame(rows: int, frauds: int, attrs=("age_band", "income_band")) -> pd.DataFrame:
+    """Two groups per attribute, each attribute partitioning the same ``rows``."""
+    return pd.DataFrame(
+        [
+            {
+                "attribute": attr,
+                "group": group,
+                "n": rows // 2,
+                "n_fraud": frauds // 2,
+                "prevalence": (frauds // 2) / (rows // 2),
+                "flag_rate_any": 0.1,
+                "fpr_any": 0.01,
+                "fpr_strict": 0.01,
+                "recall": 0.9,
+                "precision": 0.5,
+                "pr_auc": 0.9,
+                "mean_p": 0.1,
+                "calibration_gap": 0.0,
+                "brier": 0.01,
+                "n_approve": rows // 2 - 5,
+                "n_step_up": 2,
+                "n_review": 2,
+                "n_block": 1,
+                "suppressed_reason": "",
+            }
+            for attr in attrs
+            for group in ("a", "b")
+        ]
+    )
+
+
+def test_fairness_doc_counts_come_from_the_frame():
+    from fraudlens.explain.report import render_fairness_markdown
+
+    primary, secondary = _partition_frame(100, 4), _partition_frame(200, 8)
+    suppression = pd.DataFrame(
+        [
+            {"attribute": a, "n_groups": 2, "suppressed_positives": 0, "suppressed_rows": 0, "reported": 2}
+            for a in ("age_band", "income_band")
+        ]
+    )
+
+    def render(**overrides):
+        kwargs = {
+            "profile": "tiny",
+            "primary_note": "note",
+            "primary": primary,
+            "primary_suppression": suppression,
+            "secondary": secondary,
+            "ratios": [],
+            "pairwise": pd.DataFrame(columns=["attribute", "group", "metric", "point", "lo", "hi", "distinguishable"]),
+            "proxy": pd.DataFrame(columns=["attribute", "feature", "statistic", "value", "threshold", "strong"]),
+            "policy_line": "policy",
+        }
+        kwargs.update(overrides)
+        return render_fairness_markdown(**kwargs)
+
+    markdown = render()
+    assert "All 4 frauds / 100 rows" in markdown
+    assert "8 frauds / 200 rows" in markdown
+    assert "the 4 primary frauds force" in markdown
+
+    mismatched = primary.copy()
+    mismatched.loc[0, "n"] += 10
+    with pytest.raises(ValueError, match="do not partition the same rows"):
+        render(primary=mismatched)
+
+
 def test_audit_attributes_load_for_dev():
     audit = load_audit_attributes(PROFILE)
     assert list(audit.columns) == ["customer_id", *AUDIT_ATTRIBUTES]

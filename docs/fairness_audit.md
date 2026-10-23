@@ -35,7 +35,7 @@ A group is counted under `suppressed_positives` when it has fewer than 30 frauds
 
 Primary view — this is the slice the policy and its capacity were selected on (20,293 rows, 183 frauds), so per-group metrics are the honest operating numbers of the frozen policy.
 
-All 122 frauds / 20,657 rows the policy was selected on; the calibrator was fitted earlier in validation, so the calibration gap and Brier here are out-of-sample.
+All 183 frauds / 20,293 rows the policy was selected on; the calibrator was fitted earlier in validation, so the calibration gap and Brier here are out-of-sample.
 
 | attribute | group | n | n_fraud | prevalence | flag_rate_any | fpr_any | fpr_strict | recall | precision | pr_auc | mean_p | calibration_gap | brier | suppressed_reason |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -147,7 +147,7 @@ Differences vs the reference group (largest by row count), paired cluster bootst
 
 ## Exploratory view — full validation window
 
-342 frauds / 41,313 rows. **Exploratory only**: the calibrator was fitted on the first half of this window (`val_cal`), so calibration gap and Brier would be in-sample for half the rows and are therefore excluded here; the policy capacity was fitted on `val_thr`.
+360 frauds / 40,585 rows. **Exploratory only**: the calibrator was fitted on the first half of this window (`val_cal`), so calibration gap and Brier would be in-sample for half the rows and are therefore excluded here; the policy capacity was fitted on `val_thr`.
 
 | attribute | group | n | n_fraud | prevalence | flag_rate_any | fpr_any | fpr_strict | recall | precision | pr_auc | mean_p | calibration_gap | brier | suppressed_reason |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -219,7 +219,7 @@ Ordinal attributes (age/income bands) use Spearman rho; nominal attributes use e
   jurisdiction; disparate-impact analysis needs a legally defined protected class and
   a business necessity defence, neither of which is available here.
 - **Better statistics:** with more positives, per-group calibration curves, equalised
-  odds tests and Wald CIs on group differences; here the 122 primary frauds force
+  odds tests and Wald CIs on group differences; here the 183 primary frauds force
   wide intervals.
 - **Post-processing options:** group-specific thresholds, reject-option
   classification, or cost-sensitive thresholds — each trades overall cost for

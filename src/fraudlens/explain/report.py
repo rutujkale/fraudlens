@@ -62,6 +62,20 @@ def _rounded(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     return out
 
 
+def _partition_totals(df: pd.DataFrame) -> tuple[int, int]:
+    """Rows and frauds of the slice behind a group table.
+
+    Every audit attribute partitions the same rows, so sum each partition separately
+    and require them to agree; a frame-wide sum would count the rows once per attribute.
+    """
+    per_attr = df.groupby("attribute")[["n", "n_fraud"]].sum()
+    n_rows = int(per_attr["n"].max())
+    n_fraud = int(per_attr["n_fraud"].max())
+    if not ((per_attr["n"] == n_rows) & (per_attr["n_fraud"] == n_fraud)).all():
+        raise ValueError("audit attributes do not partition the same rows")
+    return n_rows, n_fraud
+
+
 FAIRNESS_HEADER = """# Fairness / subgroup audit (Part 10E)
 
 Audit attributes (`age_band`, `income_band`, `archetype`, `home_region_group`) are
@@ -95,6 +109,8 @@ def render_fairness_markdown(
     policy_line: str,
 ) -> str:
     """Render ``docs/fairness_audit.md`` from computed tables."""
+    primary_rows, primary_frauds = _partition_totals(primary)
+    secondary_rows, secondary_frauds = _partition_totals(secondary)
     parts = [FAIRNESS_HEADER.format(profile=profile), f"\n**Policy:** {policy_line}\n"]
 
     parts.append("\n## Suppressed groups per attribute (reported up front)\n")
@@ -115,7 +131,8 @@ def render_fairness_markdown(
 
     parts.append("\n## Primary view — `val_thr` (the policy's own selection slice)\n")
     parts.append(
-        f"{primary_note}\n\nAll 122 frauds / 20,657 rows the policy was selected on; "
+        f"{primary_note}\n\nAll {primary_frauds:,} frauds / {primary_rows:,} rows the "
+        "policy was selected on; "
         "the calibrator was fitted earlier in validation, so the calibration gap and "
         "Brier here are out-of-sample.\n"
     )
@@ -177,7 +194,8 @@ def render_fairness_markdown(
 
     parts.append("\n## Exploratory view — full validation window\n")
     parts.append(
-        "342 frauds / 41,313 rows. **Exploratory only**: the calibrator was fitted on "
+        f"{secondary_frauds:,} frauds / {secondary_rows:,} rows. **Exploratory only**: "
+        "the calibrator was fitted on "
         "the first half of this window (`val_cal`), so calibration gap and Brier would "
         "be in-sample for half the rows and are therefore excluded here; the policy "
         "capacity was fitted on `val_thr`.\n"
@@ -208,7 +226,7 @@ def render_fairness_markdown(
     )
 
     parts.append(
-        """
+        f"""
 ## What I would examine with real data
 
 - **Group definitions:** age/income bands are a modelling choice; real audits must
@@ -219,7 +237,7 @@ def render_fairness_markdown(
   jurisdiction; disparate-impact analysis needs a legally defined protected class and
   a business necessity defence, neither of which is available here.
 - **Better statistics:** with more positives, per-group calibration curves, equalised
-  odds tests and Wald CIs on group differences; here the 122 primary frauds force
+  odds tests and Wald CIs on group differences; here the {primary_frauds} primary frauds force
   wide intervals.
 - **Post-processing options:** group-specific thresholds, reject-option
   classification, or cost-sensitive thresholds — each trades overall cost for

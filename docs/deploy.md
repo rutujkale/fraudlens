@@ -30,6 +30,10 @@ can take 30–50 s (the app waits on the Render wake).
 - Measured container footprint (profile `dev`, `HISTORY_BACKEND=memory`, `/proc/1/status`):
   boot **441,756 kB** RSS, first SHAP explanation **472,812 kB** — fits the 512 MB free plan
   with ~10% headroom (numbers from the 2026-10-18 measurement; see `docs/api.md`).
+- Re-measured after pinning the lock (2026-10-23, `fraudlens-api:pinned`, peak `VmHWM`):
+  boot **444,840 kB**, first explanation **511,268 kB** (worst of 3 runs 522,152 kB). Still
+  under the 512 MB cap (524,288 kB) but the explain headroom is now only ~2-13 MB, so re-check
+  this before adding anything to the lazy SHAP path.
 - Free instances sleep after ~15 min without traffic; cold start on 0.1 CPU takes ~1 min and
   Render keeps retrying health checks for up to 15 min.
 
@@ -135,6 +139,19 @@ docker push ghcr.io/rutujkale/fraudlens-api:v1
 Render pins the digest it pulled: dashboard → service → **Manual Deploy** → **Deploy**
 (re-pulls `v1`). For a new release, bump the tag (`v2`, …) in the commands above **and** in
 `render.yaml`.
+
+## 7. Refreshing `requirements.lock`
+
+`requirements.txt` stays the loose, human-edited file; `Dockerfile.api` installs
+`requirements.lock`. After editing `requirements.txt`, resolve on the deploy target (Linux,
+Python 3.12) and freeze — this also captures Linux-only deps such as `nvidia-nccl-cu13`:
+
+```bash
+docker run --rm -v "${PWD}:/w" -w /w python:3.12-slim sh -c \
+  "pip install -q -r requirements.txt && pip freeze | grep -E '^[A-Za-z0-9][A-Za-z0-9._-]*==' > requirements.lock"
+```
+
+Then rebuild; the build prints `BUILD-TIME FROZEN-BUNDLE ASSERTION PASSED: 14 files ...`.
 
 ## Limits of this setup (honest)
 

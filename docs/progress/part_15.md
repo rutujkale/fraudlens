@@ -225,12 +225,12 @@ Conclusion: nothing to rotate and no history rewrite needed.
 - [x] External validation and sim-to-real gap documented — `docs/external_validation.md`, `results/sim_to_real.json`
 - [x] FastAPI with parity test and latency benchmark; Streamlit three pages; batch scoring works — `docs/api.md`, `docs/app.md`, `results/latency.json`
 - [x] Unit, data, leakage, API tests present; CI green — `python scripts/final_audit.py` → `286 passed, 1 skipped, 11 deselected` locally, `pytest -m db` → 10 passed; **CI green observed**: GitHub Actions run `39033533336` on `60d4570` → `test` job success in 2m19s (Node-20 deprecation annotation only, non-fatal)
-- [ ] README with generated headline numbers; architecture diagram; screenshots/GIF; what-went-wrong — README/diagram/what-went-wrong done; **screenshots/GIF not captured** (user TODO)
+- [x] README with generated headline numbers; architecture diagram; screenshots/GIF; what-went-wrong — README/diagram/what-went-wrong done; **screenshots captured** (5 PNGs in `docs/progress/live_deploy_screenshots/`, committed in `87ba0c5`; static screenshots, no GIF)
 
 ## Remaining TODOs for you
 
-- Capture Streamlit screenshots + a short demo GIF into `docs/screenshots/` (see
-  `docs/screenshots/README.md`, `docs/demo_script.md`).
+- Screenshots are captured (static, no GIF) in `docs/progress/live_deploy_screenshots/`; the
+  live URLs are in the README Demo section.
 - CI is green on `60d4570` (run `39033533336`); the badge in `README.md` now resolves.
 - Optionally generate the `main` profile **before** any freeze and re-run the
   locked evaluation on your own copy.

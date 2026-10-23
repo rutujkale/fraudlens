@@ -314,7 +314,13 @@ def test_fairness_doc_counts_come_from_the_frame():
     primary, secondary = _partition_frame(100, 4), _partition_frame(200, 8)
     suppression = pd.DataFrame(
         [
-            {"attribute": a, "n_groups": 2, "suppressed_positives": 0, "suppressed_rows": 0, "reported": 2}
+            {
+                "attribute": a,
+                "n_groups": 2,
+                "suppressed_positives": 0,
+                "suppressed_rows": 0,
+                "reported": 2,
+            }
             for a in ("age_band", "income_band")
         ]
     )
@@ -327,8 +333,12 @@ def test_fairness_doc_counts_come_from_the_frame():
             "primary_suppression": suppression,
             "secondary": secondary,
             "ratios": [],
-            "pairwise": pd.DataFrame(columns=["attribute", "group", "metric", "point", "lo", "hi", "distinguishable"]),
-            "proxy": pd.DataFrame(columns=["attribute", "feature", "statistic", "value", "threshold", "strong"]),
+            "pairwise": pd.DataFrame(
+                columns=["attribute", "group", "metric", "point", "lo", "hi", "distinguishable"]
+            ),
+            "proxy": pd.DataFrame(
+                columns=["attribute", "feature", "statistic", "value", "threshold", "strong"]
+            ),
             "policy_line": "policy",
         }
         kwargs.update(overrides)

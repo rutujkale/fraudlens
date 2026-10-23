@@ -1,10 +1,74 @@
 # Part 10 progress
 
-> **Superseded by the Part 02b cold-start fix (2026-10-16).** The numbers below were produced
-> on the pre-fix dataset with model `xgb_20261011_v1`; the data was regenerated and the dev model
-> retrained as `xgb_dev_20261015_v1`. See [part_02b.md](part_02b.md) for the before/after table.
+> **Updated after the Part 02b cold-start fix (2026-10-16).** Part 10 outputs were **regenerated**
+> on the post-fix data with model `xgb_dev_20261015_v1` (commit `1dd04ac`); the **Post-fix values
+> (current)** section below is the current record. The original pre-fix analysis is kept verbatim
+> as the historical record, and the before/after table is in [part_02b.md](part_02b.md).
 
 **Status:** done (SHAP explainability + subgroup fairness audit) · **Committed:** `2751cc5` (code/tests/scripts) and `a74c922` (docs/results/figures) · **Pushed:** yes (`915cd57..a74c922`)
+
+## Post-fix values (current)
+
+Regenerated on the post-fix dataset with `xgb_dev_20261015_v1` (commit `1dd04ac`). Every
+number below is read from the tracked `results/` files by code; the pre-fix text above is kept
+as the historical record.
+
+**Global SHAP** - `results/shap_global_dev.csv`, 15,360 sampled validation rows
+(E17 `post_coldstart_fix`). Top-10 mean abs SHAP with 8D permutation PR-AUC drops:
+
+| rank | feature | mean abs SHAP | perm PR-AUC drop |
+|---:|---|---:|---:|
+| 1 | `tx_from_device_prior` | 0.9453 | 0.0257 |
+| 2 | `minutes_since_prev_tx` | 0.8325 | 0.0369 |
+| 3 | `merchant_freq_30d` | 0.7080 | 0.0156 |
+| 4 | `merchant_category` | 0.6974 | 0.0264 |
+| 5 | `device_count_30d` | 0.6380 | 0.0119 |
+| 6 | `hour_deviation` | 0.5204 | 0.0055 |
+| 7 | `amount` | 0.4656 | 0.0049 |
+| 8 | `hour` | 0.4306 | -0.0014 |
+| 9 | `is_new_recipient` | 0.4147 | 0.0562 |
+| 10 | `amount_ratio_to_7d_mean` | 0.3916 | 0.0008 |
+
+- **Additivity:** max |sum(SHAP) + base - raw_margin| = 1.08e-05 over the
+  sampled rows (E17 post-fix). The all-600-trees error is **not persisted post-fix; pre-fix
+  value only** (0.108).
+
+- **Latency** (warm, single-row `explain_local`, 200 calls) -
+  `results/shap_latency_dev.json`: p50 6.4846 ms, p95 7.3500 ms,
+  max 8.0568 ms.
+
+- **Gallery pool sizes** - `results/shap_gallery_dev.csv`: clear_tp 125, subtle_tp 51, false_negative 14, hard_negative_fp 58, high_amount_tn 111, cold_start 70.
+
+- **Noise controls (post-fix 8D)** - `results/exp_8D_importance_dev.csv`: `_random_noise`
+  perm PR-AUC drop -0.000385 (mean abs SHAP 0.1184,
+  rank 31/55 by mean abs SHAP); `_shuffled_minutes_since_prev_tx`
+  -0.000144 (mean abs SHAP 0.1520, rank 25/55).
+
+**Fairness** - `results/fairness_*_dev.csv` (primary `val_thr`): 183
+frauds / 20,293 rows (partition check: 183 / 20,293); 19 groups
+across 4 attributes, **9 fully reported and 10 suppressed**
+(age_band 2/4, income_band 2/4, archetype 2/5, home_region_group 3/6).
+
+Ratios (max/min):
+
+- `recall` (age_band) = 1.100 (high `age_band=25-34`, low `age_band=35-49`)
+- `fpr_any` (age_band) = 2.341 (high `age_band=35-49`, low `age_band=25-34`)
+- `flag_rate_any` (age_band) = 1.422 (high `age_band=35-49`, low `age_band=25-34`)
+- `recall` (income_band) = 1.017 (high `income_band=mid`, low `income_band=low`)
+- `fpr_any` (income_band) = 1.180 (high `income_band=mid`, low `income_band=low`)
+- `flag_rate_any` (income_band) = 1.327 (high `income_band=low`, low `income_band=mid`)
+- `recall` (archetype) = 1.076 (high `archetype=frequent_digital`, low `archetype=regular`)
+- `fpr_any` (archetype) = 4.277 (high `archetype=regular`, low `archetype=frequent_digital`)
+- `flag_rate_any` (archetype) = 3.040 (high `archetype=regular`, low `archetype=frequent_digital`)
+- `recall` (home_region_group) = 1.053 (high `home_region_group=Central`, low `home_region_group=East`)
+- `fpr_any` (home_region_group) = 1.386 (high `home_region_group=North`, low `home_region_group=East`)
+- `flag_rate_any` (home_region_group) = 1.216 (high `home_region_group=East`, low `home_region_group=Central`)
+
+- **15 of 39** group-vs-reference differences have a
+  cluster-bootstrap CI excluding 0 (uncorrected for multiple comparisons).
+- **Proxy check:** 28 of 212 feature x attribute pairs cross the
+  pre-registered thresholds (19 archetype, 5 age_band,
+  4 income_band, 0 home_region_group).
 
 ## What was built
 

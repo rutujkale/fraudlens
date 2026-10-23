@@ -1,7 +1,7 @@
 # Part 11 progress
 
 **Status:** implemented; **real IEEE-CIS run complete** (R1–R5 + gap + truncation check).
-**Committed:** code+tests and docs/results (two commits, this part) · **Pushed:** yes
+**Committed:** yes (`dc9c8f6`, `942c3e3`, `1dd09d7`) · **Pushed:** yes
 
 > **Part 11 is complete.** Pre-registration landed before any external row was seen; the run below
 > is the second (post-R5-fix) real run. The first run's evidence is preserved verbatim under

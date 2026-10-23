@@ -1,8 +1,8 @@
 # Part 12 progress — Freeze, locked test evaluation, headline numbers
 
 **Status:** 12A (freeze) + 12B (locked evaluation) + 12C (headlines) + 12D (final results doc)
-complete. The test window was accessed **once**; no re-runs. Tag `v1.0-eval` deferred pending review.
-· **Committed:** yes (freeze, eval code, results) · **Pushed:** no
+complete. The test window was accessed **once**; no re-runs. Tag `v1.0-eval` points at `cf5ada5`
+and is pushed. · **Committed:** yes (freeze, eval code, results) · **Pushed:** yes
 
 ## Deviation from the prompt
 

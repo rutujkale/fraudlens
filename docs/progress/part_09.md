@@ -7,7 +7,7 @@
 > from the **original pre-fix run**; the post-fix values and the before/after table are in
 > [part_02b.md](part_02b.md).
 
-**Status:** done (holdout: structuring) · **Committed:** (pending) · **Pushed:** no
+**Status:** done (holdout: structuring) · **Committed:** yes (`d11d34c`, `1dd04ac`, `915cd57`) · **Pushed:** yes
 
 ## What was built
 

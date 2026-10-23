@@ -77,9 +77,22 @@ Four pre-registered outcomes (`results/final_results.json`:
 
 ## Demo
 
-Screenshots and a short GIF of the Streamlit console live in
-`docs/screenshots/` (see `docs/screenshots/README.md` for the capture script);
-the analyst walkthrough is in `docs/demo_script.md`.
+**Live deployment** (free tier — the first request after ~15 min idle can take 30–50 s
+while the Render API wakes):
+
+- Analyst console: <https://fraud-lens.streamlit.app/>
+- Scoring API: <https://fraudlens-api-pld9.onrender.com> — `/health` returns
+  `{"status":"ok","model_version":"xgb_dev_20261015_v1", ...}`
+
+![FraudLens analyst console — landing page](docs/progress/live_deploy_screenshots/entry_1440.png)
+*Landing page: profile/model/policy chips and the three console pages.*
+
+![Transaction Analyzer — scored suspicious-burst transaction with SHAP explanation](docs/progress/live_deploy_screenshots/page1_after_submit.png)
+*Transaction Analyzer: one transaction scored end-to-end (₹23,471 P2P transfer) → risk 73.2, BLOCK, with SHAP drivers.*
+
+Screenshots captured from the live deployment; the local capture script lives in
+`docs/screenshots/` (see its `README.md`), and the analyst walkthrough is in
+`docs/demo_script.md`.
 
 ## Quickstart
 

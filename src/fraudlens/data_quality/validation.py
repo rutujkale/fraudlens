@@ -3,7 +3,7 @@
 Every check returns pass/fail, the number of offending rows, and a few
 examples.  ``validate_dataset`` is pure (takes already-loaded frames) so tests
 can build tiny frames and inject defects; ``load_raw_tables`` is the thin
-convenience wrapper used by the CLI.
+convenience wrapper used by the command-line entrypoints.
 """
 
 from __future__ import annotations

@@ -885,8 +885,9 @@ _What happened, one line._
   **455,520 / 448,600 kB** and first explanation **523,264 / 515,252 kB** — so the
   472,812 kB figure was a **low outlier**, and first-explain headroom is thin (~1-11 MB
   under the 512 MB cap on the worst runs; the demo's Page 1 always explains, and `:v1`
-  has run live without an OOM). `MALLOC_ARENA_MAX=2` had no effect (worst -14.4 MB,
-  below the 15 MB bar) and is not set.
+  has run live without an OOM). `MALLOC_ARENA_MAX=2` cut the worst run by 14.4 MB —
+  below the pre-set 15 MB bar and within run-to-run noise (`:v1` alone varies ~40 MB) —
+  so it is not set.
 - **Bug hit along the way:** the first conversion attempt (`astype("category")` directly on
   arrow dtypes) produced arrow-backed *categories*, so nulls still surfaced as `pd.NA` and
   `build_features` crashed with `TypeError: boolean value of NA is ambiguous`; caught

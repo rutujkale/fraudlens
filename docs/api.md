@@ -127,8 +127,8 @@ single reading (boot 441,756 kB, first explanation 472,812 kB, quoted as ~10% he
 **low outlier** — today the same `:v1` image measures 473,836-513,260 kB on first explanation.
 The demo exercises this: Page 1 requests an explanation for every scored transaction, and
 `:v1` has run live without an OOM. `MALLOC_ARENA_MAX=2` was tested on the pinned image (5
-runs) and had **no effect** (worst 508,852 kB, a 14.4 MB drop, below the 15 MB bar), so it is
-not set. Before the earlier trims the same container booted at 645,136 kB and peaked at
+runs) and cut the worst run to 508,852 kB (-14.4 MB) — below the pre-set 15 MB bar and
+within run-to-run noise (`:v1` alone varies ~40 MB), so it is not set. Before the earlier trims the same container booted at 645,136 kB and peaked at
 681,404 kB on the first explanation, i.e. **over the limit**. What changed (serving layer only,
 parity tests untouched): pyarrow-backed history dtypes + categorical null columns + no
 defensive re-sort at load (`api/history.py`), and a `TYPE_CHECKING`-gated `Contribution` import

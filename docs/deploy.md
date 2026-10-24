@@ -34,7 +34,8 @@ can take 30–50 s (the app waits on the Render wake).
   explanation **523,264 / 515,252 kB**. First-explain headroom is thin (worst runs ~1-11 MB
   under the cap); the demo's Page 1 requests an explanation every time, and `:v1` has run live
   without an OOM. The earlier 441,756 / 472,812 kB reading was a low outlier.
-  `MALLOC_ARENA_MAX=2` had no effect (worst -14.4 MB, below the 15 MB bar), so it is not set.
+  `MALLOC_ARENA_MAX=2` cut the worst run by 14.4 MB — below the pre-set 15 MB bar and
+  within run-to-run noise (`:v1` alone varies ~40 MB), so it is not set.
 - Free instances sleep after ~15 min without traffic; cold start on 0.1 CPU takes ~1 min and
   Render keeps retrying health checks for up to 15 min.
 

@@ -111,20 +111,30 @@ Full matrix, hardware and conditions: [`docs/latency.md`](latency.md) (from `res
 
 ## Deployment footprint (Render free tier)
 
-Measured inside the Linux container built from `Dockerfile.api` (image `fraudlens-api:local`,
-profile `dev`, `HISTORY_BACKEND=memory`, process RSS from `/proc/1/status`, 2026-10-18):
+Peak `VmHWM` inside the Linux container built from `Dockerfile.api` (profile `dev`,
+`HISTORY_BACKEND=memory`, `/proc/1/status`), 5 fresh-container runs each, 2026-10-23.
+512 MB cap = 524,288 kB:
 
-- boot, `/health` answering: **441,756 kB**
-- after the first `include_explanation: true` request: **472,812 kB** (+30.3 MB — the lazy
-  SHAP explainer)
+| image | boot (worst / median) | first explanation (worst / median) |
+|---|---:|---:|
+| `ghcr.io/rutujkale/fraudlens-api:v1` (live) | 446,820 / 439,888 kB | 513,260 / 505,036 kB |
+| `fraudlens-api:pinned` (v1-versioned `requirements.lock`) | 455,520 / 448,600 kB | 523,264 / 515,252 kB |
 
-Both fit Render's free plan (512 MB, 0.1 CPU) with ~10% headroom; before these trims the same
-container booted at 645,136 kB and peaked at 681,404 kB on the first explanation, i.e. **over
-the limit**. What changed (serving layer only, parity tests untouched): pyarrow-backed history
-dtypes + categorical null columns + no defensive re-sort at load (`api/history.py`), and a
-`TYPE_CHECKING`-gated `Contribution` import so `shap` costs 42 MB only when an explanation is
-actually requested (`explain/reasons.py`). Free instances sleep after ~15 min idle; cold start
-on 0.1 CPU takes ~1 minute and Render retries health checks for up to 15 min.
+Both fit Render's free plan (512 MB, 0.1 CPU), but **first-explain headroom is thin**: the
+worst runs sit ~1-11 MB under the cap (pinned worst 523,264 kB = 1,024 kB of headroom; v1
+worst 513,260 kB = 11,028 kB). Run-to-run spread is wide (~40 MB on `:v1`), so the earlier
+single reading (boot 441,756 kB, first explanation 472,812 kB, quoted as ~10% headroom) was a
+**low outlier** — today the same `:v1` image measures 473,836-513,260 kB on first explanation.
+The demo exercises this: Page 1 requests an explanation for every scored transaction, and
+`:v1` has run live without an OOM. `MALLOC_ARENA_MAX=2` was tested on the pinned image (5
+runs) and had **no effect** (worst 508,852 kB, a 14.4 MB drop, below the 15 MB bar), so it is
+not set. Before the earlier trims the same container booted at 645,136 kB and peaked at
+681,404 kB on the first explanation, i.e. **over the limit**. What changed (serving layer only,
+parity tests untouched): pyarrow-backed history dtypes + categorical null columns + no
+defensive re-sort at load (`api/history.py`), and a `TYPE_CHECKING`-gated `Contribution` import
+so `shap` costs 42 MB only when an explanation is actually requested (`explain/reasons.py`).
+Free instances sleep after ~15 min idle; cold start on 0.1 CPU takes ~1 minute and Render
+retries health checks for up to 15 min.
 
 ## Guarantees and limitations
 

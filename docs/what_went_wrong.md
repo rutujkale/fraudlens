@@ -878,8 +878,15 @@ _What happened, one line._
   `pd.NA`, and drops the defensive re-sort (both `build_features` and `summarize_history`
   sort their own input). `explain/reasons.py` imports `Contribution` under `TYPE_CHECKING`,
   so `shap` (42 MB in the API's import context) loads only on the first explanation.
-  Measured after: boot **441,756 kB**, first explanation **472,812 kB** (both in
-  `docs/api.md` / `docs/deploy.md`).
+  Measured after: boot **441,756 kB**, first explanation **472,812 kB** on the single
+  2026-10-18 run. Re-measured 2026-10-23 over 5 fresh-container runs of peak `VmHWM`:
+  `:v1` is boot **446,820 / 439,888 kB** and first explanation **513,260 / 505,036 kB**
+  (worst / median), and the v1-versioned `requirements.lock` image is boot
+  **455,520 / 448,600 kB** and first explanation **523,264 / 515,252 kB** — so the
+  472,812 kB figure was a **low outlier**, and first-explain headroom is thin (~1-11 MB
+  under the 512 MB cap on the worst runs; the demo's Page 1 always explains, and `:v1`
+  has run live without an OOM). `MALLOC_ARENA_MAX=2` had no effect (worst -14.4 MB,
+  below the 15 MB bar) and is not set.
 - **Bug hit along the way:** the first conversion attempt (`astype("category")` directly on
   arrow dtypes) produced arrow-backed *categories*, so nulls still surfaced as `pd.NA` and
   `build_features` crashed with `TypeError: boolean value of NA is ambiguous`; caught

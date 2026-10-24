@@ -27,13 +27,14 @@ can take 30–50 s (the app waits on the Render wake).
 
 - The image build **fails** unless every file in `results/freeze.json` matches its sha256
   (build log line: `BUILD-TIME FROZEN-BUNDLE ASSERTION PASSED: 14 files sha256-match ...`).
-- Measured container footprint (profile `dev`, `HISTORY_BACKEND=memory`, `/proc/1/status`):
-  boot **441,756 kB** RSS, first SHAP explanation **472,812 kB** — fits the 512 MB free plan
-  with ~10% headroom (numbers from the 2026-10-18 measurement; see `docs/api.md`).
-- Re-measured after pinning the lock (2026-10-23, `fraudlens-api:pinned`, peak `VmHWM`):
-  boot **444,840 kB**, first explanation **511,268 kB** (worst of 3 runs 522,152 kB). Still
-  under the 512 MB cap (524,288 kB) but the explain headroom is now only ~2-13 MB, so re-check
-  this before adding anything to the lazy SHAP path.
+- Measured container footprint (profile `dev`, `HISTORY_BACKEND=memory`, peak `VmHWM` from
+  `/proc/1/status`, 5 fresh-container runs, 2026-10-23; 512 MB cap = 524,288 kB): `:v1` boot
+  **446,820 / 439,888 kB** and first explanation **513,260 / 505,036 kB** (worst / median);
+  `fraudlens-api:pinned` (the v1-versioned lock) boot **455,520 / 448,600 kB** and first
+  explanation **523,264 / 515,252 kB**. First-explain headroom is thin (worst runs ~1-11 MB
+  under the cap); the demo's Page 1 requests an explanation every time, and `:v1` has run live
+  without an OOM. The earlier 441,756 / 472,812 kB reading was a low outlier.
+  `MALLOC_ARENA_MAX=2` had no effect (worst -14.4 MB, below the 15 MB bar), so it is not set.
 - Free instances sleep after ~15 min without traffic; cold start on 0.1 CPU takes ~1 min and
   Render keeps retrying health checks for up to 15 min.
 

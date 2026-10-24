@@ -3,7 +3,7 @@
 Every recompute on this page calls the Part 07 package code through
 ``fraudlens.appdata.recompute``; the sliders only change the numbers fed in.
 
-Layout follows ``design/stitch/review_queue_cost_optimization``: context strip,
+Layout follows the design mockup: context strip,
 dense KPI row, the operational-invariant banner, the queue table with an inspector,
 the cost controls and the loss-vs-threshold chart.
 """

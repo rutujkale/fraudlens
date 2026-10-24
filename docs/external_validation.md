@@ -4,7 +4,7 @@
 > `results/external_*.csv` by `python scripts/external_validation_report.py` (never typed by hand).
 > The IEEE test window was evaluated **twice, both logged** in
 > `results/test_access_log_external.csv` (the initial run that exposed the R5 uncalibrated-score bug,
-> then the post-fix re-run). See [progress/part_11.md](progress/part_11.md) for the frozen decisions
+> then the post-fix re-run). See the pre-registration below for the frozen decisions
 > and the R5 fix.
 
 ## Why this exists
@@ -20,7 +20,7 @@ features, temporal validation, calibration, cost-based decisions) carries over t
 - pseudo-timestamp = `2017-11-30 + TransactionDT` (absolute date arbitrary; ordering/spacing only).
 - external split 60/20/20 with a 3-day embargo; IEEE test evaluated **twice, both logged**.
 - shared subset `S` = 38 of 53 features; 8 structurally missing, 7 excluded from transfer
-  (see `progress/part_11.md`).
+  (see the pre-registration above).
 - **primary gap = R1 − R2 on the IEEE test window** (both PR-AUCs on the same dataset,
   so they are comparable). A cross-dataset comparison (dev-val `S` vs IEEE-test R2)
   exists in the raw record `results/external_gap.csv` but is **deliberately not reported as a

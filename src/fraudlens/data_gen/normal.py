@@ -61,7 +61,7 @@ CATEGORY_MULTIPLIER = {
     "wallet_topup": 0.5,
 }
 
-# Approximate (very) festival calendar as (month, day) — see progress doc.
+# Approximate (very) festival calendar as (month, day) — see `docs/what_went_wrong.md`.
 FESTIVALS = [
     (1, 1), (1, 26), (3, 4), (4, 8), (6, 20), (8, 15), (10, 2), (11, 8), (12, 25),
 ]

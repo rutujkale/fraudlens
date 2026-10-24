@@ -118,7 +118,7 @@ common:
   # Part 11 external validation (IEEE-CIS). Placed under `common` because it is a
   # single external dataset, not a per-profile simulation parameter. `data/` is
   # gitignored, so the raw CSVs are never committed; the files must be downloaded
-  # from Kaggle (see docs/progress/part_11.md). The `uid` field list and split
+  # from Kaggle (see docs/external_validation.md). The `uid` field list and split
   # fractions are FIXED in advance (pre-registration) so no choice is tuned on the
   # external data after seeing it.
   external:

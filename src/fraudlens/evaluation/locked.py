@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 
 # Fields added to the config *after* the frozen artifacts were trained. Removing
 # them reconstructs the training-time config (see
-# ``reconstructed_training_config_hash`` and docs/progress/part_12.md).
+# ``reconstructed_training_config_hash`` and docs/methodology.md).
 POST_TRAINING_SIMULATION_KEYS = ("external",)
 POST_TRAINING_XGB_KEYS = ("suspicious_pr_auc_threshold", "suspicious_pr_auc_bypass_min_positives")
 

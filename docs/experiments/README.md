@@ -12,7 +12,7 @@ figure to `reports/figures/`, and rows to `results/experiments.csv`.
 | 8D | Feature-importance agreement | `dev` | `run_experiment_8D.py` | `exp_8D_{importance,method_agreement}_dev.csv` |
 | 8E | Drift and retraining policy | `drift_lab` | `run_experiment_8E.py` | `exp_8E_{backtest,psi,adversarial*}_drift_lab.*` |
 
-Common rules (from the Part 08 prompt): the same temporal split, at least three
+Common rules (from the Part 08 specification): the same temporal split, at least three
 seeds whenever a model is retrained (reported as mean ± std), cluster-bootstrap
 CIs for headline metrics, and **validation only** — no test-window access.
 

@@ -8,7 +8,7 @@ portfolio project; nothing here handles real PII.
 **Verified 2026-10-19** against the live deployment — **17/17 automated checks passed**
 (Streamlit console loads, both sidebar chips correct, a transaction scores end-to-end through
 the Render API, SHAP chart renders, zero app console/page/network errors, zero browser→Render
-requests). Screenshots from that run: `docs/progress/live_deploy_screenshots/`.
+requests). Screenshots from that run: `docs/screenshots/live/`.
 
 | Piece | Live URL |
 |---|---|

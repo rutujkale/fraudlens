@@ -74,7 +74,7 @@ cold-start fix:
   policy threshold, and re-run the calibration + cost checks before promoting.
 - **Guardrail:** the published test window is immutable. A retrain creates a new
   model version and a new forward window; it never re-scores the frozen test set
-  (`docs/progress/part_12.md`).
+  (`docs/final_results.md`).
 - **Caveat:** the ~0.04 retraining gain and the mild-drift conclusion are properties
   of *this* simulator's scenario-mix change, not established facts about real fraud.
   Re-test on real data before trusting the magnitudes

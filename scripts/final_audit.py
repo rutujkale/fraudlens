@@ -22,8 +22,7 @@ from fraudlens.reporting.render import PLACEHOLDER, TEMPLATES, resume_bullet_pro
 RENDERED_DOCS = [out for _t, out in TEMPLATES.values()]
 
 # Documentation claims that must never appear (headline-honesty guardrails). The
-# scan covers README.md and every *.md under docs/, except docs/progress/ (dated
-# historical logs, not current result docs) — the exclusion is printed below.
+# scan covers README.md and every tracked *.md under docs/.
 FORBIDDEN_PHRASES = [
     (re.compile(r"parity verified on postgres", re.I), "parity verified on postgres"),
     (
@@ -194,10 +193,10 @@ def check_leakage_parity_tests(a: Audit) -> None:
 
 
 def _doc_files() -> list[Path]:
-    """README.md plus every docs/**/*.md, excluding dated progress logs."""
-    files = [REPO_ROOT / "README.md"]
-    files += sorted((REPO_ROOT / "docs").rglob("*.md"))
-    return [f for f in files if f.exists() and "progress" not in f.parts]
+    """README.md plus every tracked docs/**/*.md (local-only build logs excluded)."""
+    tracked = _run(["git", "ls-files", "README.md", "docs"]).stdout.splitlines()
+    files = [REPO_ROOT / p for p in tracked if p.endswith(".md")]
+    return [f for f in files if f.exists()]
 
 
 def check_forbidden_phrases(a: Audit) -> None:
@@ -209,7 +208,7 @@ def check_forbidden_phrases(a: Audit) -> None:
                 if pattern.search(line):
                     hits.append(f"{path.relative_to(REPO_ROOT).as_posix()}:{i} [{label}]")
     detail = (
-        "; ".join(hits[:5]) if hits else f"{len(docs)} docs scanned (docs/progress/ logs excluded)"
+        "; ".join(hits[:5]) if hits else f"{len(docs)} tracked docs scanned"
     )
     a.check("no forbidden doc phrases", not hits, detail)
 
@@ -233,9 +232,9 @@ def check_sim_to_real(a: Audit) -> None:
 
 
 def check_dod(a: Audit) -> None:
-    path = REPO_ROOT / "docs" / "progress" / "part_15.md"
+    path = REPO_ROOT / "docs" / "definition_of_done.md"
     if not path.exists():
-        a.check("Definition-of-Done checklist present", False, "docs/progress/part_15.md missing")
+        a.check("Definition-of-Done checklist present", False, "docs/definition_of_done.md missing")
         return
     text = path.read_text(encoding="utf-8")
     unchecked = re.findall(r"- \[ \] (.+)", text)

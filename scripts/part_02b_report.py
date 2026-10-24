@@ -229,7 +229,7 @@ def main() -> None:
 
 
 def _inject_into_progress(table: str) -> None:
-    """Replace the marker block in docs/progress/part_02b.md with ``table``."""
+    """Replace the generated-table marker block in the Part 02b report with ``table``."""
     doc = ROOT / "docs" / "progress" / "part_02b.md"
     begin, end = "<!-- BEGIN part_02b_table -->", "<!-- END part_02b_table -->"
     text = doc.read_text(encoding="utf-8")

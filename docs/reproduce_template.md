@@ -76,7 +76,7 @@ python scripts/final_audit.py
 The locked test evaluation is **not** part of `all-dev`: it is a one-shot run
 (`make final`) guarded by `evaluation/guard.py` and the access log. Reproducing the
 published test numbers means re-running that guarded evaluation (it will refuse a
-second unprompted run). See `docs/progress/part_12.md`.
+second unprompted run). See `docs/final_results.md`.
 
 ## Expected runtimes (measured on this machine: Windows, Python 3.12, Docker Desktop)
 

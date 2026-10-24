@@ -99,7 +99,7 @@ are simulated as explicit episodes and measured, not ignored. Drift is a config-
 change in the scenario mix (`drift.start_fraction` / `strength`). The separability gate
 (`data_quality/validation.py`) fails a profile whose crude signals solve fraud too easily,
 so an accidental shortcut cannot ship as a result. Details and the cold-start fix are in
-`docs/progress/part_02.md`, `part_02b.md`.
+`results/part_02b_before_after.csv` and `docs/what_went_wrong.md`.
 
 ## Validation strategy (Parts 06, 12)
 

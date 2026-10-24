@@ -33,7 +33,7 @@ changed the system were:
   adopted. Reported as null, not buried.
 - **The cold-start artifact.** Customers had transactions before their account
   existed (`history_days < 0`). Fixing it regenerated the dataset
-  (`pre_coldstart_fix` tag, before/after table in `docs/progress/part_02b.md`), so
+  (`pre_coldstart_fix` tag, before/after table in `results/part_02b_before_after.csv`), so
   every pre-fix number is superseded. This is why the docs cite post-fix figures.
 - **Temporal-split drift metrics are dominated by the tenure clock.** A naively
   dramatic adversarial AUC (`0.9821` all-features) collapses to a mild behavioural
@@ -41,7 +41,7 @@ changed the system were:
   (`docs/experiments/8E_drift.md`).
 - **A small `tiny` API detail.** The tiny model has no calibrator/policy, so the
   scorer refuses to start; this shaped the CI smoke-test fallback
-  (`.github/workflows/ci.yml`, `docs/progress/part_15.md`).
+  (`.github/workflows/ci.yml`, `docs/definition_of_done.md`).
 - **A test that needed a local-only artifact.** The first remote CI run failed
   `test_ieee_adapter.py::test_runner_end_to_end_on_fake_frame` because
   `experiments_lib.best_xgb_params` read a gitignored `artifacts/` file that a fresh
@@ -64,14 +64,6 @@ _What happened, one line._
 - **Effect:** _what wrong result it could have produced._
 - **Fix:** _what was changed and where._
 - **Test added:** _which test now guards against regression._
-
----
-
-### Incident: prompt files missing from `prompts/`
-- **How detected:** `git status` before the Part 01 commit showed only `00_START_HERE.md` in `prompts/`; the `part_*.md` build files were absent.
-- **Effect:** the repo would have shipped without its build log/instructions.
-- **Fix:** re-copied with `Get-ChildItem -Filter "part_*.md" | Copy-Item` (the original `Copy-Item -LiteralPath ... part_*.md` does not expand wildcards).
-- **Test added:** eyeball check of `prompts/` listing before commit (build-process issue, no unit test).
 
 ---
 
@@ -160,19 +152,19 @@ _What happened, one line._
   | hard-negative overlap signals | ≥ 2 | — | 2/2 PASS |
 
   **Honesty note:** the *exact numeric* metrics of the original failing run were **not persisted** —
-  the CLI wrote the failing report to `results/separability_gate_dev.json` and the next (passing) run
+  the script wrote the failing report to `results/separability_gate_dev.json` and the next (passing) run
   overwrote it. Only the after numbers are recorded verbatim in that file. The before column above
   records the conditions that failed and the culprit signal, not invented numbers. Process fix:
-  the CLI now also writes a preserved `results/separability_gate_<profile>.FAILED.json` on failure
+  the script now also writes a preserved `results/separability_gate_<profile>.FAILED.json` on failure
   (written once, never clobbered by a pass).
 - **Test added:** `tests/test_separability_gate.py` (perfect single-signal separator must FAIL the
-  gate), plus the CLI run recorded in `docs/separability_gate.md`.
+  gate), plus the run recorded in `docs/separability_gate.md`.
 
 ---
 
 ### Incident: `RANGE ... EXCLUDE CURRENT ROW` does not exclude same-timestamp peers
 - **How detected:** code review while writing `sql/views.sql` (`curated.rolling_24h_sql_demo`), per
-  the Part 04 prompt.
+  the Part 04 specification.
 - **Effect:** in a window frame `RANGE BETWEEN INTERVAL '24 hours' PRECEDING AND CURRENT ROW`, rows
   sharing the current row's `timestamp` are *peers*; `EXCLUDE CURRENT ROW` removes only the current
   physical row, not its peers. If two of a customer's transactions share a timestamp, the demo view
@@ -223,7 +215,7 @@ _What happened, one line._
   better" signature. The inclusive-window leak, by contrast, barely moves the metric (+0.0007): a
   metric-only review would have missed it. The invariance tests catch **both** deterministically.
 - **Fix:** none needed in the shipped code — the leak existed only in the scratch monkeypatch; the
-  canary test (`test_8`) keeps both detectors honest. Correcting the prompt's assumption: an
+  canary test (`test_8`) keeps both detectors honest. Correcting the specification's assumption: an
   *inclusive* window does **not** fail test 1 (its current-row/same-timestamp leak is invisible to a
   truncation test because the peer/current row exists on both sides of the cut); it fails tests 3 & 4.
   Test 1 fails only for a future/lifetime leak.
@@ -305,9 +297,9 @@ _What happened, one line._
 - **Effect:** calibration does not improve and mildly worsens Brier/ECE/log-loss for both models.
   The calibration comparison is therefore a null result rather than a demonstration that
   calibration repairs weighting.
-- **Fix:** none to the models. The least-bad calibrator is still selected per the prompt rule
+- **Fix:** none to the models. The least-bad calibrator is still selected per the specified rule
   (xgb: tie -> sigmoid; logreg: sigmoid lower Brier), the before/after table is kept as the
-  transparent record, and the finding is stated honestly in docs/progress/part_07.md. The
+  transparent record, and the finding is stated honestly in `docs/methodology.md`. The
   policy comparison is materially unaffected because calibrated and raw scores agree at the
   high probabilities that drive decisions.
 - **Test added:** tests/test_calibration.py::test_calibration_repairs_mean_prediction pins the
@@ -532,7 +524,7 @@ _What happened, one line._
   gap **0.124**, single-signal ROC 0.795 (< 0.85), PR 0.195 (< 0.20), overlap 2 → PASS. No
   gate threshold was changed.
 - **Test added:** none (the gate is the check); numbers recorded in
-  `results/part_02b_before_after.csv` and `docs/progress/part_02b.md`.
+  `results/part_02b_before_after.csv`.
 
 ### Finding: tiny XGB val PR-AUC = 1.0 — guard bypassed as small-sample
 - **What happened:** after regeneration, `train.py --profile tiny` tripped the suspicious-PR-AUC

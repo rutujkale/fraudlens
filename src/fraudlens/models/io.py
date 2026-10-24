@@ -32,7 +32,7 @@ def build_metadata(
     metrics: dict[str, Any],
     config_hash: str,
 ) -> dict[str, Any]:
-    """Assemble the artifact metadata dict (all fields required by AGENTS.md)."""
+    """Assemble the artifact metadata dict (all fields required by project conventions)."""
     return {
         "model_version": model_version,
         "feature_version": feature_version,

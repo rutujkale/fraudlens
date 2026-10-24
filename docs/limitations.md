@@ -55,7 +55,7 @@ the committed results, not estimated.
   `--profile main`; every published result is on `dev`. We did not generate
   `main`: it would mint new data and a new test window after the freeze, breaking
   the frozen-hash and test-window discipline. Recorded in
-  `docs/progress/part_15.md`.
+  `docs/definition_of_done.md`.
 - **`ruff format` is not the repository style and is not enforced.** `ruff check`
   is clean, but `ruff format --check .` would reformat the existing tree; a
   bulk reformat was deliberately deferred to its own commit so it would not bury

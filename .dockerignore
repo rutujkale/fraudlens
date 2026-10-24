@@ -13,7 +13,6 @@ dist
 *.egg-info
 .coverage
 htmlcov
-.opencode
 tests
 docs
 design
@@ -28,8 +27,6 @@ render.yaml
 .env
 .env.example
 README.md
-AGENTS.md
-CLAUDE.md
 data/raw/tiny
 data/raw/drift_lab
 data/raw/unseen_lab

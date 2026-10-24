@@ -137,7 +137,7 @@ app-artifacts:
 ## app: run the Streamlit analyst console (Part 14). Start `make api` first for scoring.
 app:
 	$(PY) -m streamlit run app/streamlit_app.py
-# Part 15 targets. Aliases named as the prompt lists them; each delegates to the
+# Part 15 targets. Aliases match the documented targets; each delegates to the
 # underlying script so business logic stays in src/fraudlens.
 ## data: simulate raw data for $(PROFILE).
 data: simulate

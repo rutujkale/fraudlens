@@ -1,6 +1,6 @@
 """Business cost model for the four risk actions (Part 07B).
 
-Implements the framework in ``CLAUDE.md`` ("Decision framework"). For a
+Implements the framework in ``docs/methodology.md`` ("Decision framework"). For a
 transaction with calibrated probability ``p`` and amount ``A`` (INR):
 
     cost(APPROVE) = p·(α·A + fee)

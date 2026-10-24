@@ -1,7 +1,7 @@
-# FraudLens Streamlit theme — translated from design/stitch/technical_precision_slate/DESIGN.md
+# FraudLens Streamlit theme — translated from the project design tokens
 # ("Technical Precision Slate": navy / warm cream / golden brown / steel blue).
 # Colors, radii and type only. No CDN, no remote fonts: family names are set and the
-# browser falls back if Inter / JetBrains Mono are not installed (see docs/progress/ui_polish.md).
+# browser falls back if Inter / JetBrains Mono are not installed (theme documented in docs/app.md).
 
 [theme]
 base = "light"

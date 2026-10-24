@@ -113,7 +113,7 @@ class ExternalIeeeCisConfig(StrictModel):
     ``costs``/``cost_scenarios`` are deliberately separate from ``common.costs``:
     IEEE-CIS amounts are USD-scale and its prevalence/fraud mechanisms differ, so
     the INR-calibrated synthetic cost model is not transferable (see
-    ``docs/progress/part_11.md``).
+    ``docs/external_validation.md``).
     """
 
     subdir: str

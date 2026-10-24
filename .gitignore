@@ -20,11 +20,6 @@ dist/
 *.egg-info/
 .coverage
 htmlcov/
-.opencode/
-# Screenshot captures stay local (vendored stitch mockups are already tracked;
-# this guards new files). The Playwright audit screenshots are dev artifacts.
-design/stitch/**/*.png
-docs/progress/ui_polish_playwright_screenshots/
 # Streamlit Community Cloud secrets stay local (config.toml above stays tracked).
 .streamlit/secrets.toml
 # Carve-out: the small pre-rendered app snapshot the console loads on entry and

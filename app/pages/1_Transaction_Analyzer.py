@@ -3,7 +3,7 @@
 Scores one transaction through the API and shows its explanation and customer
 context. No feature or model logic lives here.
 
-Layout follows ``design/stitch/transaction_analyzer``: a two-pane workspace with
+Layout follows the design mockup: a two-pane workspace with
 the payload form on the left and the decision / why / SHAP deep-dive on the right.
 """
 

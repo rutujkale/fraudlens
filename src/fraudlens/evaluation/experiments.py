@@ -1,8 +1,9 @@
 """Experiment log (Part 06C).
 
 Every experiment appends one row to ``results/experiments.csv`` so results are
-traceable to a commit, a timestamp and a config hash. Columns follow AGENTS.md;
-extra keys are appended at the end rather than dropped.
+traceable to a commit, a timestamp and a config hash. Columns follow the project
+conventions in ``docs/methodology.md``; extra keys are appended at the end rather
+than dropped.
 """
 
 from __future__ import annotations

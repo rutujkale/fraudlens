@@ -1,8 +1,8 @@
 """XGBoost model: seeded random search + early stopping (Part 06F).
 
 Selection is by **validation PR-AUC**; early stopping also uses the validation
-``aucpr`` (so the validation window is used for both — stated in the progress
-file). ``scale_pos_weight`` candidates include the discrete tokens one/sqrt/full
+``aucpr`` (so the validation window is used for both — stated in the methodology
+doc). ``scale_pos_weight`` candidates include the discrete tokens one/sqrt/full
 (1, sqrt(neg/pos), neg/pos) plus a continuous range. Native NaN handling; the
 categorical features are label-encoded with a fixed, train/val-consistent map.
 """

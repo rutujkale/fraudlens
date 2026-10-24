@@ -84,10 +84,10 @@ while the Render API wakes):
 - Scoring API: <https://fraudlens-api-pld9.onrender.com> — `/health` returns
   `{"status":"ok","model_version":"xgb_dev_20261015_v1", ...}`
 
-![FraudLens analyst console — landing page](docs/progress/live_deploy_screenshots/entry_1440.png)
+![FraudLens analyst console — landing page](docs/screenshots/live/entry_1440.png)
 *Landing page: profile/model/policy chips and the three console pages.*
 
-![Transaction Analyzer — scored suspicious-burst transaction with SHAP explanation](docs/progress/live_deploy_screenshots/page1_after_submit.png)
+![Transaction Analyzer — scored suspicious-burst transaction with SHAP explanation](docs/screenshots/live/page1_after_submit.png)
 *Transaction Analyzer: one transaction scored end-to-end (₹23,471 P2P transfer) → risk 73.2, BLOCK, with SHAP drivers.*
 
 Screenshots captured from the live deployment; the local capture script lives in
@@ -121,7 +121,7 @@ app/             Streamlit console (three pages)
 scripts/         thin CLI entrypoints (no business logic)
 sql/             schema, indexes, views
 tests/           unit, data, leakage, API and (db-marked) integration tests
-docs/            methodology, model card, limitations, trade-offs, progress, experiments
+docs/            methodology, model card, limitations, trade-offs, experiments
 results/         small CSV/JSON results (tracked)
 reports/figures/ PNG figures (tracked)
 ```

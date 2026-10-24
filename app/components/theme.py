@@ -4,7 +4,7 @@ One place applies the DESIGN.md tokens that Streamlit's theme cannot express:
 a single additive CSS block (tabular figures, mono machine data, chips) and two
 tiny HTML helpers. This module holds **no** data, numbers or business logic.
 
-Palette (from ``design/stitch/technical_precision_slate/DESIGN.md``):
+Palette (from the project design tokens):
 navy ``#0F1626`` · warm cream ``#EDE7DA`` · golden brown ``#B08D57`` ·
 steel blue ``#4A6FA5`` (charts; darkened to ``#3D5A88`` for *text* uses so
 chips/links clear WCAG AA 4.5:1) · success green ``#1B6A4C`` · error ``#BA1A1A``.
